@@ -162,6 +162,11 @@ class ProjectUnitLocatorController extends Controller
             $query->where('block', $block);
         }
 
+        // Lọc theo trục căn
+        if ($axis = $request->input('unit_axis')) {
+            $query->where('unit_axis', $axis);
+        }
+
         // Lọc theo số phòng ngủ
         if ($bedroom = $request->input('bedroom')) {
             $query->where('bedroom', $bedroom);
@@ -176,6 +181,8 @@ class ProjectUnitLocatorController extends Controller
         $sort = $request->input('sort', 'latest');
         match ($sort) {
             'code_asc' => $query->orderBy('unit_code', 'asc'),
+            'axis_asc' => $query->orderBy('unit_axis', 'asc'),
+            'axis_desc' => $query->orderBy('unit_axis', 'desc'),
             'area_asc' => $query->orderBy('area', 'asc'),
             'area_desc' => $query->orderBy('area', 'desc'),
             'price_asc' => $query->orderBy('price', 'asc'),
@@ -185,9 +192,10 @@ class ProjectUnitLocatorController extends Controller
 
         $units = $query->paginate(16)->withQueryString();
 
-        // Lấy danh sách các hướng, tòa đã có trong dự án để làm bộ lọc
+        // Lấy danh sách các hướng, tòa, trục căn đã có trong dự án để làm bộ lọc
         $existingDirections = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('direction')->distinct()->pluck('direction');
         $existingBlocks = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('block')->distinct()->pluck('block');
+        $existingAxes = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('unit_axis')->where('unit_axis', '!=', '')->distinct()->orderBy('unit_axis')->pluck('unit_axis');
         $floorplans = ProjectFloorplan::where('project_id', $projectId)->latest()->get();
         $templates = ProjectTemplate::where('project_id', $projectId)->latest()->get();
         $perspectives = ProjectPerspective::where('project_id', $projectId)->latest()->get();
@@ -205,6 +213,7 @@ class ProjectUnitLocatorController extends Controller
             'units',
             'existingDirections',
             'existingBlocks',
+            'existingAxes',
             'floorplans',
             'templates',
             'perspectives',
@@ -272,11 +281,17 @@ class ProjectUnitLocatorController extends Controller
                 ->where('unit_code', $unitCode)
                 ->first();
 
+            $unitAxis = !empty($item['unit_axis']) ? trim($item['unit_axis']) : (!empty($item['truc']) ? trim($item['truc']) : (!empty($item['truc_can']) ? trim($item['truc_can']) : null));
+            if (empty($unitAxis)) {
+                $unitAxis = ProjectUnitLocator::extractAxisFromCode($unitCode, $item['block'] ?? null, $item['floor'] ?? null);
+            }
+
             $data = [
                 'project_id' => $projectId,
                 'project_name' => $projectName,
                 'unit_code' => $unitCode,
                 'unit_type' => !empty($item['unit_type']) ? trim($item['unit_type']) : null,
+                'unit_axis' => $unitAxis,
                 'block' => !empty($item['block']) ? trim($item['block']) : null,
                 'floor' => !empty($item['floor']) ? trim($item['floor']) : null,
                 'area' => !empty($item['area']) ? (float)$item['area'] : null,
@@ -292,6 +307,11 @@ class ProjectUnitLocatorController extends Controller
 
             if (!empty($item['image'])) {
                 $data['image'] = $item['image'];
+            }
+            if (!empty($item['layout_3d_image'])) {
+                $data['layout_3d_image'] = $item['layout_3d_image'];
+            } elseif (!empty($item['boc_mai'])) {
+                $data['layout_3d_image'] = $item['boc_mai'];
             }
 
             if ($existing) {
@@ -341,6 +361,12 @@ class ProjectUnitLocatorController extends Controller
         }
         if (in_array('floor', $applyFields) && $request->filled('floor')) {
             $data['floor'] = trim($request->input('floor'));
+        }
+        if (in_array('unit_axis', $applyFields) && $request->filled('unit_axis')) {
+            $data['unit_axis'] = trim($request->input('unit_axis'));
+        }
+        if (in_array('layout_3d_image', $applyFields) && $request->filled('layout_3d_image')) {
+            $data['layout_3d_image'] = trim($request->input('layout_3d_image'));
         }
         if (in_array('unit_type', $applyFields) && $request->filled('unit_type')) {
             $data['unit_type'] = trim($request->input('unit_type'));
@@ -513,11 +539,23 @@ class ProjectUnitLocatorController extends Controller
             ->where('unit_code', trim($request->unit_code))
             ->first();
 
+        $unitAxis = $request->unit_axis ? trim($request->unit_axis) : ProjectUnitLocator::extractAxisFromCode($request->unit_code, $request->block, $request->floor);
+
+        $layout3dPath = null;
+        if ($request->hasFile('layout_3d_file')) {
+            $file = $request->file('layout_3d_file');
+            $filename = 'boc_mai_' . $request->project_id . '_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $layout3dPath = $file->storeAs('layout_3d/' . $request->project_id, $filename, 'public');
+        } elseif ($request->filled('layout_3d_image')) {
+            $layout3dPath = trim($request->layout_3d_image);
+        }
+
         $unitData = [
             'project_id' => $request->project_id,
             'project_name' => $projectName,
             'unit_code' => trim($request->unit_code),
             'unit_type' => $request->unit_type ? trim($request->unit_type) : null,
+            'unit_axis' => $unitAxis,
             'block' => $request->block ? trim($request->block) : null,
             'floor' => $request->floor ? trim($request->floor) : null,
             'area' => $request->area ? (float) $request->area : null,
@@ -532,6 +570,7 @@ class ProjectUnitLocatorController extends Controller
             'price_note' => $request->price_note ? trim($request->price_note) : null,
             'status' => $request->status ?: 'available',
             'image' => $imagePath,
+            'layout_3d_image' => $layout3dPath,
             'base_image' => $request->base_image,
             'highlight_data' => $highlightData,
             'composer_data' => $composerData,
@@ -544,6 +583,12 @@ class ProjectUnitLocatorController extends Controller
         } else {
             $unitData['created_by'] = auth()->id();
             $unit = ProjectUnitLocator::create($unitData);
+        }
+
+        if ($request->boolean('sync_axis_layout_3d') && !empty($unit->unit_axis) && !empty($unit->layout_3d_image)) {
+            ProjectUnitLocator::where('project_id', $unit->project_id)
+                ->where('unit_axis', $unit->unit_axis)
+                ->update(['layout_3d_image' => $unit->layout_3d_image]);
         }
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -602,15 +647,33 @@ class ProjectUnitLocatorController extends Controller
      */
     public function destroyFloorplan($id)
     {
-        $floorplan = ProjectFloorplan::findOrFail($id);
+        try {
+            $floorplan = ProjectFloorplan::findOrFail($id);
 
-        if (!empty($floorplan->image) && Storage::disk('public')->exists($floorplan->image)) {
-            Storage::disk('public')->delete($floorplan->image);
+            if (!empty($floorplan->image) && Storage::disk('public')->exists($floorplan->image)) {
+                Storage::disk('public')->delete($floorplan->image);
+            }
+
+            $floorplan->delete();
+
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã xóa mặt bằng thành công!',
+                ]);
+            }
+
+            return back()->with('success', 'Đã xóa mặt bằng thành công!');
+        } catch (\Exception $e) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không thể xóa mặt bằng: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', 'Không thể xóa mặt bằng: ' . $e->getMessage());
         }
-
-        $floorplan->delete();
-
-        return back()->with('success', 'Đã xóa mặt bằng thành công!');
     }
 
     /**
@@ -747,13 +810,31 @@ class ProjectUnitLocatorController extends Controller
      */
     public function destroyTemplate($id)
     {
-        $template = ProjectTemplate::findOrFail($id);
-        if (!empty($template->image) && Storage::disk('public')->exists($template->image)) {
-            Storage::disk('public')->delete($template->image);
-        }
-        $template->delete();
+        try {
+            $template = ProjectTemplate::findOrFail($id);
+            if (!empty($template->image) && Storage::disk('public')->exists($template->image)) {
+                Storage::disk('public')->delete($template->image);
+            }
+            $template->delete();
 
-        return back()->with('success', 'Đã xóa phôi mẫu!');
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã xóa phôi mẫu thành công!',
+                ]);
+            }
+
+            return back()->with('success', 'Đã xóa phôi mẫu!');
+        } catch (\Exception $e) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không thể xóa phôi mẫu: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', 'Không thể xóa phôi mẫu: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -817,13 +898,31 @@ class ProjectUnitLocatorController extends Controller
      */
     public function destroyPerspective($id)
     {
-        $persp = ProjectPerspective::findOrFail($id);
-        if (!empty($persp->image) && Storage::disk('public')->exists($persp->image)) {
-            Storage::disk('public')->delete($persp->image);
-        }
-        $persp->delete();
+        try {
+            $persp = ProjectPerspective::findOrFail($id);
+            if (!empty($persp->image) && Storage::disk('public')->exists($persp->image)) {
+                Storage::disk('public')->delete($persp->image);
+            }
+            $persp->delete();
 
-        return back()->with('success', 'Đã xóa ảnh phối cảnh!');
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã xóa ảnh phối cảnh thành công!',
+                ]);
+            }
+
+            return back()->with('success', 'Đã xóa ảnh phối cảnh!');
+        } catch (\Exception $e) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không thể xóa ảnh phối cảnh: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', 'Không thể xóa ảnh phối cảnh: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -837,6 +936,7 @@ class ProjectUnitLocatorController extends Controller
             'success' => true,
             'unit' => $unit,
             'image_url' => $unit->image_url,
+            'layout_3d_image_url' => $unit->layout_3d_image_url,
             'base_image_url' => $unit->base_image_url,
             'status_info' => $unit->status_info,
             'display_price' => $unit->display_price,
@@ -852,6 +952,7 @@ class ProjectUnitLocatorController extends Controller
 
         $validated = $request->validate([
             'unit_code' => 'required|string|max:100',
+            'unit_axis' => 'nullable|string|max:50',
             'block' => 'nullable|string|max:100',
             'floor' => 'nullable|string|max:50',
             'area' => 'nullable|numeric|min:0',
@@ -865,6 +966,9 @@ class ProjectUnitLocatorController extends Controller
             'status' => 'nullable|string|in:available,reserved,deposited,sold,locked',
             'note' => 'nullable|string|max:2000',
             'image_file' => 'nullable|image|max:12288',
+            'layout_3d_file' => 'nullable|image|max:15360',
+            'layout_3d_image' => 'nullable|string',
+            'sync_axis_layout_3d' => 'nullable',
         ]);
 
         if ($request->hasFile('image_file')) {
@@ -878,7 +982,25 @@ class ProjectUnitLocatorController extends Controller
             $unit->image = $file->storeAs('unit_locators/' . $unit->project_id, $filename, 'public');
         }
 
+        // Xử lý ảnh bóc mái 3D
+        if ($request->hasFile('layout_3d_file')) {
+            if (!empty($unit->layout_3d_image) && Storage::disk('public')->exists($unit->layout_3d_image)) {
+                Storage::disk('public')->delete($unit->layout_3d_image);
+            }
+            $file3d = $request->file('layout_3d_file');
+            $filename3d = 'boc_mai_' . $unit->project_id . '_' . time() . '_' . uniqid() . '.' . $file3d->getClientOriginalExtension();
+            $unit->layout_3d_image = $file3d->storeAs('layout_3d/' . $unit->project_id, $filename3d, 'public');
+        } elseif ($request->filled('layout_3d_image')) {
+            $unit->layout_3d_image = trim($request->layout_3d_image);
+        } elseif ($request->boolean('remove_layout_3d')) {
+            if (!empty($unit->layout_3d_image) && Storage::disk('public')->exists($unit->layout_3d_image)) {
+                Storage::disk('public')->delete($unit->layout_3d_image);
+            }
+            $unit->layout_3d_image = null;
+        }
+
         $unit->unit_code = trim($request->unit_code);
+        $unit->unit_axis = $request->filled('unit_axis') ? trim($request->unit_axis) : ($unit->unit_axis ?: ProjectUnitLocator::extractAxisFromCode($request->unit_code, $request->block, $request->floor));
         $unit->block = $request->block ? trim($request->block) : null;
         $unit->floor = $request->floor ? trim($request->floor) : null;
         $unit->area = $request->area ? (float) $request->area : null;
@@ -893,16 +1015,119 @@ class ProjectUnitLocatorController extends Controller
         $unit->note = $request->note ? trim($request->note) : null;
         $unit->save();
 
+        // Đồng bộ ảnh bóc mái cho các căn cùng trục căn nếu được yêu cầu
+        $syncAxis = $request->boolean('sync_axis_layout_3d') || $request->input('sync_axis_layout_3d') === '1' || $request->input('sync_axis_layout_3d') === 'true';
+        if ($syncAxis && !empty($unit->unit_axis) && !empty($unit->layout_3d_image)) {
+            ProjectUnitLocator::where('project_id', $unit->project_id)
+                ->where('unit_axis', $unit->unit_axis)
+                ->update(['layout_3d_image' => $unit->layout_3d_image]);
+        }
+
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => "Đã cập nhật chỉ căn {$unit->unit_code} thành công!",
                 'unit' => $unit,
                 'image_url' => $unit->image_url,
+                'layout_3d_image_url' => $unit->layout_3d_image_url,
             ]);
         }
 
         return back()->with('success', "Đã cập nhật chỉ căn {$unit->unit_code} thành công!");
+    }
+
+    /**
+     * Cập nhật / Tải lên nhanh ảnh bóc mái 3D cho 1 căn (Ajax)
+     */
+    public function updateLayout3d(Request $request, $id)
+    {
+        $unit = ProjectUnitLocator::findOrFail($id);
+
+        $request->validate([
+            'layout_3d_file' => 'nullable|image|max:15360',
+            'layout_3d_image' => 'nullable|string',
+            'sync_axis' => 'nullable',
+        ]);
+
+        $imagePath = $unit->layout_3d_image;
+
+        if ($request->hasFile('layout_3d_file')) {
+            if (!empty($unit->layout_3d_image) && Storage::disk('public')->exists($unit->layout_3d_image)) {
+                Storage::disk('public')->delete($unit->layout_3d_image);
+            }
+            $file = $request->file('layout_3d_file');
+            $filename = 'boc_mai_' . $unit->project_id . '_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $imagePath = $file->storeAs('layout_3d/' . $unit->project_id, $filename, 'public');
+        } elseif ($request->filled('layout_3d_image')) {
+            $imagePath = trim($request->layout_3d_image);
+        } elseif ($request->boolean('remove_image')) {
+            if (!empty($unit->layout_3d_image) && Storage::disk('public')->exists($unit->layout_3d_image)) {
+                Storage::disk('public')->delete($unit->layout_3d_image);
+            }
+            $imagePath = null;
+        }
+
+        $unit->layout_3d_image = $imagePath;
+        $unit->save();
+
+        $syncedCount = 1;
+        $syncAxis = $request->boolean('sync_axis') || $request->input('sync_axis') === '1' || $request->input('sync_axis') === 'true';
+        if ($syncAxis && !empty($unit->unit_axis)) {
+            $syncedCount = ProjectUnitLocator::where('project_id', $unit->project_id)
+                ->where('unit_axis', $unit->unit_axis)
+                ->update(['layout_3d_image' => $imagePath]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => ($syncAxis && !empty($unit->unit_axis))
+                ? "Đã cập nhật ảnh bóc mái cho {$syncedCount} căn thuộc trục căn {$unit->unit_axis}!"
+                : "Đã cập nhật ảnh bóc mái căn {$unit->unit_code} thành công!",
+            'unit' => $unit,
+            'layout_3d_image_url' => $unit->layout_3d_image_url,
+            'synced_count' => $syncedCount,
+        ]);
+    }
+
+    /**
+     * Đồng bộ nhanh ảnh bóc mái theo trục căn cho toàn dự án (Ajax)
+     */
+    public function syncAxisLayout3d(Request $request, $projectId)
+    {
+        $request->validate([
+            'unit_axis' => 'required|string',
+            'layout_3d_image' => 'nullable|string',
+            'layout_3d_file' => 'nullable|image|max:15360',
+        ]);
+
+        $axis = trim($request->unit_axis);
+        $imagePath = null;
+
+        if ($request->hasFile('layout_3d_file')) {
+            $file = $request->file('layout_3d_file');
+            $filename = 'boc_mai_axis_' . $projectId . '_' . $axis . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $imagePath = $file->storeAs('layout_3d/' . $projectId, $filename, 'public');
+        } elseif ($request->filled('layout_3d_image')) {
+            $imagePath = trim($request->layout_3d_image);
+        }
+
+        $count = ProjectUnitLocator::where('project_id', $projectId)
+            ->where('unit_axis', $axis)
+            ->update(['layout_3d_image' => $imagePath]);
+
+        $imageUrl = null;
+        if ($imagePath) {
+            $imageUrl = str_starts_with($imagePath, 'http') ? $imagePath : route('admin.unit-locators.media', ['path' => $imagePath]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã đồng bộ ảnh bóc mái cho {$count} căn thuộc trục {$axis}!",
+            'unit_axis' => $axis,
+            'layout_3d_image' => $imagePath,
+            'layout_3d_image_url' => $imageUrl,
+            'count' => $count,
+        ]);
     }
 
     /**
@@ -930,26 +1155,37 @@ class ProjectUnitLocatorController extends Controller
      */
     public function destroy($id)
     {
-        $unit = ProjectUnitLocator::findOrFail($id);
-        $code = $unit->unit_code;
-        $projectId = $unit->project_id;
+        try {
+            $unit = ProjectUnitLocator::findOrFail($id);
+            $code = $unit->unit_code;
+            $projectId = $unit->project_id;
 
-        // Xóa file ảnh trong storage
-        if (!empty($unit->image) && Storage::disk('public')->exists($unit->image)) {
-            Storage::disk('public')->delete($unit->image);
+            // Xóa file ảnh trong storage
+            if (!empty($unit->image) && Storage::disk('public')->exists($unit->image)) {
+                Storage::disk('public')->delete($unit->image);
+            }
+
+            $unit->delete();
+
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Đã xóa chỉ căn {$code}!",
+                ]);
+            }
+
+            return redirect()->route('admin.unit-locators.project', $projectId)
+                ->with('success', "Đã xóa chỉ căn {$code}!");
+        } catch (\Exception $e) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không thể xóa chỉ căn: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', 'Không thể xóa chỉ căn: ' . $e->getMessage());
         }
-
-        $unit->delete();
-
-        if (request()->ajax() || request()->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => "Đã xóa chỉ căn {$code}!",
-            ]);
-        }
-
-        return redirect()->route('admin.unit-locators.project', $projectId)
-            ->with('success', "Đã xóa chỉ căn {$code}!");
     }
 
     /**

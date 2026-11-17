@@ -56,7 +56,7 @@
         <div class="bg-white px-4 py-2.5 rounded-xl border border-slate-200/80 shadow-xs flex items-center justify-between">
             <div>
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Tổng số chỉ căn</span>
-                <span class="text-lg font-black text-slate-800 leading-tight">{{ $stats['total'] }}</span>
+                <span class="text-lg font-black text-slate-800 leading-tight" x-text="unitCount">{{ $stats['total'] }}</span>
             </div>
             <div class="w-8 h-8 rounded-lg bg-slate-50 text-slate-400 flex items-center justify-center text-xs">
                 <i class="fa-solid fa-layer-group"></i>
@@ -103,7 +103,7 @@
             >
                 <i class="fa-solid fa-layer-group text-xs"></i>
                 <span>Danh sách Chỉ căn Hộ</span>
-                <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="activeTab === 'units' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'">{{ $units->total() }}</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="activeTab === 'units' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'" x-text="unitCount">{{ $units->total() }}</span>
             </button>
 
             <!-- Tab 2: Cấu hình Phôi Chỉ Căn -->
@@ -115,7 +115,7 @@
             >
                 <i class="fa-solid fa-palette text-xs text-amber-500"></i>
                 <span>Cấu hình Phôi Chỉ Căn</span>
-                <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="activeTab === 'templates' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'">{{ $templates->count() }}</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="activeTab === 'templates' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'" x-text="templateCount">{{ $templates->count() }}</span>
             </button>
 
             <!-- Tab 3: Kho Ảnh Phối Cảnh & Tiện Ích -->
@@ -127,7 +127,7 @@
             >
                 <i class="fa-solid fa-images text-xs text-indigo-500"></i>
                 <span>Kho Phối Cảnh & Tiện Ích</span>
-                <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="activeTab === 'perspectives' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'">{{ $perspectives->count() }}</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="activeTab === 'perspectives' ? 'bg-indigo-100 text-indigo-800' : 'bg-slate-100 text-slate-600'" x-text="perspectiveCount">{{ $perspectives->count() }}</span>
             </button>
 
             <!-- Tab 4: Mặt bằng tầng -->
@@ -139,7 +139,7 @@
             >
                 <i class="fa-solid fa-map text-xs"></i>
                 <span>Mặt bằng Tầng</span>
-                <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="activeTab === 'floorplans' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'">{{ $floorplans->count() }}</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="activeTab === 'floorplans' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'" x-text="floorplanCount">{{ $floorplans->count() }}</span>
             </button>
         </div>
 
@@ -220,11 +220,25 @@
                         </select>
                     </div>
 
+                    <!-- Axis Filter -->
+                    @if(!empty($existingAxes) && count($existingAxes) > 0)
+                    <div>
+                        <select name="unit_axis" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
+                            <option value="">-- Trục căn --</option>
+                            @foreach($existingAxes as $ax)
+                            <option value="{{ $ax }}" {{ request('unit_axis') === $ax ? 'selected' : '' }}>Trục {{ $ax }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
+
                     <!-- Sort Order -->
                     <div>
                         <select name="sort" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50">
                             <option value="latest" {{ request('sort') === 'latest' ? 'selected' : '' }}>Mới nhất</option>
                             <option value="code_asc" {{ request('sort') === 'code_asc' ? 'selected' : '' }}>Mã căn A-Z</option>
+                            <option value="axis_asc" {{ request('sort') === 'axis_asc' ? 'selected' : '' }}>Trục căn (Tăng dần)</option>
+                            <option value="axis_desc" {{ request('sort') === 'axis_desc' ? 'selected' : '' }}>Trục căn (Giảm dần)</option>
                             <option value="area_asc" {{ request('sort') === 'area_asc' ? 'selected' : '' }}>Diện tích tăng dần</option>
                             <option value="area_desc" {{ request('sort') === 'area_desc' ? 'selected' : '' }}>Diện tích giảm dần</option>
                             <option value="price_asc" {{ request('sort') === 'price_asc' ? 'selected' : '' }}>Giá tăng dần</option>
@@ -237,7 +251,7 @@
                         <button type="submit" class="flex-1 py-1.5 px-3 rounded-lg bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition shadow-xs">
                             Lọc
                         </button>
-                        @if(request()->anyFilled(['search', 'direction', 'status', 'sort', 'block']))
+                        @if(request()->anyFilled(['search', 'direction', 'status', 'sort', 'block', 'unit_axis']))
                         <a href="{{ route('admin.unit-locators.project', $project->id) }}" class="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition" title="Đặt lại bộ lọc">
                             <i class="fa-solid fa-rotate-left text-xs"></i>
                         </a>
@@ -323,6 +337,8 @@
                         <th class="py-2.5 px-3.5">Mã căn</th>
                         <th class="py-2.5 px-3.5">Tòa / Tháp</th>
                         <th class="py-2.5 px-3.5">Tầng</th>
+                        <th class="py-2.5 px-3.5 text-center">Trục căn</th>
+                        <th class="py-2.5 px-3.5 text-center">Ảnh bóc mái</th>
                         <th class="py-2.5 px-3.5">DT thông thủy</th>
                         <th class="py-2.5 px-3.5">DT tim tường</th>
                         <th class="py-2.5 px-3.5">Hướng ban công</th>
@@ -336,7 +352,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     @foreach ($units as $unit)
-                    <tr :class="selectedUnitIds.includes({{ $unit->id }}) ? 'bg-indigo-50/50' : 'hover:bg-blue-50/30'" class="transition duration-150">
+                    <tr id="unit-row-{{ $unit->id }}" data-unit-id="{{ $unit->id }}" data-unit-axis="{{ $unit->unit_axis }}" :class="selectedUnitIds.includes({{ $unit->id }}) ? 'bg-indigo-50/50' : 'hover:bg-blue-50/30'" class="transition duration-150">
                         <!-- Checkbox chọn căn -->
                         <td class="py-1.5 px-3 text-center" @click.stop>
                             <input 
@@ -390,6 +406,57 @@
                         <!-- Tầng -->
                         <td class="py-1.5 px-3.5">
                             <span class="text-slate-600 font-medium">{{ $unit->floor ?: '—' }}</span>
+                        </td>
+
+                        <!-- Trục căn -->
+                        <td class="py-1.5 px-3.5 text-center">
+                            @if ($unit->unit_axis)
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-black bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs" title="Trục căn: {{ $unit->unit_axis }}">
+                                {{ $unit->unit_axis }}
+                            </span>
+                            @else
+                            <span class="text-slate-300 font-medium">—</span>
+                            @endif
+                        </td>
+
+                        <!-- Ảnh bóc mái 3D -->
+                        <td class="py-1.5 px-3.5 text-center" id="unit-bocmai-cell-{{ $unit->id }}">
+                            @if ($unit->layout_3d_image_url)
+                            <div class="inline-flex items-center gap-1.5">
+                                <div 
+                                    class="w-9 h-9 rounded-lg overflow-hidden bg-slate-900 border border-indigo-200 shrink-0 shadow-2xs cursor-pointer relative group/bocmai"
+                                    @click="openLightbox('{{ $unit->layout_3d_image_url }}', 'Bóc mái căn {{ $unit->unit_code }}', {{ json_encode($unit) }})"
+                                    title="Xem ảnh bóc mái 3D căn {{ $unit->unit_code }} (Click phóng to)"
+                                >
+                                    <img 
+                                        src="{{ $unit->layout_3d_image_url }}" 
+                                        alt="Bóc mái {{ $unit->unit_code }}" 
+                                        class="w-full h-full object-cover group-hover/bocmai:scale-110 transition duration-300"
+                                    >
+                                    <div class="absolute inset-0 bg-black/35 flex items-center justify-center opacity-0 group-hover/bocmai:opacity-100 transition">
+                                        <i class="fa-solid fa-magnifying-glass-plus text-white text-[9px]"></i>
+                                    </div>
+                                </div>
+                                <button 
+                                    type="button"
+                                    @click="openQuickBocMaiModal({{ json_encode($unit) }})"
+                                    class="w-6 h-6 rounded-md bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition flex items-center justify-center border border-slate-200 hover:border-indigo-300"
+                                    title="Đổi ảnh bóc mái hoặc đồng bộ theo trục căn"
+                                >
+                                    <i class="fa-solid fa-pen text-[10px]"></i>
+                                </button>
+                            </div>
+                            @else
+                            <button 
+                                type="button" 
+                                @click="openQuickBocMaiModal({{ json_encode($unit) }})"
+                                class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border border-dashed border-indigo-300 transition"
+                                title="Thêm ảnh bóc mái 3D cho căn này hoặc cả trục căn"
+                            >
+                                <i class="fa-solid fa-cube text-[10px]"></i>
+                                <span>+ Bóc mái</span>
+                            </button>
+                            @endif
                         </td>
 
                         <!-- Diện tích thông thủy -->
@@ -555,7 +622,7 @@
     <!-- ==================== VIEW 2: GRID VIEW (THẺ LƯỚI) ==================== -->
     <div x-show="viewMode === 'grid'" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         @foreach ($units as $unit)
-        <div :class="selectedUnitIds.includes({{ $unit->id }}) ? 'ring-2 ring-indigo-500 border-indigo-400 bg-indigo-50/10 shadow-lg' : 'border-slate-200/80 hover:border-blue-400'" class="group bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+        <div id="unit-card-{{ $unit->id }}" data-unit-id="{{ $unit->id }}" data-unit-axis="{{ $unit->unit_axis }}" :class="selectedUnitIds.includes({{ $unit->id }}) ? 'ring-2 ring-indigo-500 border-indigo-400 bg-indigo-50/10 shadow-lg' : 'border-slate-200/80 hover:border-blue-400'" class="group bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
             <div>
                 <!-- Unit Image Card -->
                 <div class="relative h-56 bg-slate-900 overflow-hidden cursor-pointer" @click="openLightbox('{{ $unit->image_url }}', '{{ $unit->unit_code }}', {{ json_encode($unit) }})">
@@ -606,9 +673,16 @@
                     <!-- Unit Code Prominent Banner on image -->
                     <div class="absolute bottom-3 left-3 right-3 text-white flex items-end justify-between">
                         <div>
-                            <span class="text-[11px] text-blue-300 font-bold block uppercase tracking-wider">
-                                {{ $unit->block ?: 'Căn hộ' }} {{ $unit->floor ? '• ' . $unit->floor : '' }}
-                            </span>
+                            <div class="flex items-center gap-1.5 mb-0.5">
+                                <span class="text-[11px] text-blue-300 font-bold uppercase tracking-wider">
+                                    {{ $unit->block ?: 'Căn hộ' }} {{ $unit->floor ? '• Tầng ' . $unit->floor : '' }}
+                                </span>
+                                @if ($unit->unit_axis)
+                                <span class="px-1.5 py-0.2 rounded text-[10px] font-black bg-indigo-600/90 text-white shadow-xs">
+                                    Trục {{ $unit->unit_axis }}
+                                </span>
+                                @endif
+                            </div>
                             <h3 class="text-xl font-black text-white drop-shadow-md">
                                 {{ $unit->unit_code }}
                             </h3>
@@ -638,6 +712,44 @@
                                 {{ $unit->bedroom ? $unit->bedroom . ' PN' : '—' }} {{ $unit->bathroom ? '• ' . $unit->bathroom . ' WC' : '' }}
                             </span>
                         </div>
+                    </div>
+
+                    <!-- Ảnh bóc mái 3D -->
+                    <div id="unit-card-bocmai-{{ $unit->id }}" class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-1.5 text-slate-600">
+                            <i class="fa-solid fa-cube text-indigo-500 text-xs"></i>
+                            <span class="font-bold">Ảnh bóc mái 3D:</span>
+                        </div>
+                        @if ($unit->layout_3d_image_url)
+                        <div class="flex items-center gap-1.5">
+                            <button 
+                                type="button"
+                                @click="openLightbox('{{ $unit->layout_3d_image_url }}', 'Bóc mái căn {{ $unit->unit_code }}', {{ json_encode($unit) }})"
+                                class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800"
+                                title="Xem ảnh bóc mái lớn"
+                            >
+                                <span>Xem 3D</span>
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                            </button>
+                            <button 
+                                type="button"
+                                @click="openQuickBocMaiModal({{ json_encode($unit) }})"
+                                class="w-5 h-5 rounded bg-white hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 flex items-center justify-center border border-slate-200 transition"
+                                title="Đổi ảnh hoặc đồng bộ theo trục"
+                            >
+                                <i class="fa-solid fa-pen text-[9px]"></i>
+                            </button>
+                        </div>
+                        @else
+                        <button 
+                            type="button"
+                            @click="openQuickBocMaiModal({{ json_encode($unit) }})"
+                            class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded border border-dashed border-indigo-300 transition"
+                        >
+                            <i class="fa-solid fa-plus text-[9px]"></i>
+                            <span>Thêm ảnh</span>
+                        </button>
+                        @endif
                     </div>
 
                     @if (!empty($unit->note))
@@ -754,7 +866,7 @@
         <!-- Templates List Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             @foreach ($templates as $tmpl)
-            <div class="bg-white rounded-2xl border border-slate-200/80 hover:border-amber-400 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+            <div id="template-card-{{ $tmpl->id }}" data-template-id="{{ $tmpl->id }}" class="bg-white rounded-2xl border border-slate-200/80 hover:border-amber-400 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
                 <div>
                     <!-- Template Image Preview with overlay slot badges -->
                     <div class="relative h-64 bg-slate-900 overflow-hidden cursor-pointer" @click="openTemplateStudio({{ json_encode($tmpl) }})">
@@ -846,13 +958,13 @@
                         </span>
                         @endif
 
-                        <form action="{{ route('admin.unit-locators.templates.destroy', $tmpl->id) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phôi mẫu này?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="text-rose-400 hover:text-rose-600 transition">
-                                Xóa phôi
-                            </button>
-                        </form>
+                        <button 
+                            type="button" 
+                            @click="deleteTemplate({{ $tmpl->id }}, '{{ addslashes($tmpl->name) }}')"
+                            class="text-rose-400 hover:text-rose-600 transition"
+                        >
+                            Xóa phôi
+                        </button>
                     </div>
                 </div>
             </div>
@@ -943,6 +1055,8 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5">
             @foreach ($perspectives as $p)
             <div 
+                id="perspective-card-{{ $p->id }}"
+                data-perspective-id="{{ $p->id }}"
                 x-show="perspectiveCategory === 'all' || perspectiveCategory === '{{ $p->category }}'"
                 class="bg-white rounded-xl border border-slate-200/80 hover:border-indigo-400 overflow-hidden shadow-xs hover:shadow-md transition group flex flex-col justify-between"
             >
@@ -963,13 +1077,14 @@
                     <span class="text-xs font-bold text-slate-800 truncate" title="{{ $p->name }}">
                         {{ $p->name }}
                     </span>
-                    <form action="{{ route('admin.unit-locators.perspectives.destroy', $p->id) }}" method="POST" onsubmit="return confirm('Bạn có chắc muốn xóa ảnh này?')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="text-slate-400 hover:text-rose-600 p-1" title="Xóa ảnh">
-                            <i class="fa-regular fa-trash-can text-xs"></i>
-                        </button>
-                    </form>
+                    <button 
+                        type="button" 
+                        @click="deletePerspective({{ $p->id }}, '{{ addslashes($p->name) }}')"
+                        class="text-slate-400 hover:text-rose-600 p-1 transition" 
+                        title="Xóa ảnh"
+                    >
+                        <i class="fa-regular fa-trash-can text-xs"></i>
+                    </button>
                 </div>
             </div>
             @endforeach
@@ -980,8 +1095,8 @@
     <!-- ==================== TAB 4: DANH SÁCH MẶT BẰNG TẦNG ==================== -->
     <div x-show="activeTab === 'floorplans'" class="space-y-4">
 
-        @if ($floorplans->isEmpty())
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 text-center">
+        <!-- Empty state khi không còn mặt bằng nào -->
+        <div x-show="floorplanCount === 0" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-16 text-center" style="{{ $floorplans->isEmpty() ? '' : 'display: none;' }}">
             <div class="w-20 h-20 rounded-3xl bg-blue-50 text-blue-500 mx-auto flex items-center justify-center text-3xl mb-4">
                 <i class="fa-solid fa-map"></i>
             </div>
@@ -996,9 +1111,9 @@
                 </button>
             </div>
         </div>
-        @else
+
         <!-- Floorplans Table View (Mỗi mặt bằng 1 dòng, tối ưu không xuống dòng) -->
-        <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div x-show="floorplanCount > 0" class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden" style="{{ $floorplans->isEmpty() ? 'display: none;' : '' }}">
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse text-xs whitespace-nowrap">
                     <thead>
@@ -1012,11 +1127,11 @@
                             <th class="py-2.5 px-3.5 text-right">Thao tác</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody id="floorplanTableBody" class="divide-y divide-slate-100">
                         @foreach ($floorplans as $index => $fp)
-                        <tr class="hover:bg-blue-50/30 transition duration-150">
+                        <tr id="floorplan-row-{{ $fp->id }}" data-floorplan-id="{{ $fp->id }}" class="hover:bg-blue-50/30 transition duration-150">
                             <!-- STT -->
-                            <td class="py-2 px-3.5 text-center font-bold text-slate-400">
+                            <td class="floorplan-stt py-2 px-3.5 text-center font-bold text-slate-400">
                                 {{ $index + 1 }}
                             </td>
 
@@ -1107,14 +1222,15 @@
                                         <i class="fa-solid fa-download text-xs"></i>
                                     </a>
 
-                                    <!-- Nút Xóa -->
-                                    <form action="{{ route('admin.unit-locators.floorplan.destroy', $fp->id) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa mặt bằng này?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition" title="Xóa mặt bằng này">
-                                            <i class="fa-regular fa-trash-can text-xs"></i>
-                                        </button>
-                                    </form>
+                                    <!-- Nút Xóa (Ajax) -->
+                                    <button 
+                                        type="button" 
+                                        @click="deleteFloorplan({{ $fp->id }}, '{{ addslashes($fp->name) }}')"
+                                        class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition" 
+                                        title="Xóa mặt bằng này"
+                                    >
+                                        <i class="fa-regular fa-trash-can text-xs"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -1123,7 +1239,6 @@
                 </table>
             </div>
         </div>
-        @endif
     </div> <!-- End Tab 2: Floorplans -->
 
     <!-- LIGHTBOX MODAL: Xem ảnh chỉ căn kích thước lớn (Giao diện sáng, mờ tinh tế) -->
@@ -1293,14 +1408,18 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-3">
+                    <div class="grid grid-cols-4 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Tòa / Block</label>
                             <input type="text" name="block" x-model="editingUnit.block" placeholder="Tòa A" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Tầng</label>
-                            <input type="text" name="floor" x-model="editingUnit.floor" placeholder="Tầng 12" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500">
+                            <input type="text" name="floor" x-model="editingUnit.floor" placeholder="12" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Trục căn</label>
+                            <input type="text" name="unit_axis" x-model="editingUnit.unit_axis" placeholder="05, 08A..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">Số phòng ngủ</label>
@@ -1324,6 +1443,61 @@
                         <input type="file" name="image_file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     </div>
 
+                    <!-- Ảnh bóc mái 3D -->
+                    <div class="p-3.5 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-extrabold text-indigo-900">
+                                <i class="fa-solid fa-cube text-indigo-500 mr-1"></i>
+                                Ảnh bóc mái 3D
+                            </label>
+                            <template x-if="editingUnit.layout_3d_image_url">
+                                <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                    Đã có ảnh
+                                </span>
+                            </template>
+                        </div>
+
+                        <!-- Current 3D preview if any -->
+                        <template x-if="editingUnit.layout_3d_image_url">
+                            <div class="flex items-center gap-3 p-2 bg-white rounded-xl border border-indigo-100">
+                                <img :src="editingUnit.layout_3d_image_url" alt="Bóc mái" class="w-12 h-12 object-cover rounded-lg border border-slate-200 shrink-0">
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs font-bold text-slate-800 truncate" x-text="'Bóc mái căn ' + editingUnit.unit_code"></div>
+                                    <button 
+                                        type="button" 
+                                        @click="openLightbox(editingUnit.layout_3d_image_url, 'Bóc mái ' + editingUnit.unit_code, editingUnit)"
+                                        class="text-[11px] text-blue-600 hover:underline font-semibold"
+                                    >
+                                        Xem ảnh phóng to
+                                    </button>
+                                </div>
+                                <label class="inline-flex items-center gap-1.5 text-xs text-rose-600 cursor-pointer">
+                                    <input type="checkbox" name="remove_layout_3d" value="1" class="rounded text-rose-600">
+                                    <span>Xóa ảnh</span>
+                                </label>
+                            </div>
+                        </template>
+
+                        <div class="space-y-1">
+                            <span class="text-[11px] text-slate-500 font-medium block">Tải ảnh bóc mái mới từ máy tính:</span>
+                            <input type="file" name="layout_3d_file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200">
+                        </div>
+
+                        <!-- Sync axis option -->
+                        <div class="pt-1 border-t border-indigo-100">
+                            <label class="inline-flex items-start gap-2 cursor-pointer">
+                                <input type="checkbox" name="sync_axis_layout_3d" value="1" checked class="mt-0.5 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                <div class="text-xs">
+                                    <span class="font-bold text-slate-800">Đồng bộ cho tất cả căn cùng trục</span>
+                                    <template x-if="editingUnit.unit_axis">
+                                        <span class="font-black text-indigo-700" x-text="' (' + editingUnit.unit_axis + ')'"></span>
+                                    </template>
+                                    <p class="text-[11px] text-slate-500">Tự động áp dụng ảnh bóc mái này cho các căn hộ cùng trục căn.</p>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">Ghi chú / Điểm nổi bật</label>
                         <textarea name="note" x-model="editingUnit.note" rows="2" placeholder="Ví dụ: Căn góc 2 mặt thoáng, view hồ điều hòa..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500"></textarea>
@@ -1339,6 +1513,205 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ==================== QUICK BÓC MÁI 3D MODAL (AJAX, KHÔNG LOAD TRANG) ==================== -->
+    <div 
+        x-show="quickBocMaiModalOpen" 
+        x-cloak 
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
+        @keydown.escape.window="closeQuickBocMaiModal()"
+        @click.self="closeQuickBocMaiModal()"
+    >
+        <div class="relative max-w-lg w-full bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-2xl transition-all">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50/60 to-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
+                        <i class="fa-solid fa-cube text-base"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                            <span>Ảnh bóc mái 3D</span>
+                            <template x-if="activeBocMaiUnit">
+                                <span class="text-xs px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 font-black" x-text="activeBocMaiUnit.unit_code"></span>
+                            </template>
+                        </h4>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Căn hộ: <span class="font-bold text-slate-700" x-text="activeBocMaiUnit?.unit_code || '—'"></span>
+                            • Trục căn: <span class="font-black text-indigo-600" x-text="activeBocMaiUnit?.unit_axis || 'Chưa đặt'"></span>
+                        </p>
+                    </div>
+                </div>
+                <button type="button" @click="closeQuickBocMaiModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                <!-- Preview current image if existing -->
+                <template x-if="activeBocMaiUnit && activeBocMaiUnit.layout_3d_image_url">
+                    <div class="p-3 bg-indigo-50/40 rounded-2xl border border-indigo-100 flex items-center gap-3.5">
+                        <div class="w-14 h-14 rounded-xl overflow-hidden bg-slate-900 border border-indigo-200 shrink-0 shadow-xs cursor-pointer" @click="openLightbox(activeBocMaiUnit.layout_3d_image_url, 'Bóc mái căn ' + activeBocMaiUnit.unit_code, activeBocMaiUnit)">
+                            <img :src="activeBocMaiUnit.layout_3d_image_url" alt="Bóc mái hiện tại" class="w-full h-full object-cover hover:scale-105 transition">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 mb-1">
+                                Ảnh bóc mái hiện tại
+                            </span>
+                            <div class="text-xs text-slate-600 truncate font-medium">Bấm ảnh để xem kích thước lớn</div>
+                        </div>
+                        <button 
+                            type="button" 
+                            @click="deleteCurrentBocMai()" 
+                            class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs transition border border-rose-200/80"
+                            title="Xóa ảnh bóc mái của căn này"
+                        >
+                            <i class="fa-regular fa-trash-can mr-1"></i> Xóa ảnh
+                        </button>
+                    </div>
+                </template>
+
+                <!-- Source Selector Tabs -->
+                <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+                    <button 
+                        type="button" 
+                        @click="bocMaiSourceTab = 'upload'" 
+                        :class="bocMaiSourceTab === 'upload' ? 'bg-indigo-600 text-white shadow-xs font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'"
+                        class="px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition"
+                    >
+                        <i class="fa-solid fa-cloud-arrow-up text-xs"></i>
+                        <span>Tải ảnh từ máy tính</span>
+                    </button>
+                    <button 
+                        type="button" 
+                        @click="bocMaiSourceTab = 'perspectives'" 
+                        :class="bocMaiSourceTab === 'perspectives' ? 'bg-indigo-600 text-white shadow-xs font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'"
+                        class="px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition"
+                    >
+                        <i class="fa-solid fa-images text-xs"></i>
+                        <span>Kho Phối Cảnh ({{ $perspectives->count() }})</span>
+                    </button>
+                </div>
+
+                <!-- Tab 1: Upload File -->
+                <div x-show="bocMaiSourceTab === 'upload'" class="space-y-3">
+                    <div 
+                        class="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition"
+                        :class="bocMaiFilePreview ? 'border-indigo-400 bg-indigo-50/20' : 'border-slate-300 hover:border-indigo-400 bg-slate-50/50 hover:bg-indigo-50/30'"
+                        @click="$refs.quickBocMaiFileInput.click()"
+                    >
+                        <input 
+                            x-ref="quickBocMaiFileInput" 
+                            type="file" 
+                            accept="image/png,image/jpeg,image/webp" 
+                            class="hidden" 
+                            @change="handleQuickBocMaiFile($event)"
+                        >
+                        <template x-if="!bocMaiFilePreview">
+                            <div class="space-y-2">
+                                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center text-xl shadow-2xs">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                </div>
+                                <div class="text-xs font-bold text-slate-700">Bấm để chọn file ảnh bóc mái 3D từ máy tính</div>
+                                <p class="text-[11px] text-slate-400">Hỗ trợ PNG, JPG, WEBP (tối đa 15MB)</p>
+                            </div>
+                        </template>
+                        <template x-if="bocMaiFilePreview">
+                            <div class="space-y-2">
+                                <img :src="bocMaiFilePreview" class="max-h-48 mx-auto rounded-xl border border-indigo-200 shadow-sm object-contain bg-white">
+                                <p class="text-xs font-bold text-indigo-700 flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    <span x-text="selectedBocMaiFileName"></span>
+                                </p>
+                                <span class="text-[11px] text-slate-400">Bấm để chọn ảnh khác</span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Choose from Kho Phối Cảnh & Tiện Ích -->
+                <div x-show="bocMaiSourceTab === 'perspectives'" class="space-y-2">
+                    @if ($perspectives->isEmpty())
+                    <div class="p-6 text-center bg-slate-50 rounded-2xl border border-slate-200">
+                        <i class="fa-solid fa-image text-slate-300 text-3xl mb-2"></i>
+                        <p class="text-xs text-slate-500">Dự án này chưa có ảnh nào trong Kho Phối Cảnh.</p>
+                        <p class="text-[11px] text-slate-400 mt-1">Hãy chuyển sang tab "Tải ảnh từ máy tính" ở trên.</p>
+                    </div>
+                    @else
+                    <div class="text-xs text-slate-500 font-medium">Bấm vào 1 ảnh dưới đây để chọn làm ảnh bóc mái:</div>
+                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-2.5 max-h-56 overflow-y-auto p-1">
+                        @foreach ($perspectives as $persp)
+                        <div 
+                            @click="selectPerspectiveForBocMai('{{ $persp->image_path }}', '{{ $persp->image_url }}')"
+                            :class="selectedPerspectivePath === '{{ $persp->image_path }}' ? 'ring-2 ring-indigo-600 border-indigo-500 shadow-md' : 'border-slate-200 hover:border-indigo-300'"
+                            class="group relative rounded-xl border bg-slate-900 overflow-hidden cursor-pointer aspect-4/3 transition-all"
+                            title="{{ $persp->name }}"
+                        >
+                            <img src="{{ $persp->image_url }}" alt="{{ $persp->name }}" class="w-full h-full object-cover group-hover:scale-105 transition">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-1.5">
+                                <span class="text-[10px] font-bold text-white truncate drop-shadow-sm">{{ $persp->name }}</span>
+                                @if ($persp->category === 'layout_3d')
+                                <span class="text-[8px] font-black text-amber-300">Bóc mái 3D</span>
+                                @endif
+                            </div>
+                            <template x-if="selectedPerspectivePath === '{{ $persp->image_path }}'">
+                                <div class="absolute top-1 right-1 w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] shadow-sm">
+                                    <i class="fa-solid fa-check"></i>
+                                </div>
+                            </template>
+                        </div>
+                        @endforeach
+                    </div>
+                    @endif
+                </div>
+
+                <!-- Sync Axis Option Checkbox -->
+                <div class="p-3.5 bg-gradient-to-r from-amber-50/60 to-indigo-50/60 rounded-2xl border border-indigo-100/80">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            x-model="syncAxisBocMai" 
+                            class="mt-0.5 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        >
+                        <div class="text-xs">
+                            <div class="font-extrabold text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-arrows-rotate text-indigo-600 text-xs"></i>
+                                <span>Đồng bộ cho tất cả các căn cùng trục</span>
+                                <template x-if="activeBocMaiUnit && activeBocMaiUnit.unit_axis">
+                                    <span class="px-1.5 py-0.2 rounded bg-indigo-600 text-white font-black text-[11px]" x-text="'Trục ' + activeBocMaiUnit.unit_axis"></span>
+                                </template>
+                            </div>
+                            <p class="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
+                                Thường các căn cùng trục căn ở các tầng khác nhau có thiết kế bóc mái giống hệt nhau. Bật tùy chọn này sẽ tự động cập nhật ảnh cho toàn bộ các căn cùng trục.
+                            </p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-100">
+                <button type="button" @click="closeQuickBocMaiModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-100 transition">
+                    Đóng
+                </button>
+                <button 
+                    type="button" 
+                    @click="saveQuickBocMai()"
+                    :disabled="isSavingBocMai || (!selectedBocMaiFile && !selectedPerspectivePath)"
+                    class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-extrabold shadow-md shadow-indigo-500/20 transition cursor-pointer"
+                >
+                    <template x-if="isSavingBocMai">
+                        <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                    </template>
+                    <template x-if="!isSavingBocMai">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i>
+                    </template>
+                    <span>Lưu ảnh bóc mái</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1495,15 +1868,13 @@
                 <!-- List of existing floorplans -->
                 <div>
                     <h5 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-                        Danh sách mặt bằng đã có ({{ $floorplans->count() }})
+                        Danh sách mặt bằng đã có (<span x-text="floorplanCount">{{ $floorplans->count() }}</span>)
                     </h5>
 
-                    @if ($floorplans->isEmpty())
-                    <p class="text-xs text-slate-400 italic text-center py-4">Chưa có ảnh mặt bằng nào. Hãy tải lên ảnh mặt bằng đầu tiên ở trên!</p>
-                    @else
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <p x-show="floorplanCount === 0" class="text-xs text-slate-400 italic text-center py-4" style="{{ $floorplans->isEmpty() ? '' : 'display: none;' }}">Chưa có ảnh mặt bằng nào. Hãy tải lên ảnh mặt bằng đầu tiên ở trên!</p>
+                    <div x-show="floorplanCount > 0" class="grid grid-cols-1 sm:grid-cols-2 gap-3" style="{{ $floorplans->isEmpty() ? 'display: none;' : '' }}">
                         @foreach ($floorplans as $fp)
-                        <div class="p-3 rounded-xl border border-slate-200 flex items-center justify-between gap-3 bg-white hover:border-blue-400 transition">
+                        <div id="modal-floorplan-{{ $fp->id }}" data-modal-floorplan-id="{{ $fp->id }}" class="p-3 rounded-xl border border-slate-200 flex items-center justify-between gap-3 bg-white hover:border-blue-400 transition">
                             <div class="flex items-center gap-3 overflow-hidden">
                                 <img 
                                     src="{{ $fp->image_url }}" 
@@ -1520,17 +1891,17 @@
                                 </div>
                             </div>
 
-                            <form action="{{ route('admin.unit-locators.floorplan.destroy', $fp->id) }}" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa mặt bằng này?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="p-2 text-slate-400 hover:text-rose-600 transition" title="Xóa mặt bằng">
-                                    <i class="fa-regular fa-trash-can text-sm"></i>
-                                </button>
-                            </form>
+                            <button 
+                                type="button" 
+                                @click="deleteFloorplan({{ $fp->id }}, '{{ addslashes($fp->name) }}')"
+                                class="p-2 text-slate-400 hover:text-rose-600 transition" 
+                                title="Xóa mặt bằng"
+                            >
+                                <i class="fa-regular fa-trash-can text-sm"></i>
+                            </button>
                         </div>
                         @endforeach
                     </div>
-                    @endif
                 </div>
             </div>
 
@@ -2397,6 +2768,12 @@ function unitProjectHub() {
         perspectiveCategory: 'all',
         isSavingTemplate: false,
 
+        // Reactive Counts
+        floorplanCount: {{ $floorplans->count() }},
+        templateCount: {{ $templates->count() }},
+        perspectiveCount: {{ $perspectives->count() }},
+        unitCount: {{ $units->total() }},
+
         // Selection State
         selectedUnitIds: [],
         currentPageUnitIds: {{ json_encode($units->pluck('id')) }},
@@ -2435,6 +2812,7 @@ function unitProjectHub() {
             unit_code: '',
             block: '',
             floor: '',
+            unit_axis: '',
             area: '',
             area_gross: '',
             direction: '',
@@ -2443,8 +2821,20 @@ function unitProjectHub() {
             bathroom: '',
             price_text: '',
             status: 'available',
-            note: ''
+            note: '',
+            layout_3d_image_url: null
         },
+
+        // Quick Bóc Mái Modal States
+        quickBocMaiModalOpen: false,
+        activeBocMaiUnit: null,
+        bocMaiSourceTab: 'upload',
+        selectedBocMaiFile: null,
+        selectedBocMaiFileName: '',
+        bocMaiFilePreview: null,
+        selectedPerspectivePath: '',
+        syncAxisBocMai: true,
+        isSavingBocMai: false,
 
         init() {
             this.calcBoardDimensions();
@@ -2936,6 +3326,7 @@ function unitProjectHub() {
                 unit_code: unit.unit_code || '',
                 block: unit.block || '',
                 floor: unit.floor || '',
+                unit_axis: unit.unit_axis || '',
                 area: unit.area || '',
                 area_gross: unit.area_gross || '',
                 direction: unit.direction || '',
@@ -2944,9 +3335,266 @@ function unitProjectHub() {
                 bathroom: unit.bathroom || '',
                 price_text: unit.price_text || '',
                 status: unit.status || 'available',
-                note: unit.note || ''
+                note: unit.note || '',
+                layout_3d_image_url: unit.layout_3d_image_url || null
             };
             this.editModalOpen = true;
+        },
+
+        openQuickBocMaiModal(unit) {
+            this.activeBocMaiUnit = unit;
+            this.bocMaiSourceTab = 'upload';
+            this.selectedBocMaiFile = null;
+            this.selectedBocMaiFileName = '';
+            this.bocMaiFilePreview = null;
+            this.selectedPerspectivePath = '';
+            this.syncAxisBocMai = true;
+            this.isSavingBocMai = false;
+            this.quickBocMaiModalOpen = true;
+        },
+
+        closeQuickBocMaiModal() {
+            this.quickBocMaiModalOpen = false;
+            this.activeBocMaiUnit = null;
+            this.selectedBocMaiFile = null;
+            this.selectedBocMaiFileName = '';
+            this.bocMaiFilePreview = null;
+            this.selectedPerspectivePath = '';
+            this.isSavingBocMai = false;
+        },
+
+        handleQuickBocMaiFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.selectedBocMaiFile = file;
+                this.selectedBocMaiFileName = file.name;
+                this.selectedPerspectivePath = '';
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.bocMaiFilePreview = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        },
+
+        selectPerspectiveForBocMai(path, url) {
+            this.selectedPerspectivePath = path;
+            this.selectedBocMaiFile = null;
+            this.selectedBocMaiFileName = '';
+            this.bocMaiFilePreview = url;
+        },
+
+        saveQuickBocMai() {
+            if (!this.activeBocMaiUnit) return;
+            if (!this.selectedBocMaiFile && !this.selectedPerspectivePath) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Chưa chọn ảnh',
+                    text: 'Vui lòng chọn 1 file ảnh từ máy tính hoặc từ Kho Phối Cảnh!',
+                    confirmButtonText: 'Đã hiểu'
+                });
+                return;
+            }
+
+            this.isSavingBocMai = true;
+            const formData = new FormData();
+            if (this.selectedBocMaiFile) {
+                formData.append('layout_3d_file', this.selectedBocMaiFile);
+            } else if (this.selectedPerspectivePath) {
+                formData.append('layout_3d_image', this.selectedPerspectivePath);
+            }
+            formData.append('sync_axis', this.syncAxisBocMai ? '1' : '0');
+
+            fetch(`{{ url('admin/unit-locators') }}/${this.activeBocMaiUnit.id}/layout-3d`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.isSavingBocMai = false;
+                if (data.success) {
+                    Toast.fire({
+                        icon: 'success',
+                        title: data.message || 'Đã cập nhật ảnh bóc mái!'
+                    });
+
+                    const newUrl = data.layout_3d_image_url;
+                    const unitId = this.activeBocMaiUnit.id;
+                    const unitAxis = this.activeBocMaiUnit.unit_axis;
+
+                    if (this.syncAxisBocMai && unitAxis) {
+                        document.querySelectorAll(`[data-unit-axis="${unitAxis}"]`).forEach(el => {
+                            const id = el.getAttribute('data-unit-id');
+                            if (id) {
+                                this.updateUnitBocMaiDOM(id, newUrl, unitAxis);
+                            }
+                        });
+                    } else {
+                        this.updateUnitBocMaiDOM(unitId, newUrl, unitAxis);
+                    }
+
+                    this.closeQuickBocMaiModal();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: data.message || 'Không thể cập nhật ảnh bóc mái.'
+                    });
+                }
+            })
+            .catch(err => {
+                this.isSavingBocMai = false;
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi kết nối',
+                    text: 'Có lỗi xảy ra khi lưu ảnh. Vui lòng thử lại.'
+                });
+            });
+        },
+
+        deleteCurrentBocMai() {
+            if (!this.activeBocMaiUnit) return;
+            confirmAction({
+                title: `Xóa ảnh bóc mái căn ${this.activeBocMaiUnit.unit_code}?`,
+                text: this.syncAxisBocMai && this.activeBocMaiUnit.unit_axis 
+                    ? `Ảnh sẽ bị xóa khỏi tất cả căn cùng trục ${this.activeBocMaiUnit.unit_axis}.`
+                    : 'Ảnh bóc mái của căn này sẽ bị xóa khỏi hệ thống.',
+                icon: 'warning',
+                confirmButtonText: 'Đồng ý xóa',
+                confirmButtonColor: '#ef4444'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    const formData = new FormData();
+                    formData.append('remove_image', '1');
+                    formData.append('sync_axis', this.syncAxisBocMai ? '1' : '0');
+
+                    fetch(`{{ url('admin/unit-locators') }}/${this.activeBocMaiUnit.id}/layout-3d`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Toast.fire({
+                                icon: 'success',
+                                title: 'Đã xóa ảnh bóc mái!'
+                            });
+
+                            const unitId = this.activeBocMaiUnit.id;
+                            const unitAxis = this.activeBocMaiUnit.unit_axis;
+                            if (this.syncAxisBocMai && unitAxis) {
+                                document.querySelectorAll(`[data-unit-axis="${unitAxis}"]`).forEach(el => {
+                                    const id = el.getAttribute('data-unit-id');
+                                    if (id) {
+                                        this.updateUnitBocMaiDOM(id, null, unitAxis);
+                                    }
+                                });
+                            } else {
+                                this.updateUnitBocMaiDOM(unitId, null, unitAxis);
+                            }
+
+                            this.closeQuickBocMaiModal();
+                        }
+                    });
+                }
+            });
+        },
+
+        updateUnitBocMaiDOM(id, url, axis) {
+            // Update Table View cell
+            const cell = document.getElementById(`unit-bocmai-cell-${id}`);
+            if (cell) {
+                if (url) {
+                    cell.innerHTML = `
+                        <div class="inline-flex items-center gap-1.5">
+                            <div class="w-9 h-9 rounded-lg overflow-hidden bg-slate-900 border border-indigo-200 shrink-0 shadow-2xs cursor-pointer relative group/bocmai">
+                                <img src="${url}" alt="Bóc mái" class="w-full h-full object-cover group-hover/bocmai:scale-110 transition duration-300">
+                                <div class="absolute inset-0 bg-black/35 flex items-center justify-center opacity-0 group-hover/bocmai:opacity-100 transition">
+                                    <i class="fa-solid fa-magnifying-glass-plus text-white text-[9px]"></i>
+                                </div>
+                            </div>
+                            <button type="button" class="w-6 h-6 rounded-md bg-slate-50 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 transition flex items-center justify-center border border-slate-200 hover:border-indigo-300" title="Đổi ảnh hoặc đồng bộ trục">
+                                <i class="fa-solid fa-pen text-[10px]"></i>
+                            </button>
+                        </div>
+                    `;
+                    const imgDiv = cell.querySelector('.group\\/bocmai');
+                    if (imgDiv) {
+                        imgDiv.onclick = () => this.openLightbox(url, 'Bóc mái căn', null);
+                    }
+                    const editBtn = cell.querySelector('button');
+                    if (editBtn) {
+                        editBtn.onclick = () => this.openQuickBocMaiModal({ id: id, unit_code: '', unit_axis: axis, layout_3d_image_url: url });
+                    }
+                } else {
+                    cell.innerHTML = `
+                        <button type="button" class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100/80 border border-dashed border-indigo-300 transition" title="Thêm ảnh bóc mái 3D">
+                            <i class="fa-solid fa-cube text-[10px]"></i>
+                            <span>+ Bóc mái</span>
+                        </button>
+                    `;
+                    const addBtn = cell.querySelector('button');
+                    if (addBtn) {
+                        addBtn.onclick = () => this.openQuickBocMaiModal({ id: id, unit_code: '', unit_axis: axis, layout_3d_image_url: null });
+                    }
+                }
+            }
+
+            // Update Grid View card
+            const cardEl = document.getElementById(`unit-card-bocmai-${id}`);
+            if (cardEl) {
+                if (url) {
+                    cardEl.innerHTML = `
+                        <div class="flex items-center gap-1.5 text-slate-600">
+                            <i class="fa-solid fa-cube text-indigo-500 text-xs"></i>
+                            <span class="font-bold">Ảnh bóc mái 3D:</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800" title="Xem ảnh bóc mái lớn">
+                                <span>Xem 3D</span>
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                            </button>
+                            <button type="button" class="w-5 h-5 rounded bg-white hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 flex items-center justify-center border border-slate-200 transition" title="Đổi ảnh hoặc đồng bộ theo trục">
+                                <i class="fa-solid fa-pen text-[9px]"></i>
+                            </button>
+                        </div>
+                    `;
+                    const viewBtn = cardEl.querySelector('button');
+                    if (viewBtn) {
+                        viewBtn.onclick = () => this.openLightbox(url, 'Bóc mái căn', null);
+                    }
+                    const editBtn = cardEl.querySelectorAll('button')[1];
+                    if (editBtn) {
+                        editBtn.onclick = () => this.openQuickBocMaiModal({ id: id, unit_code: '', unit_axis: axis, layout_3d_image_url: url });
+                    }
+                } else {
+                    cardEl.innerHTML = `
+                        <div class="flex items-center gap-1.5 text-slate-600">
+                            <i class="fa-solid fa-cube text-indigo-500 text-xs"></i>
+                            <span class="font-bold">Ảnh bóc mái 3D:</span>
+                        </div>
+                        <button type="button" class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded border border-dashed border-indigo-300 transition">
+                            <i class="fa-solid fa-plus text-[9px]"></i>
+                            <span>Thêm ảnh</span>
+                        </button>
+                    `;
+                    const addBtn = cardEl.querySelector('button');
+                    if (addBtn) {
+                        addBtn.onclick = () => this.openQuickBocMaiModal({ id: id, unit_code: '', unit_axis: axis, layout_3d_image_url: null });
+                    }
+                }
+            }
         },
 
         copyUnitInfo(unit) {
@@ -2977,26 +3625,241 @@ function unitProjectHub() {
         },
 
         deleteUnit(id, code) {
-            Swal.fire({
+            confirmAction({
                 title: `Xóa chỉ căn ${code}?`,
-                text: 'Hành động này sẽ xóa vĩnh viễn hình ảnh chỉ căn này khỏi hệ thống.',
+                text: 'Hành động này sẽ xóa vĩnh viễn hình ảnh và dữ liệu chỉ căn này khỏi hệ thống.',
                 icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                cancelButtonColor: '#64748b',
                 confirmButtonText: 'Đồng ý xóa',
-                cancelButtonText: 'Hủy bỏ'
+                cancelButtonText: 'Hủy bỏ',
+                confirmButtonColor: '#ef4444'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = `{{ url('admin/unit-locators') }}/${id}`;
-                    form.innerHTML = `
-                        @csrf
-                        @method('DELETE')
-                    `;
-                    document.body.appendChild(form);
-                    form.submit();
+                    fetch(`{{ url('admin/unit-locators') }}/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Toast.fire({
+                                icon: 'success',
+                                title: data.message || `Đã xóa chỉ căn ${code}!`
+                            });
+                            const elements = [
+                                document.getElementById(`unit-row-${id}`),
+                                document.getElementById(`unit-card-${id}`)
+                            ];
+                            elements.forEach(el => {
+                                if (el) {
+                                    el.style.transition = 'all 0.3s ease';
+                                    el.style.opacity = '0';
+                                    el.style.transform = 'scale(0.95)';
+                                    setTimeout(() => el.remove(), 300);
+                                }
+                            });
+                            this.unitCount = Math.max(0, this.unitCount - 1);
+                            this.selectedUnitIds = this.selectedUnitIds.filter(item => item !== id);
+                            this.currentPageUnitIds = this.currentPageUnitIds.filter(item => item !== id);
+                            this.allProjectUnitIds = this.allProjectUnitIds.filter(item => item !== id);
+                        } else {
+                            Toast.fire({
+                                icon: 'error',
+                                title: data.message || 'Không thể xóa chỉ căn!'
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Delete unit error:', err);
+                        Toast.fire({
+                            icon: 'error',
+                            title: 'Đã xảy ra lỗi khi xóa chỉ căn!'
+                        });
+                    });
+                }
+            });
+        },
+
+        deleteFloorplan(id, name) {
+            confirmAction({
+                title: 'Xác nhận xóa mặt bằng?',
+                text: `Bạn có chắc chắn muốn xóa mặt bằng "${name || 'này'}"? Thao tác này không thể hoàn tác!`,
+                icon: 'warning',
+                confirmButtonText: 'Có, xóa ngay',
+                cancelButtonText: 'Hủy bỏ',
+                confirmButtonColor: '#ef4444'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`{{ url('admin/unit-locators/floorplans') }}/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Toast.fire({
+                                icon: 'success',
+                                title: data.message || 'Đã xóa mặt bằng thành công!'
+                            });
+
+                            // Xóa trên bảng danh sách mặt bằng chính
+                            const tableRow = document.getElementById(`floorplan-row-${id}`);
+                            if (tableRow) {
+                                tableRow.style.transition = 'all 0.3s ease';
+                                tableRow.style.opacity = '0';
+                                tableRow.style.transform = 'scale(0.97)';
+                                setTimeout(() => {
+                                    tableRow.remove();
+                                    this.updateFloorplanIndices();
+                                }, 300);
+                            }
+
+                            // Xóa trên modal quản lý mặt bằng
+                            const modalItem = document.getElementById(`modal-floorplan-${id}`);
+                            if (modalItem) {
+                                modalItem.style.transition = 'all 0.3s ease';
+                                modalItem.style.opacity = '0';
+                                modalItem.style.transform = 'scale(0.97)';
+                                setTimeout(() => {
+                                    modalItem.remove();
+                                }, 300);
+                            }
+
+                            this.floorplanCount = Math.max(0, this.floorplanCount - 1);
+                        } else {
+                            Toast.fire({
+                                icon: 'error',
+                                title: data.message || 'Không thể xóa mặt bằng!'
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Delete floorplan error:', err);
+                        Toast.fire({
+                            icon: 'error',
+                            title: 'Đã xảy ra lỗi khi xóa mặt bằng!'
+                        });
+                    });
+                }
+            });
+        },
+
+        updateFloorplanIndices() {
+            const sttCells = document.querySelectorAll('#floorplanTableBody .floorplan-stt');
+            sttCells.forEach((cell, idx) => {
+                cell.textContent = idx + 1;
+            });
+        },
+
+        deleteTemplate(id, name) {
+            confirmAction({
+                title: 'Xác nhận xóa phôi mẫu?',
+                text: `Bạn có chắc chắn muốn xóa phôi mẫu "${name || 'này'}"?`,
+                icon: 'warning',
+                confirmButtonText: 'Có, xóa ngay',
+                cancelButtonText: 'Hủy bỏ',
+                confirmButtonColor: '#ef4444'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`{{ url('admin/unit-locators/templates') }}/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Toast.fire({
+                                icon: 'success',
+                                title: data.message || 'Đã xóa phôi mẫu thành công!'
+                            });
+                            const el = document.getElementById(`template-card-${id}`);
+                            if (el) {
+                                el.style.transition = 'all 0.3s ease';
+                                el.style.opacity = '0';
+                                el.style.transform = 'scale(0.95)';
+                                setTimeout(() => el.remove(), 300);
+                            }
+                            this.templateCount = Math.max(0, this.templateCount - 1);
+                        } else {
+                            Toast.fire({
+                                icon: 'error',
+                                title: data.message || 'Không thể xóa phôi mẫu!'
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Delete template error:', err);
+                        Toast.fire({
+                            icon: 'error',
+                            title: 'Đã xảy ra lỗi khi xóa phôi mẫu!'
+                        });
+                    });
+                }
+            });
+        },
+
+        deletePerspective(id, name) {
+            confirmAction({
+                title: 'Xác nhận xóa ảnh?',
+                text: `Bạn có chắc muốn xóa ảnh "${name || 'này'}"?`,
+                icon: 'warning',
+                confirmButtonText: 'Có, xóa ngay',
+                cancelButtonText: 'Hủy bỏ',
+                confirmButtonColor: '#ef4444'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`{{ url('admin/unit-locators/perspectives') }}/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Toast.fire({
+                                icon: 'success',
+                                title: data.message || 'Đã xóa ảnh phối cảnh thành công!'
+                            });
+                            const el = document.getElementById(`perspective-card-${id}`);
+                            if (el) {
+                                el.style.transition = 'all 0.3s ease';
+                                el.style.opacity = '0';
+                                el.style.transform = 'scale(0.95)';
+                                setTimeout(() => el.remove(), 300);
+                            }
+                            this.perspectiveCount = Math.max(0, this.perspectiveCount - 1);
+                        } else {
+                            Toast.fire({
+                                icon: 'error',
+                                title: data.message || 'Không thể xóa ảnh phối cảnh!'
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Delete perspective error:', err);
+                        Toast.fire({
+                            icon: 'error',
+                            title: 'Đã xảy ra lỗi khi xóa ảnh phối cảnh!'
+                        });
+                    });
                 }
             });
         },

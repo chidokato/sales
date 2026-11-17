@@ -16,6 +16,7 @@ class ProjectUnitLocator extends Model
         'project_name',
         'unit_code',
         'unit_type',
+        'unit_axis',
         'block',
         'floor',
         'area',
@@ -30,6 +31,7 @@ class ProjectUnitLocator extends Model
         'price_note',
         'status',
         'image',
+        'layout_3d_image',
         'base_image',
         'highlight_data',
         'composer_data',
@@ -51,6 +53,7 @@ class ProjectUnitLocator extends Model
 
     protected $appends = [
         'image_url',
+        'layout_3d_image_url',
         'base_image_url',
         'status_info',
         'display_price',
@@ -77,6 +80,26 @@ class ProjectUnitLocator extends Model
             return route('admin.unit-locators.media', ['path' => $this->image]);
         } catch (\Exception $e) {
             return asset('storage/' . $this->image);
+        }
+    }
+
+    /**
+     * URL ảnh bóc mái 3D
+     */
+    public function getLayout3dImageUrlAttribute(): ?string
+    {
+        if (empty($this->layout_3d_image)) {
+            return null;
+        }
+
+        if (str_starts_with($this->layout_3d_image, 'http://') || str_starts_with($this->layout_3d_image, 'https://')) {
+            return $this->layout_3d_image;
+        }
+
+        try {
+            return route('admin.unit-locators.media', ['path' => $this->layout_3d_image]);
+        } catch (\Exception $e) {
+            return asset('storage/' . $this->layout_3d_image);
         }
     }
 
@@ -179,5 +202,49 @@ class ProjectUnitLocator extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Tự động trích xuất trục căn từ mã căn (ví dụ: S2.15A08A -> 08A, S1.3202 -> 02, S3.0506 -> 06)
+     */
+    public static function extractAxisFromCode(?string $unitCode, ?string $block = null, ?string $floor = null): ?string
+    {
+        if (empty($unitCode)) {
+            return null;
+        }
+
+        $code = trim($unitCode);
+        if (str_contains($code, '.')) {
+            $parts = explode('.', $code, 2);
+            $codeAfterDot = $parts[1];
+        } else {
+            $codeAfterDot = $code;
+            if ($block && str_starts_with(strtoupper($codeAfterDot), strtoupper(trim($block)))) {
+                $codeAfterDot = substr($codeAfterDot, strlen(trim($block)));
+            }
+        }
+
+        $codeAfterDot = trim($codeAfterDot, '-_ ');
+
+        if (!empty($floor)) {
+            $f = trim($floor);
+            if (str_starts_with(strtoupper($codeAfterDot), strtoupper($f))) {
+                return substr($codeAfterDot, strlen($f));
+            }
+            $fPadded = str_pad($f, 2, '0', STR_PAD_LEFT);
+            if (str_starts_with(strtoupper($codeAfterDot), strtoupper($fPadded))) {
+                return substr($codeAfterDot, strlen($fPadded));
+            }
+            $fUnpadded = ltrim($f, '0');
+            if (!empty($fUnpadded) && str_starts_with(strtoupper($codeAfterDot), strtoupper($fUnpadded))) {
+                return substr($codeAfterDot, strlen($fUnpadded));
+            }
+        }
+
+        if (preg_match('/([0-9]{2}[A-Za-z]?)$/', $codeAfterDot, $m)) {
+            return $m[1];
+        }
+
+        return null;
     }
 }

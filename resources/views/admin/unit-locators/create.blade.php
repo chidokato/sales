@@ -1577,6 +1577,7 @@ function unitCreatorStudio() {
             price_note: '(Chưa VAT và Kinh phí bảo trì)',
             block: 'Tòa C2.3',
             floor: 'Tầng 27',
+            unit_axis: '',
             note: ''
         },
 
@@ -1866,8 +1867,13 @@ function unitCreatorStudio() {
                         resolved[slotId] = this.allFloorplans[0].image_url;
                     }
                 } else {
-                    // Ô không phải mặt bằng: phối cảnh, tiện ích, căn hộ...
-                    if (savedSlots[slotId]) {
+                    // Ô không phải mặt bằng: phối cảnh, tiện ích, căn hộ, bóc mái 3D...
+                    const isBocMai = slot.key === 'boc_mai' || (slot.name && (slot.name.toLowerCase().includes('bóc mái') || slot.name.toLowerCase().includes('boc mai')));
+                    if (u._manuallyAssignedSlots && u._manuallyAssignedSlots[slotId] && savedSlots[slotId]) {
+                        resolved[slotId] = savedSlots[slotId];
+                    } else if (isBocMai && u.layout_3d_image_url) {
+                        resolved[slotId] = u.layout_3d_image_url;
+                    } else if (savedSlots[slotId]) {
                         resolved[slotId] = savedSlots[slotId];
                     } else if (this.sharedSlotImages && this.sharedSlotImages[slotId]) {
                         resolved[slotId] = this.sharedSlotImages[slotId];
@@ -2366,6 +2372,7 @@ function unitCreatorStudio() {
             this.posterForm.unit_type = u.unit_type || '';
             this.posterForm.block = u.block || '';
             this.posterForm.floor = u.floor || '';
+            this.posterForm.unit_axis = u.unit_axis || '';
             this.posterForm.area = u.area !== null && u.area !== undefined ? String(u.area) : '';
             this.posterForm.direction = u.direction || '';
             this.posterForm.view = u.view || '';
@@ -2494,6 +2501,7 @@ function unitCreatorStudio() {
             this.posterForm.unit_type = u.unit_type || '';
             this.posterForm.block = u.block || '';
             this.posterForm.floor = u.floor || '';
+            this.posterForm.unit_axis = u.unit_axis || '';
             this.posterForm.area = u.area !== null && u.area !== undefined ? String(u.area) : '';
             this.posterForm.direction = u.direction || '';
             this.posterForm.view = u.view || '';
