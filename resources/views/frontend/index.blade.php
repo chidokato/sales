@@ -323,9 +323,8 @@
                             <span>Đăng nhập hệ thống</span>
                         </button>
 
-                        <div class="flex items-center justify-between text-[10px] text-slate-400 px-1 pt-0.5">
-                            <a href="{{ route('login') }}" class="hover:text-blue-400 transition">Trang login</a>
-                            <button type="button" @click="openDemoLogin()" class="text-blue-400 hover:underline">Tài khoản mẫu</button>
+                        <div class="text-center text-[10px] text-slate-400 pt-0.5">
+                            <a href="{{ route('login') }}" class="hover:text-blue-400 transition">Trang đăng nhập quản trị</a>
                         </div>
                     </div>
                 @endauth
@@ -1728,29 +1727,6 @@
                         <span x-text="loginForm.submitting ? 'Đang xác thực...' : 'Đăng nhập ngay'"></span>
                     </button>
                 </form>
-
-                <!-- Thao tác đăng nhập mẫu 1-click (Demo) -->
-                <div class="mt-5 pt-4 border-t border-slate-100">
-                    <p class="text-[11px] text-slate-400 font-semibold mb-2">Thử nhanh bằng tài khoản mẫu có sẵn:</p>
-                    <div class="grid grid-cols-2 gap-2 text-[11px]">
-                        <button 
-                            type="button" 
-                            @click="fillDemoAccount('admin@idc.vn', 'admin123')" 
-                            class="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold transition text-left"
-                        >
-                            <span class="block">👑 Quản trị (Admin)</span>
-                            <span class="text-[9px] font-normal text-amber-600">admin@idc.vn</span>
-                        </button>
-                        <button 
-                            type="button" 
-                            @click="fillDemoAccount('an.nguyen@example.com', 'password123')" 
-                            class="p-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 font-bold transition text-left"
-                        >
-                            <span class="block">👤 Khách hàng (User)</span>
-                            <span class="text-[9px] font-normal text-blue-600">an.nguyen@...</span>
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -2513,17 +2489,6 @@
                     } finally {
                         this.loginForm.submitting = false;
                     }
-                },
-
-                // Điền tài khoản mẫu demo
-                fillDemoAccount(email, password) {
-                    this.loginForm.email = email;
-                    this.loginForm.password = password;
-                },
-
-                openDemoLogin() {
-                    this.loginModalOpen = true;
-                    this.fillDemoAccount('an.nguyen@example.com', 'password123');
                 },
 
                 // Xử lý Đăng xuất

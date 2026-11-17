@@ -210,15 +210,9 @@
                             </td>
                             <td class="py-4 px-6 text-slate-600 font-mono">{{ $user->email }}</td>
                             <td class="py-4 px-6">
-                                @if ($user->role === 'admin')
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                        <i class="fa-solid fa-shield-halved text-[10px]"></i> Admin
-                                    </span>
-                                @else
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
-                                        <i class="fa-solid fa-user text-[10px]"></i> Member
-                                    </span>
-                                @endif
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border {{ $user->role_badge }}">
+                                    <i class="fa-solid {{ $user->role_icon }} text-[10px]"></i> {{ $user->role_name }}
+                                </span>
                             </td>
                             <td class="py-4 px-6">
                                 @if ($user->status === 'active')

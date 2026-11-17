@@ -46,9 +46,11 @@ Route::get('/unit-locators/media/{path}', [ProjectUnitLocatorController::class, 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', [AdminController::class, 'dashboard'])->name('dashboard');
     
-    // User management
+    // User management & Permissions
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::post('/users', [AdminController::class, 'storeUser'])->name('users.store');
+    Route::get('/users/{id}/data', [AdminController::class, 'getUserData'])->name('users.data');
+    Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('users.update');
     Route::post('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('users.toggle');
     Route::delete('/users/{id}', [AdminController::class, 'deleteUser'])->name('users.delete');
 

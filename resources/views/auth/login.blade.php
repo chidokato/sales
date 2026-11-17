@@ -151,22 +151,6 @@
                     </div>
                 @endif
 
-                <!-- Demo Credentials Quick-Fill Pill -->
-                <div class="mb-6 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 flex items-center justify-between">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-7 h-7 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                            <i class="fa-solid fa-key text-xs"></i>
-                        </div>
-                        <div class="text-xs">
-                            <span class="text-slate-500 dark:text-slate-400">Tài khoản mẫu: </span>
-                            <span class="font-semibold text-slate-800 dark:text-slate-200">admin@idc.vn</span> | <span class="font-semibold text-slate-800 dark:text-slate-200">admin123</span>
-                        </div>
-                    </div>
-                    <button type="button" onclick="fillDemo()" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
-                        Điền nhanh
-                    </button>
-                </div>
-
                 <!-- Form -->
                 <form action="{{ route('login.post') }}" method="POST" class="space-y-5">
                     @csrf
@@ -263,11 +247,6 @@
                 eyeIcon.classList.remove('fa-eye-slash');
                 eyeIcon.classList.add('fa-eye');
             }
-        }
-
-        function fillDemo() {
-            document.getElementById('email').value = 'admin@idc.vn';
-            document.getElementById('password').value = 'admin123';
         }
     </script>
 </body>

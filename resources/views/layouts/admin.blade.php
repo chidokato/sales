@@ -343,8 +343,9 @@
                         <div class="overflow-hidden">
                             <h3 class="text-sm font-bold text-slate-900">{{ auth()->user()->name }}</h3>
                             <p class="text-xs text-slate-500 font-mono">{{ auth()->user()->email }}</p>
-                            <span class="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase">
-                                {{ auth()->user()->role === 'admin' ? 'Quản trị viên (Admin)' : 'Người dùng' }}
+                            <span class="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border {{ auth()->user()->role_badge ?? 'bg-blue-100 text-blue-700' }}">
+                                <i class="fa-solid {{ auth()->user()->role_icon ?? 'fa-user' }} mr-1"></i>
+                                {{ auth()->user()->role_name ?? ucfirst(auth()->user()->role) }}
                             </span>
                         </div>
                     </div>

@@ -14,7 +14,7 @@ class AuthController extends Controller
     public function showLogin()
     {
         if (Auth::check()) {
-            if (Auth::user()->isAdmin()) {
+            if (Auth::user()->canAccessAdmin()) {
                 return redirect()->route('admin.dashboard');
             }
             return redirect()->route('home');
@@ -61,7 +61,10 @@ class AuthController extends Controller
 
             $request->session()->regenerate();
 
-            $redirectUrl = $user->isAdmin() ? route('admin.dashboard') : route('home');
+            // Cập nhật thời điểm đăng nhập gần nhất
+            $user->update(['last_login_at' => now()]);
+
+            $redirectUrl = $user->canAccessAdmin() ? route('admin.dashboard') : route('home');
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
