@@ -608,13 +608,13 @@
                                     >
                                 </div>
 
-                                <!-- Bộ chọn nhanh Tòa, Tầng, Loại căn, Trạng thái (Lưới 2x2 siêu gọn) -->
-                                <div class="grid grid-cols-2 gap-1.5">
+                                <!-- Bộ chọn nhanh Tòa, Tầng, Loại căn (1 hàng 3 cột tinh gọn) -->
+                                <div class="grid grid-cols-3 gap-1.5">
                                     <!-- Tòa -->
                                     <select 
                                         x-model="unitFilter.block" 
                                         @change="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
-                                        class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] focus:ring-1 focus:ring-blue-500 font-medium text-slate-700"
+                                        class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] focus:ring-1 focus:ring-blue-500 font-medium text-slate-700 truncate"
                                     >
                                         <option value="">Tất cả Tòa</option>
                                         <template x-for="blk in availableBlocks" :key="blk">
@@ -626,7 +626,7 @@
                                     <select 
                                         x-model="unitFilter.floor" 
                                         @change="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
-                                        class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] focus:ring-1 focus:ring-blue-500 font-medium text-slate-700"
+                                        class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] focus:ring-1 focus:ring-blue-500 font-medium text-slate-700 truncate"
                                     >
                                         <option value="">Tất cả Tầng</option>
                                         <template x-for="flr in availableFloors" :key="flr">
@@ -638,24 +638,12 @@
                                     <select 
                                         x-model="unitFilter.type" 
                                         @change="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
-                                        class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] focus:ring-1 focus:ring-blue-500 font-medium text-slate-700"
+                                        class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] focus:ring-1 focus:ring-blue-500 font-medium text-slate-700 truncate"
                                     >
-                                        <option value="">Tất cả Loại căn</option>
+                                        <option value="">Tất cả Loại</option>
                                         <template x-for="tp in availableTypes" :key="tp">
                                             <option :value="tp" x-text="tp"></option>
                                         </template>
-                                    </select>
-
-                                    <!-- Trạng thái -->
-                                    <select 
-                                        x-model="unitFilter.status" 
-                                        @change="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
-                                        class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] focus:ring-1 focus:ring-blue-500 font-medium text-slate-700"
-                                    >
-                                        <option value="">Tất cả Trạng thái</option>
-                                        <option value="available">🟢 Còn trống</option>
-                                        <option value="reserved">🟡 Đang giữ chỗ</option>
-                                        <option value="sold">🔴 Đã bán</option>
                                     </select>
                                 </div>
                             </div>
