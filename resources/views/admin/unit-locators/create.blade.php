@@ -5,15 +5,20 @@
 
 @push('styles')
 <style>
+.custom-unit-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
 .custom-unit-scroll::-webkit-scrollbar {
-    width: 4px;
+    width: 6px;
+    height: 6px;
 }
 .custom-unit-scroll::-webkit-scrollbar-track {
     background: transparent;
 }
 .custom-unit-scroll::-webkit-scrollbar-thumb {
     background: #cbd5e1;
-    border-radius: 4px;
+    border-radius: 6px;
 }
 .custom-unit-scroll::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
@@ -707,10 +712,10 @@
     </div>
 
     <!-- ==================== MODE 1: VISUAL CANVAS STUDIO ==================== -->
-    <div x-show="mode === 'studio'" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div x-show="mode === 'studio'" class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0 overflow-hidden">
 
-        <!-- Left: Form Input Unit Info & Pin Customization -->
-        <div class="lg:col-span-4 space-y-4">
+        <!-- Left: Form Input Unit Info & Pin Customization (Có thể lăn chuột cuộn nội dung độc lập) -->
+        <div class="lg:col-span-4 h-full min-h-0 overflow-y-auto space-y-3 pr-1.5 custom-unit-scroll">
 
             <!-- Card 0: Chế độ Định vị (Theo Trục Căn vs Theo Từng Căn) -->
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 space-y-3">
@@ -1121,23 +1126,23 @@
         </div>
 
         <!-- Right: Interactive Canvas Floorplan Viewer -->
-        <div class="lg:col-span-8 space-y-4">
+        <div class="lg:col-span-8 flex flex-col h-full min-h-0 overflow-hidden space-y-2">
             <!-- Floorplan Source Selector -->
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div class="flex items-center gap-3 w-full sm:w-auto">
-                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs px-3.5 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <div class="flex items-center gap-2.5 w-full sm:w-auto">
+                    <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 text-xs">
                         <i class="fa-solid fa-map"></i>
                     </div>
                     <div>
-                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Ảnh mặt bằng tầng</h4>
-                        <p class="text-[11px] text-slate-400">Chọn mặt bằng tầng hoặc tải ảnh mới</p>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-tight">Ảnh mặt bằng tầng</h4>
+                        <p class="text-[10px] text-slate-400">Chọn mặt bằng từ dự án hoặc tải ảnh mới</p>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3 w-full sm:w-auto">
+                <div class="flex items-center gap-2 w-full sm:w-auto">
                     <!-- Select from saved project floorplans -->
                     @if ($floorplans->isNotEmpty())
-                    <select @change="loadSavedFloorplan($event.target.value)" class="py-2 px-3 rounded-xl border border-slate-200 text-xs bg-slate-50 font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500">
+                    <select @change="loadSavedFloorplan($event.target.value)" class="py-1 px-2.5 rounded-lg border border-slate-200 text-xs bg-slate-50 font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500">
                         <option value="">-- Chọn mặt bằng dự án --</option>
                         @foreach ($floorplans as $fp)
                         <option value="{{ $fp->image_url }}">{{ $fp->name }}</option>
@@ -1146,22 +1151,22 @@
                     @endif
 
                     <!-- Upload new floorplan on the fly -->
-                    <label class="cursor-pointer px-4 py-2 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold transition flex items-center gap-1.5 shrink-0 border border-blue-200">
-                        <i class="fa-solid fa-upload"></i>
-                        <span>Tải ảnh mặt bằng</span>
+                    <label class="cursor-pointer px-3 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold transition flex items-center gap-1.5 shrink-0 border border-blue-200 shadow-2xs">
+                        <i class="fa-solid fa-upload text-[11px]"></i>
+                        <span>Tải ảnh</span>
                         <input type="file" accept="image/*" @change="handleFileUpload($event)" class="hidden">
                     </label>
                 </div>
             </div>
 
             <!-- Canvas Container -->
-            <div class="bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden relative min-h-[580px] flex flex-col">
+            <div class="flex-1 min-h-0 bg-slate-900 rounded-2xl border border-slate-800 shadow-xl overflow-hidden relative flex flex-col">
                 <!-- Canvas Top Bar Controls -->
-                <div class="px-5 py-3 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between text-xs text-slate-300 z-10">
+                <div class="px-4 py-2 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between text-xs text-slate-300 z-10 shrink-0">
                     <div class="flex items-center gap-3">
-                        <span class="flex items-center gap-1.5 text-amber-400 font-semibold text-[11px] sm:text-xs">
-                            <i class="fa-solid fa-mouse-pointer"></i>
-                            <span>Kéo chuột để vẽ khung • Kéo thân khung để di chuyển • Kéo 4 góc để đổi kích thước • Kéo đuôi mũi tên để đổi góc chỉ</span>
+                        <span class="flex items-center gap-1.5 text-amber-400 font-semibold text-[11px]">
+                            <i class="fa-solid fa-mouse-pointer text-[10px]"></i>
+                            <span>Kéo chuột vẽ khung • Kéo thân khung để dời • Kéo 4 góc đổi cỡ • Kéo đuôi mũi tên đổi hướng</span>
                         </span>
                     </div>
 
@@ -1171,7 +1176,7 @@
                             type="button" 
                             @click="centerLocatorBox()"
                             x-show="hasImage"
-                            class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold"
+                            class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold"
                         >
                             Đưa về tâm
                         </button>
@@ -1181,16 +1186,16 @@
                 <!-- Empty State before floorplan selected -->
                 <div 
                     x-show="!hasImage" 
-                    class="flex-1 flex flex-col items-center justify-center p-12 text-center text-slate-400"
+                    class="flex-1 flex flex-col items-center justify-center p-8 text-center text-slate-400"
                 >
-                    <div class="w-20 h-20 rounded-3xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-3xl text-blue-400 mb-4">
+                    <div class="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-2xl text-blue-400 mb-3">
                         <i class="fa-solid fa-cloud-arrow-up"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-white">Chưa chọn ảnh mặt bằng</h3>
+                    <h3 class="text-base font-bold text-white">Chưa chọn ảnh mặt bằng</h3>
                     <p class="text-xs text-slate-400 max-w-sm mt-1">
-                        Hãy chọn một mặt bằng từ menu phía trên hoặc bấm <strong>"Tải ảnh mặt bằng"</strong> để bắt đầu Studio chỉ căn.
+                        Hãy chọn một mặt bằng từ menu phía trên hoặc bấm <strong>"Tải ảnh"</strong> để bắt đầu Studio chỉ căn.
                     </p>
-                    <label class="mt-5 cursor-pointer px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-500/25">
+                    <label class="mt-4 cursor-pointer px-4 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-500/25">
                         <i class="fa-solid fa-image mr-1"></i>
                         <span>Chọn ảnh từ máy tính</span>
                         <input type="file" accept="image/*" @change="handleFileUpload($event)" class="hidden">
@@ -1200,7 +1205,7 @@
                 <!-- Active Canvas Area -->
                 <div 
                     x-show="hasImage" 
-                    class="flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-950 select-none"
+                    class="flex-1 min-h-0 overflow-auto p-3 flex items-center justify-center bg-slate-950 select-none"
                     id="canvasWrapper"
                 >
                     <canvas 
@@ -1213,7 +1218,7 @@
                         @touchmove="handleTouchMove($event)"
                         @touchend="handleTouchEnd($event)"
                         @click="handleCanvasClick($event)"
-                        class="max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl border border-slate-800"
+                        class="max-w-full max-h-full object-contain rounded-lg shadow-2xl border border-slate-800"
                     ></canvas>
                 </div>
             </div>
