@@ -148,10 +148,11 @@ class FrontendController extends Controller
             'locked' => $units->where('status', 'locked')->count(),
         ];
 
-        // 6. Danh sách blocks, tầng, loại căn để làm bộ lọc
+        // 6. Danh sách blocks, tầng, loại căn, trục căn để làm bộ lọc
         $blocks = $units->pluck('block')->filter()->unique()->values();
         $floors = $units->pluck('floor')->filter()->unique()->values();
         $unitTypes = $units->pluck('unit_type')->filter()->unique()->values();
+        $axes = $units->pluck('unit_axis')->filter()->unique()->sort()->values();
 
         // 7. Tin tức & Cẩm nang Bất động sản
         $articles = $this->getSampleArticles();
@@ -166,6 +167,7 @@ class FrontendController extends Controller
             'blocks',
             'floors',
             'unitTypes',
+            'axes',
             'floorplans',
             'perspectives',
             'templates',
@@ -208,6 +210,7 @@ class FrontendController extends Controller
         $blocks = $units->pluck('block')->filter()->unique()->values();
         $floors = $units->pluck('floor')->filter()->unique()->values();
         $unitTypes = $units->pluck('unit_type')->filter()->unique()->values();
+        $axes = $units->pluck('unit_axis')->filter()->unique()->sort()->values();
 
         return response()->json([
             'success' => true,
@@ -219,6 +222,7 @@ class FrontendController extends Controller
             'blocks' => $blocks,
             'floors' => $floors,
             'unitTypes' => $unitTypes,
+            'axes' => $axes,
         ]);
     }
 

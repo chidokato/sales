@@ -190,7 +190,19 @@ class ProjectUnitLocatorController extends Controller
             default => $query->orderBy('id', 'desc'),
         };
 
-        $units = $query->paginate(16)->withQueryString();
+        $perPage = (int) $request->input('per_page', 100);
+        $units = $query->paginate($perPage)->withQueryString();
+
+        // Xử lý request AJAX tìm kiếm / lọc / phân trang không load lại trang
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'html' => view('admin.unit-locators.partials.units-list', compact('project', 'units'))->render(),
+                'total' => $units->total(),
+                'count' => $units->count(),
+                'page_unit_ids' => $units->pluck('id')->values()->all(),
+            ]);
+        }
 
         // Lấy danh sách các hướng, tòa, trục căn đã có trong dự án để làm bộ lọc
         $existingDirections = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('direction')->distinct()->pluck('direction');
@@ -246,7 +258,18 @@ class ProjectUnitLocatorController extends Controller
         }
         $existingUnits = ProjectUnitLocator::where('project_id', $projectId)->orderBy('unit_code', 'asc')->get();
 
-        return view('admin.unit-locators.create', compact('project', 'floorplans', 'templates', 'perspectives', 'existingUnits', 'selectedUnitIds'));
+        $axisLocators = [];
+        foreach ($existingUnits as $u) {
+            if (!empty($u->unit_axis) && !empty($u->highlight_data) && !isset($axisLocators[$u->unit_axis])) {
+                $axisLocators[$u->unit_axis] = [
+                    'highlight_data' => $u->highlight_data,
+                    'base_image' => $u->base_image,
+                    'unit_code' => $u->unit_code,
+                ];
+            }
+        }
+
+        return view('admin.unit-locators.create', compact('project', 'floorplans', 'templates', 'perspectives', 'existingUnits', 'selectedUnitIds', 'axisLocators'));
     }
 
     /**
@@ -539,7 +562,9 @@ class ProjectUnitLocatorController extends Controller
             ->where('unit_code', trim($request->unit_code))
             ->first();
 
-        $unitAxis = $request->unit_axis ? trim($request->unit_axis) : ProjectUnitLocator::extractAxisFromCode($request->unit_code, $request->block, $request->floor);
+        $unitAxis = $request->filled('unit_axis') 
+            ? trim($request->unit_axis) 
+            : ($existingUnit?->unit_axis ?: ProjectUnitLocator::extractAxisFromCode($request->unit_code, $request->block, $request->floor));
 
         $layout3dPath = null;
         if ($request->hasFile('layout_3d_file')) {
@@ -548,6 +573,10 @@ class ProjectUnitLocatorController extends Controller
             $layout3dPath = $file->storeAs('layout_3d/' . $request->project_id, $filename, 'public');
         } elseif ($request->filled('layout_3d_image')) {
             $layout3dPath = trim($request->layout_3d_image);
+        } elseif ($request->boolean('remove_layout_3d')) {
+            $layout3dPath = null;
+        } elseif ($existingUnit) {
+            $layout3dPath = $existingUnit->layout_3d_image;
         }
 
         $unitData = [
@@ -589,6 +618,17 @@ class ProjectUnitLocatorController extends Controller
             ProjectUnitLocator::where('project_id', $unit->project_id)
                 ->where('unit_axis', $unit->unit_axis)
                 ->update(['layout_3d_image' => $unit->layout_3d_image]);
+        }
+
+        if (($request->boolean('sync_axis_locator') || $request->input('sync_axis_locator') === '1' || $request->input('sync_axis_locator') === 'true') && !empty($unit->unit_axis) && !empty($highlightData)) {
+            $syncData = ['highlight_data' => $highlightData];
+            if (!empty($request->base_image)) {
+                $syncData['base_image'] = $request->base_image;
+            }
+            ProjectUnitLocator::where('project_id', $unit->project_id)
+                ->where('unit_axis', $unit->unit_axis)
+                ->where('id', '!=', $unit->id)
+                ->update($syncData);
         }
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -1013,6 +1053,15 @@ class ProjectUnitLocatorController extends Controller
         $unit->price_text = $request->price_text ? trim($request->price_text) : null;
         $unit->status = $request->status ?: $unit->status;
         $unit->note = $request->note ? trim($request->note) : null;
+
+        if ($request->has('highlight_data')) {
+            $hl = $request->input('highlight_data');
+            $unit->highlight_data = is_string($hl) ? json_decode($hl, true) : $hl;
+        }
+        if ($request->filled('base_image')) {
+            $unit->base_image = trim($request->base_image);
+        }
+
         $unit->save();
 
         // Đồng bộ ảnh bóc mái cho các căn cùng trục căn nếu được yêu cầu
@@ -1021,6 +1070,19 @@ class ProjectUnitLocatorController extends Controller
             ProjectUnitLocator::where('project_id', $unit->project_id)
                 ->where('unit_axis', $unit->unit_axis)
                 ->update(['layout_3d_image' => $unit->layout_3d_image]);
+        }
+
+        // Đồng bộ định vị trên mặt bằng cho các căn cùng trục căn nếu được yêu cầu
+        $syncAxisLocator = $request->boolean('sync_axis_locator') || $request->input('sync_axis_locator') === '1' || $request->input('sync_axis_locator') === 'true';
+        if ($syncAxisLocator && !empty($unit->unit_axis) && !empty($unit->highlight_data)) {
+            $syncData = ['highlight_data' => $unit->highlight_data];
+            if (!empty($unit->base_image)) {
+                $syncData['base_image'] = $unit->base_image;
+            }
+            ProjectUnitLocator::where('project_id', $unit->project_id)
+                ->where('unit_axis', $unit->unit_axis)
+                ->where('id', '!=', $unit->id)
+                ->update($syncData);
         }
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -1127,6 +1189,114 @@ class ProjectUnitLocatorController extends Controller
             'layout_3d_image' => $imagePath,
             'layout_3d_image_url' => $imageUrl,
             'count' => $count,
+        ]);
+    }
+
+    /**
+     * Đồng bộ nhanh định vị vị trí căn trên mặt bằng theo trục căn cho toàn dự án (Ajax)
+     * Các căn cùng trục căn sẽ có định vị giống nhau
+     */
+    public function syncAxisLocator(Request $request, $projectId)
+    {
+        $request->validate([
+            'unit_axis' => 'required|string',
+            'highlight_data' => 'nullable',
+            'base_image' => 'nullable|string',
+            'image_data' => 'nullable|string',
+        ]);
+
+        $axis = trim($request->unit_axis);
+        $highlightData = null;
+        if (!empty($request->highlight_data)) {
+            $highlightData = is_string($request->highlight_data) 
+                ? json_decode($request->highlight_data, true) 
+                : $request->highlight_data;
+        }
+
+        $baseImage = $request->filled('base_image') ? trim($request->base_image) : null;
+
+        $updateData = [
+            'highlight_data' => $highlightData,
+        ];
+        if ($baseImage !== null) {
+            $updateData['base_image'] = $baseImage;
+        }
+
+        // Nếu gửi kèm ảnh chỉ căn được xuất từ Studio Canvas (image_data base64)
+        if (!empty($request->image_data)) {
+            $imageData = $request->image_data;
+            if (preg_match('/^data:image\/(\w+);base64,/', $imageData, $type)) {
+                $imageData = substr($imageData, strpos($imageData, ',') + 1);
+                $type = strtolower($type[1]);
+                $imageData = base64_decode($imageData);
+                if ($imageData !== false) {
+                    $filename = 'unit_canvas_axis_' . $projectId . '_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $axis) . '_' . time() . '.' . $type;
+                    $storageDir = 'unit_locators/' . $projectId;
+                    Storage::disk('public')->makeDirectory($storageDir);
+                    Storage::disk('public')->put($storageDir . '/' . $filename, $imageData);
+                    $updateData['image'] = $storageDir . '/' . $filename;
+                }
+            }
+        }
+
+        $count = ProjectUnitLocator::where('project_id', $projectId)
+            ->where('unit_axis', $axis)
+            ->update($updateData);
+
+        $imageUrl = null;
+        if (isset($updateData['image'])) {
+            $imageUrl = route('admin.unit-locators.media', ['path' => $updateData['image']]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã đồng bộ định vị mặt bằng cho {$count} căn thuộc trục {$axis} thành công!",
+            'unit_axis' => $axis,
+            'highlight_data' => $highlightData,
+            'base_image' => $baseImage,
+            'image' => $updateData['image'] ?? null,
+            'image_url' => $imageUrl,
+            'count' => $count,
+        ]);
+    }
+
+    /**
+     * Lấy danh sách định vị theo các trục căn của dự án
+     */
+    public function getAxisLocators($projectId)
+    {
+        $units = ProjectUnitLocator::where('project_id', $projectId)
+            ->whereNotNull('unit_axis')
+            ->where('unit_axis', '!=', '')
+            ->get();
+
+        $axes = [];
+        foreach ($units as $u) {
+            $axis = $u->unit_axis;
+            if (!isset($axes[$axis])) {
+                $axes[$axis] = [
+                    'axis' => $axis,
+                    'total_units' => 0,
+                    'has_locator' => false,
+                    'highlight_data' => null,
+                    'base_image' => null,
+                    'sample_unit' => $u->unit_code,
+                    'block' => $u->block,
+                ];
+            }
+            $axes[$axis]['total_units']++;
+            if (!empty($u->highlight_data) && !$axes[$axis]['has_locator']) {
+                $axes[$axis]['has_locator'] = true;
+                $axes[$axis]['highlight_data'] = $u->highlight_data;
+                $axes[$axis]['base_image'] = $u->base_image;
+            }
+        }
+
+        ksort($axes);
+
+        return response()->json([
+            'success' => true,
+            'axes' => array_values($axes),
         ]);
     }
 

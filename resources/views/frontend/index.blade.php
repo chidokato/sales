@@ -596,20 +596,20 @@
 
                             <!-- Bộ lọc tìm kiếm nhanh gọn gàng -->
                             <div class="space-y-1.5 pb-2 border-b border-slate-100 shrink-0">
-                                <!-- Ô tìm kiếm mã căn -->
+                                <!-- Ô tìm kiếm mã căn hoặc trục căn -->
                                 <div class="relative">
                                     <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                                     <input 
                                         type="text" 
                                         x-model="unitFilter.search" 
                                         @input="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
-                                        placeholder="Tìm mã căn (VD: E1.05)..." 
+                                        placeholder="Tìm mã căn, trục căn (VD: E1.05, Trục 08)..." 
                                         class="w-full pl-7 pr-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
                                     >
                                 </div>
 
-                                <!-- Bộ chọn nhanh Tòa, Tầng, Loại căn (1 hàng 3 cột tinh gọn) -->
-                                <div class="grid grid-cols-3 gap-1.5">
+                                <!-- Bộ chọn nhanh Tòa, Tầng, Trục căn, Loại căn (Lưới 2x2 cân đối, rõ ràng) -->
+                                <div class="grid grid-cols-2 gap-1.5">
                                     <!-- Tòa -->
                                     <select 
                                         x-model="unitFilter.block" 
@@ -631,6 +631,18 @@
                                         <option value="">Tất cả Tầng</option>
                                         <template x-for="flr in availableFloors" :key="flr">
                                             <option :value="flr" x-text="'Tầng ' + flr"></option>
+                                        </template>
+                                    </select>
+
+                                    <!-- Trục căn -->
+                                    <select 
+                                        x-model="unitFilter.axis" 
+                                        @change="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
+                                        class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] focus:ring-1 focus:ring-blue-500 font-medium text-slate-700 truncate"
+                                    >
+                                        <option value="">Tất cả Trục căn</option>
+                                        <template x-for="ax in availableAxes" :key="ax">
+                                            <option :value="ax" x-text="'Trục ' + ax"></option>
                                         </template>
                                     </select>
 
@@ -691,7 +703,7 @@
                                                 <p 
                                                     :class="selectedUnit && selectedUnit.id === unit.id ? 'text-blue-100' : 'text-slate-400'"
                                                     class="text-[10px] truncate mt-0.5" 
-                                                    x-text="(unit.block ? 'Tòa ' + unit.block + ' ' : '') + '• T' + (unit.floor || '-') + ' • ' + (unit.unit_type || '2PN') + (unit.area ? ' • ' + unit.area + 'm²' : '')"
+                                                    x-text="(unit.block ? 'Tòa ' + unit.block + ' ' : '') + '• T' + (unit.floor || '-') + (unit.unit_axis ? ' • Trục ' + unit.unit_axis : '') + ' • ' + (unit.unit_type || '2PN') + (unit.area ? ' • ' + unit.area + 'm²' : '')"
                                                 ></p>
                                                 <p 
                                                     :class="selectedUnit && selectedUnit.id === unit.id ? 'text-amber-200 font-extrabold' : 'text-blue-600 font-bold'"
@@ -745,7 +757,7 @@
                                                 x-text="selectedUnit.status === 'available' ? '🟢 Còn trống' : (selectedUnit.status === 'sold' ? '🔴 Đã bán' : '🟡 Đang giữ chỗ')"
                                             ></span>
                                             <span class="text-xs sm:text-sm font-extrabold text-blue-600 truncate" x-text="(selectedUnit.price_text || selectedUnit.display_price || 'Liên hệ') + (selectedUnit.price_note ? ' ' + selectedUnit.price_note : '')"></span>
-                                            <span class="text-[11px] text-slate-400 hidden xl:inline truncate" x-text="(selectedUnit.block ? 'Tòa ' + selectedUnit.block + ' • ' : '') + 'T' + (selectedUnit.floor || '-') + ' • ' + (selectedUnit.unit_type || '2PN') + (selectedUnit.area ? ' • ' + selectedUnit.area + ' m²' : '') + (selectedUnit.direction ? ' • ' + selectedUnit.direction : '')"></span>
+                                            <span class="text-[11px] text-slate-400 hidden xl:inline truncate" x-text="(selectedUnit.block ? 'Tòa ' + selectedUnit.block + ' • ' : '') + 'T' + (selectedUnit.floor || '-') + (selectedUnit.unit_axis ? ' • Trục ' + selectedUnit.unit_axis : '') + ' • ' + (selectedUnit.unit_type || '2PN') + (selectedUnit.area ? ' • ' + selectedUnit.area + ' m²' : '') + (selectedUnit.direction ? ' • ' + selectedUnit.direction : '')"></span>
                                         </div>
 
                                         <!-- Các nút thao tác nhanh: Tư vấn, Tính vay, Phóng to, Tab mới, Tải ảnh -->
@@ -2103,10 +2115,12 @@
                 availableBlocks: {!! json_encode($blocks) !!},
                 availableFloors: {!! json_encode($floors) !!},
                 availableTypes: {!! json_encode($unitTypes) !!},
+                availableAxes: {!! json_encode($axes ?? []) !!},
                 unitFilter: {
                     search: '',
                     block: '',
                     floor: '',
+                    axis: '',
                     type: '',
                     status: ''
                 },
@@ -2254,11 +2268,16 @@
                 // Danh sách căn sau khi lọc (Computed)
                 get filteredUnits() {
                     return this.unitsList.filter(u => {
-                        // Lọc từ khóa mã căn
+                        // Lọc từ khóa mã căn hoặc trục căn
                         if (this.unitFilter.search) {
                             const q = this.unitFilter.search.toLowerCase().trim();
                             const code = (u.unit_code || '').toLowerCase();
-                            if (!code.includes(q)) return false;
+                            const axis = (u.unit_axis || '').toLowerCase();
+                            const axisWithPrefix = 'trục ' + axis;
+                            const axisWithPrefixNoAccent = 'truc ' + axis;
+                            if (!code.includes(q) && !axis.includes(q) && !axisWithPrefix.includes(q) && !axisWithPrefixNoAccent.includes(q)) {
+                                return false;
+                            }
                         }
                         // Lọc Tòa / Block
                         if (this.unitFilter.block && u.block !== this.unitFilter.block) {
@@ -2266,6 +2285,10 @@
                         }
                         // Lọc Tầng
                         if (this.unitFilter.floor && String(u.floor) !== String(this.unitFilter.floor)) {
+                            return false;
+                        }
+                        // Lọc Trục căn
+                        if (this.unitFilter.axis && String(u.unit_axis) !== String(this.unitFilter.axis)) {
                             return false;
                         }
                         // Lọc Loại căn
@@ -2288,6 +2311,7 @@
                     this.unitFilter.search = '';
                     this.unitFilter.block = '';
                     this.unitFilter.floor = '';
+                    this.unitFilter.axis = '';
                     this.unitFilter.type = '';
                     this.unitFilter.status = '';
                 },

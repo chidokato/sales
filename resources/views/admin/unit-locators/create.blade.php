@@ -493,11 +493,24 @@
                                           x-text="slotImages[slot.id] ? (isFloorplanSlot(slot) ? '✓ Chỉ căn đúng tầng' : '✓ Đã gán ảnh') : 'Kéo thả ảnh vào đây'"></span>
                                 </div>
                             </div>
-                            <template x-if="slotImages[slot.id]">
-                                <button type="button" @click="removeSlotImage(slot.id)" class="p-1 text-slate-400 hover:text-rose-600 shrink-0" title="Bỏ ảnh này">
-                                    <i class="fa-solid fa-xmark text-xs"></i>
-                                </button>
-                            </template>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <template x-if="isFloorplanSlot(slot)">
+                                    <button 
+                                        type="button" 
+                                        @click="goToStudioWithCurrentUnit()" 
+                                        class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition flex items-center gap-1 shadow-2xs"
+                                        title="Chuyển sang Studio để định vị vị trí căn hoặc đồng bộ theo trục căn trên mặt bằng"
+                                    >
+                                        <i class="fa-solid fa-crosshairs text-[8px] text-amber-600"></i>
+                                        <span>Định vị</span>
+                                    </button>
+                                </template>
+                                <template x-if="slotImages[slot.id]">
+                                    <button type="button" @click="removeSlotImage(slot.id)" class="p-1 text-slate-400 hover:text-rose-600 shrink-0" title="Bỏ ảnh này">
+                                        <i class="fa-solid fa-xmark text-xs"></i>
+                                    </button>
+                                </template>
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -697,54 +710,315 @@
     <div x-show="mode === 'studio'" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         <!-- Left: Form Input Unit Info & Pin Customization -->
-        <div class="lg:col-span-4 space-y-5">
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-                <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
+        <div class="lg:col-span-4 space-y-4">
+
+            <!-- Card 0: Chế độ Định vị (Theo Trục Căn vs Theo Từng Căn) -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-black text-slate-800 uppercase tracking-tight flex items-center gap-1.5">
+                        <i class="fa-solid fa-layer-group text-blue-600"></i>
+                        <span>Chế độ Định Vị</span>
+                    </span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+                        <span x-text="allAxes.length"></span> Trục căn
+                    </span>
+                </div>
+
+                <!-- 2 Tabs chuyển đổi -->
+                <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
+                    <button 
+                        type="button" 
+                        @click="switchStudioTargetMode('axis')"
+                        :class="studioTargetMode === 'axis' ? 'bg-blue-600 text-white font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                        class="py-1.5 px-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-center"
+                    >
+                        <i class="fa-solid fa-arrows-split-up-and-left text-[11px]"></i>
+                        <span>1. Theo Trục Căn</span>
+                    </button>
+                    <button 
+                        type="button" 
+                        @click="switchStudioTargetMode('unit')"
+                        :class="studioTargetMode === 'unit' ? 'bg-blue-600 text-white font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-bold'"
+                        class="py-1.5 px-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-center"
+                    >
+                        <i class="fa-solid fa-door-open text-[11px]"></i>
+                        <span>2. Theo Từng Căn</span>
+                    </button>
+                </div>
+
+                <!-- Trợ giúp giải thích tính năng -->
+                <div class="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/60 text-[11px] text-blue-900 leading-snug flex items-start gap-2">
+                    <i class="fa-solid fa-circle-check text-blue-600 mt-0.5 shrink-0"></i>
+                    <div>
+                        <strong class="font-bold">Đồng bộ cùng trục căn:</strong> Khi định vị theo trục căn, <u>tất cả các căn cùng trục qua mọi tầng</u> sẽ có cùng vị trí chính xác trên mặt bằng.
+                    </div>
+                </div>
+
+                <!-- KHI CHỌN CHẾ ĐỘ 1: THEO TRỤC CĂN -->
+                <div x-show="studioTargetMode === 'axis'" class="space-y-2.5 pt-1 border-t border-slate-100">
+                    <label class="block text-xs font-bold text-slate-700">
+                        Chọn trục căn cần định vị:
+                    </label>
+
+                    <!-- Danh sách các nút Trục căn cuộn ngang / bọc lưới -->
+                    <div class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto custom-unit-scroll p-1 bg-slate-50/80 rounded-xl border border-slate-200">
+                        <template x-for="ax in allAxes" :key="ax.axis">
+                            <button 
+                                type="button" 
+                                @click="selectAxis(ax.axis)"
+                                :class="selectedAxis === ax.axis 
+                                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs font-black' 
+                                    : (ax.has_locator ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium')"
+                                class="px-2 py-1 rounded-lg border text-xs transition flex items-center gap-1"
+                            >
+                                <span x-text="'Trục ' + ax.axis"></span>
+                                <span class="text-[10px] opacity-80" x-text="'(' + ax.count + ')'"></span>
+                                <template x-if="ax.has_locator">
+                                    <i class="fa-solid fa-circle-check text-[10px]" :class="selectedAxis === ax.axis ? 'text-white' : 'text-emerald-600'"></i>
+                                </template>
+                            </button>
+                        </template>
+                    </div>
+
+                    <!-- Thẻ tóm tắt trục căn đang chọn -->
+                    <template x-if="selectedAxis">
+                        <div class="p-2.5 rounded-xl bg-slate-900 text-white text-xs space-y-1">
+                            <div class="flex items-center justify-between">
+                                <span class="font-black text-amber-300 text-sm" x-text="'Đang định vị: Trục ' + selectedAxis"></span>
+                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/30 text-blue-300 border border-blue-400/40" x-text="getAxisUnitCount(selectedAxis) + ' căn hộ'"></span>
+                            </div>
+                            <p class="text-[11px] text-slate-300">
+                                Hãy kéo hoặc vẽ khung viền đỏ lên mặt bằng bên phải để định vị vị trí cho trục này.
+                            </p>
+                        </div>
+                    </template>
+
+                    <!-- Nút Lưu & Đồng bộ nhanh cho Trục căn -->
+                    <button 
+                        type="button" 
+                        @click="saveAxisLocator()"
+                        :disabled="isSaving || !hasImage || !selectedAxis"
+                        class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-xs transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2"
+                    >
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        <span x-text="isSaving ? 'Đang lưu & đồng bộ...' : ('Lưu & Đồng bộ cho toàn bộ Trục ' + (selectedAxis || ''))"></span>
+                    </button>
+                </div>
+
+                <!-- KHI CHỌN CHẾ ĐỘ 2: THEO TỪNG CĂN -->
+                <div x-show="studioTargetMode === 'unit'" class="space-y-2 pt-1 border-t border-slate-100">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600 font-bold">Căn đang chỉnh sửa:</span>
+                        <span class="font-black text-blue-700 font-mono" x-text="form.unit_code || 'Chưa chọn'"></span>
+                    </div>
+
+                    <template x-if="inheritedFromAxis">
+                        <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center gap-1.5">
+                            <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i>
+                            <span>Đã tự động nạp vị trí từ <b>Trục <span x-text="inheritedFromAxis"></span></b></span>
+                        </div>
+                    </template>
+
+                    <label class="flex items-start gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200 cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            x-model="syncAxisLocatorOption"
+                            class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer mt-0.5"
+                        >
+                        <div class="text-[11px] text-slate-700">
+                            <strong class="font-bold text-slate-900">Đồng bộ cho các căn cùng trục</strong>
+                            <p class="text-slate-500">Tự động áp dụng định vị này cho mọi căn hộ cùng trục căn.</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Card 1: Bounding Box & Pin Styling Controls (Hình Thức Định Vị) -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 space-y-3.5">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <h3 class="text-xs font-black text-slate-900 uppercase tracking-tight flex items-center gap-1.5">
+                        <i class="fa-solid fa-crosshairs text-rose-600"></i>
+                        <span>Hình Thức Định Vị</span>
+                    </h3>
+                    <span class="text-[10px] font-bold text-rose-600 uppercase font-mono">Chuẩn Bản Vẽ</span>
+                </div>
+
+                <!-- Kiểu định vị -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Kiểu đánh dấu vị trí căn</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button 
+                            type="button" 
+                            @click="locatorStyle = 'box_arrow'; hasArrow = true; renderCanvas()"
+                            :class="locatorStyle === 'box_arrow' ? 'border-rose-600 bg-rose-50 text-rose-700 font-black ring-1 ring-rose-500/30' : 'border-slate-200 text-slate-600 hover:bg-slate-50 font-bold'"
+                            class="p-2 rounded-xl border text-xs text-left transition flex items-center gap-2"
+                        >
+                            <span class="text-lg">↗️</span>
+                            <div>
+                                <span class="block font-black leading-tight">Khung + Mũi tên</span>
+                                <span class="text-[10px] opacity-75 font-normal">Đúng như ảnh mẫu</span>
+                            </div>
+                        </button>
+                        <button 
+                            type="button" 
+                            @click="locatorStyle = 'box'; hasArrow = false; renderCanvas()"
+                            :class="locatorStyle === 'box' ? 'border-rose-600 bg-rose-50 text-rose-700 font-black ring-1 ring-rose-500/30' : 'border-slate-200 text-slate-600 hover:bg-slate-50 font-bold'"
+                            class="p-2 rounded-xl border text-xs text-left transition flex items-center gap-2"
+                        >
+                            <span class="text-lg">🔲</span>
+                            <div>
+                                <span class="block font-black leading-tight">Khung viền đỏ</span>
+                                <span class="text-[10px] opacity-75 font-normal">Bao quanh căn</span>
+                            </div>
+                        </button>
+                        <button 
+                            type="button" 
+                            @click="locatorStyle = 'bullseye'; pinStyle = 'bullseye'; renderCanvas()"
+                            :class="locatorStyle === 'bullseye' ? 'border-blue-600 bg-blue-50 text-blue-700 font-black ring-1 ring-blue-500/30' : 'border-slate-200 text-slate-600 hover:bg-slate-50 font-bold'"
+                            class="p-2 rounded-xl border text-xs text-left transition flex items-center gap-2"
+                        >
+                            <span class="text-lg">🎯</span>
+                            <div>
+                                <span class="block font-black leading-tight">Vòng mục tiêu</span>
+                                <span class="text-[10px] opacity-75 font-normal">Chấm tâm căn</span>
+                            </div>
+                        </button>
+                        <button 
+                            type="button" 
+                            @click="locatorStyle = 'badge'; pinStyle = 'badge'; renderCanvas()"
+                            :class="locatorStyle === 'badge' ? 'border-blue-600 bg-blue-50 text-blue-700 font-black ring-1 ring-blue-500/30' : 'border-slate-200 text-slate-600 hover:bg-slate-50 font-bold'"
+                            class="p-2 rounded-xl border text-xs text-left transition flex items-center gap-2"
+                        >
+                            <span class="text-lg">🏷️</span>
+                            <div>
+                                <span class="block font-black leading-tight">Thẻ mã căn</span>
+                                <span class="text-[10px] opacity-75 font-normal">Badge nổi bật</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- BẢNG ĐIỀU KHIỂN RIÊNG CHO KHUNG VIỀN & MŨI TÊN (BOX & BOX_ARROW) -->
+                <div x-show="locatorStyle === 'box' || locatorStyle === 'box_arrow'" class="space-y-3 pt-2 border-t border-slate-100">
+                    
+                    <!-- Nút thao tác nhanh với khung -->
+                    <div class="flex items-center gap-2">
+                        <button 
+                            type="button" 
+                            @click="startDrawNewBox()"
+                            class="flex-1 py-1.5 px-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-2xs"
+                        >
+                            <i class="fa-solid fa-draw-polygon text-[11px]"></i>
+                            <span>Kéo vẽ khung mới</span>
+                        </button>
+                        <button 
+                            type="button" 
+                            @click="centerLocatorBox()"
+                            class="py-1.5 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
+                            title="Đưa khung về tâm ảnh"
+                        >
+                            <i class="fa-solid fa-arrows-to-dot"></i>
+                        </button>
+                    </div>
+
+                    <!-- Kích thước khung & Tăng giảm nhanh -->
+                    <div class="flex items-center justify-between text-xs bg-slate-50 p-2 rounded-xl border border-slate-200/80">
+                        <span class="font-bold text-slate-700">Kích thước khung:</span>
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-mono text-[11px] font-bold text-slate-600" x-text="Math.round(locatorBox.w) + ' × ' + Math.round(locatorBox.h) + ' px'"></span>
+                            <button type="button" @click="scaleLocatorBox(0.9)" class="w-6 h-6 rounded bg-white hover:bg-slate-200 text-slate-700 font-bold border border-slate-200 flex items-center justify-center text-xs" title="Thu nhỏ 10%">-</button>
+                            <button type="button" @click="scaleLocatorBox(1.1)" class="w-6 h-6 rounded bg-white hover:bg-slate-200 text-slate-700 font-bold border border-slate-200 flex items-center justify-center text-xs" title="Phóng to 10%">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Tùy chọn Mũi tên chỉ căn -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" x-model="hasArrow" @change="renderCanvas()" class="w-3.5 h-3.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500">
+                                <span>Mũi tên chỉ vào căn</span>
+                            </label>
+                            <span class="text-[10px] text-slate-400">Kéo đuôi mũi tên trên ảnh</span>
+                        </div>
+                        
+                        <!-- 4 Hướng mũi tên nhanh -->
+                        <div x-show="hasArrow" class="grid grid-cols-4 gap-1 text-[11px]">
+                            <button type="button" @click="setArrowDirection('bottom-left')" :class="arrowDir === 'bottom-left' ? 'bg-rose-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'" class="py-1 rounded transition text-center truncate">↙ Dưới-T</button>
+                            <button type="button" @click="setArrowDirection('bottom-right')" :class="arrowDir === 'bottom-right' ? 'bg-rose-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'" class="py-1 rounded transition text-center truncate">↘ Dưới-P</button>
+                            <button type="button" @click="setArrowDirection('top-left')" :class="arrowDir === 'top-left' ? 'bg-rose-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'" class="py-1 rounded transition text-center truncate">↖ Trên-T</button>
+                            <button type="button" @click="setArrowDirection('top-right')" :class="arrowDir === 'top-right' ? 'bg-rose-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'" class="py-1 rounded transition text-center truncate">↗ Trên-P</button>
+                        </div>
+                    </div>
+
+                    <!-- Tùy chọn Nền mờ & Nhãn tên -->
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-700">
+                            <input type="checkbox" x-model="boxHasFill" @change="renderCanvas()" class="w-3.5 h-3.5 rounded border-slate-300 text-rose-600">
+                            <span class="font-medium text-[11px]">Nền highlight</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer text-slate-700">
+                            <input type="checkbox" x-model="boxHasLabel" @change="renderCanvas()" class="w-3.5 h-3.5 rounded border-slate-300 text-rose-600">
+                            <span class="font-medium text-[11px]">Nhãn mã/trục căn</span>
+                        </label>
+                    </div>
+
+                    <!-- Độ dày viền -->
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold text-slate-700">Độ dày nét viền:</span>
+                        <div class="flex items-center gap-1 font-semibold text-[11px]">
+                            <button type="button" @click="boxBorderWidth = 3; renderCanvas()" :class="boxBorderWidth === 3 ? 'bg-rose-600 text-white font-bold' : 'bg-slate-100 text-slate-700'" class="px-2 py-0.5 rounded transition">3px</button>
+                            <button type="button" @click="boxBorderWidth = 6; renderCanvas()" :class="boxBorderWidth === 6 ? 'bg-rose-600 text-white font-bold' : 'bg-slate-100 text-slate-700'" class="px-2 py-0.5 rounded transition">6px</button>
+                            <button type="button" @click="boxBorderWidth = 10; renderCanvas()" :class="boxBorderWidth === 10 ? 'bg-rose-600 text-white font-bold' : 'bg-slate-100 text-slate-700'" class="px-2 py-0.5 rounded transition">10px</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bảng màu sắc định vị -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Màu sắc định vị</label>
+                    <div class="flex items-center gap-2">
+                        <template x-for="c in ['#ef4444', '#f97316', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899']" :key="c">
+                            <button 
+                                type="button" 
+                                @click="pinColor = c; renderCanvas()"
+                                :style="'background-color: ' + c"
+                                :class="pinColor === c ? 'ring-4 ring-offset-2 ring-rose-400 scale-110' : 'hover:scale-105'"
+                                class="w-7 h-7 rounded-full transition-transform shadow-2xs"
+                            ></button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Thông tin căn hộ (chỉ hiển thị khi ở mode 'unit') -->
+            <div x-show="studioTargetMode === 'unit'" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
                     <i class="fa-solid fa-sliders text-blue-600"></i>
                     <span>Thông tin căn hộ</span>
                 </h3>
 
-                <!-- Mã căn -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">
-                        Mã căn <span class="text-rose-500">*</span>
-                    </label>
-                    <input 
-                        type="text" 
-                        x-model="form.unit_code" 
-                        @input="renderCanvas()"
-                        placeholder="Ví dụ: CH-01, A12.05, Căn 08..." 
-                        class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50/50"
-                        required
-                    >
+                <!-- Mã căn & Trục căn -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Mã căn <span class="text-rose-500">*</span></label>
+                        <input type="text" x-model="form.unit_code" @input="renderCanvas()" placeholder="CH-01..." class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50/50">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Trục căn</label>
+                        <input type="text" x-model="form.unit_axis" placeholder="05, 12A..." class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-indigo-700 bg-slate-50/50">
+                    </div>
                 </div>
 
                 <!-- Diện tích & Hướng -->
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">
-                            Diện tích (m²) <span class="text-rose-500">*</span>
-                        </label>
-                        <input 
-                            type="number" 
-                            step="0.1" 
-                            x-model="form.area" 
-                            @input="renderCanvas()"
-                            placeholder="75.5" 
-                            class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
-                        >
+                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Diện tích (m²)</label>
+                        <input type="number" step="0.1" x-model="form.area" @input="renderCanvas()" placeholder="75.5" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50">
                     </div>
-
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">
-                            Hướng ban công
-                        </label>
-                        <select 
-                            x-model="form.direction" 
-                            @change="renderCanvas()"
-                            class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
-                        >
-                            <option value="">-- Chọn hướng --</option>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Hướng ban công</label>
+                        <select x-model="form.direction" @change="renderCanvas()" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50">
+                            <option value="">-- Hướng --</option>
                             <option value="Đông Nam">Đông Nam</option>
                             <option value="Đông Bắc">Đông Bắc</option>
                             <option value="Tây Nam">Tây Nam</option>
@@ -758,245 +1032,81 @@
                 </div>
 
                 <!-- Tòa & Tầng -->
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Tòa / Block</label>
-                        <input 
-                            type="text" 
-                            x-model="form.block" 
-                            @input="renderCanvas()"
-                            placeholder="Tòa A" 
-                            class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
-                        >
+                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Tòa / Block</label>
+                        <input type="text" x-model="form.block" @input="renderCanvas()" placeholder="Tòa A" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Tầng</label>
-                        <input 
-                            type="text" 
-                            x-model="form.floor" 
-                            @input="renderCanvas()"
-                            placeholder="Tầng 12" 
-                            class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
-                        >
+                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Tầng</label>
+                        <input type="text" x-model="form.floor" @input="renderCanvas()" placeholder="Tầng 12" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50">
                     </div>
                 </div>
 
                 <!-- Phòng ngủ & Giá bán -->
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Số phòng ngủ</label>
-                        <input 
-                            type="number" 
-                            min="0" 
-                            max="10" 
-                            x-model="form.bedroom" 
-                            @input="renderCanvas()"
-                            placeholder="2" 
-                            class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
-                        >
+                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Phòng ngủ</label>
+                        <input type="number" min="0" max="10" x-model="form.bedroom" @input="renderCanvas()" placeholder="2" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Giá hiển thị</label>
-                        <input 
-                            type="text" 
-                            x-model="form.price_text" 
-                            @input="renderCanvas()"
-                            placeholder="3.5 Tỷ" 
-                            class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
-                        >
+                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Giá hiển thị</label>
+                        <input type="text" x-model="form.price_text" @input="renderCanvas()" placeholder="3.5 Tỷ" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50">
                     </div>
                 </div>
+            </div>
 
-                <!-- Ghi chú / Điểm nổi bật -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Ghi chú / Điểm nổi bật</label>
-                    <input 
-                        type="text" 
-                        x-model="form.note" 
-                        placeholder="Căn góc 2 mặt thoáng view hồ điều hòa..." 
-                        class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+            <!-- Card 3: Thẻ thông tin tóm tắt căn hộ (Info Card Banner) -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+                <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                    <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-id-card text-indigo-600"></i>
+                        <span>Thẻ Tóm Tắt Thông Tin</span>
+                    </h3>
+                    <select x-model="cardPosition" @change="renderCanvas()" class="py-0.5 px-2 rounded-lg border border-slate-200 text-[11px] bg-slate-50 font-bold text-slate-700">
+                        <option value="none">Không hiển thị</option>
+                        <option value="bottom-left">Góc dưới - Trái</option>
+                        <option value="bottom-right">Góc dưới - Phải</option>
+                        <option value="top-left">Góc trên - Trái</option>
+                        <option value="top-right">Góc trên - Phải</option>
+                        <option value="custom">Tự do (Kéo thả)</option>
+                    </select>
+                </div>
+
+                <div x-show="cardPosition !== 'none'" class="space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-600 font-medium">Kích thước thẻ:</span>
+                        <span class="px-2 py-0.5 rounded-full text-xs font-black bg-blue-100 text-blue-700 font-mono" x-text="cardScalePercent + '%'"></span>
+                    </div>
+                    <input type="range" min="40" max="250" step="5" x-model.number="cardScalePercent" @input="renderCanvas()" class="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer">
+                </div>
+            </div>
+
+            <!-- Card 4: Nút Lưu & Xuất Ảnh -->
+            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-2.5">
+                <template x-if="studioTargetMode === 'axis'">
+                    <button 
+                        type="button" 
+                        @click="saveAxisLocator()"
+                        :disabled="isSaving || !hasImage || !selectedAxis"
+                        class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-sm transition shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2"
                     >
-                </div>
-            </div>
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        <span x-text="isSaving ? 'Đang lưu & đồng bộ...' : ('Lưu & Đồng bộ cho toàn bộ Trục ' + (selectedAxis || ''))"></span>
+                    </button>
+                </template>
 
-            <!-- Pin Marker & Watermark Stying Controls -->
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
-                <h3 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2 border-b border-slate-100 pb-3">
-                    <i class="fa-solid fa-paintbrush text-indigo-600"></i>
-                    <span>Tùy chỉnh Điểm Ghim & Thẻ Thông Tin</span>
-                </h3>
-
-                <!-- Pin Style -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Kiểu ghim đánh dấu</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button 
-                            type="button" 
-                            @click="pinStyle = 'bullseye'; renderCanvas()"
-                            :class="pinStyle === 'bullseye' ? 'border-blue-600 bg-blue-50 text-blue-700 font-bold' : 'border-slate-200 text-slate-600'"
-                            class="p-2 rounded-xl border text-xs text-center transition flex flex-col items-center gap-1"
-                        >
-                            <span class="text-base">🎯</span>
-                            <span>Mục tiêu</span>
-                        </button>
-                        <button 
-                            type="button" 
-                            @click="pinStyle = 'pin'; renderCanvas()"
-                            :class="pinStyle === 'pin' ? 'border-blue-600 bg-blue-50 text-blue-700 font-bold' : 'border-slate-200 text-slate-600'"
-                            class="p-2 rounded-xl border text-xs text-center transition flex flex-col items-center gap-1"
-                        >
-                            <span class="text-base">📍</span>
-                            <span>Ghim vị trí</span>
-                        </button>
-                        <button 
-                            type="button" 
-                            @click="pinStyle = 'badge'; renderCanvas()"
-                            :class="pinStyle === 'badge' ? 'border-blue-600 bg-blue-50 text-blue-700 font-bold' : 'border-slate-200 text-slate-600'"
-                            class="p-2 rounded-xl border text-xs text-center transition flex flex-col items-center gap-1"
-                        >
-                            <span class="text-base">🏷️</span>
-                            <span>Thẻ mã căn</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Pin Color Picker -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Màu sắc ghim</label>
-                    <div class="flex items-center gap-2.5">
-                        <template x-for="c in ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899']" :key="c">
-                            <button 
-                                type="button" 
-                                @click="pinColor = c; renderCanvas()"
-                                :style="'background-color: ' + c"
-                                :class="pinColor === c ? 'ring-4 ring-offset-2 ring-blue-400 scale-110' : 'hover:scale-105'"
-                                class="w-8 h-8 rounded-full transition-transform shadow-sm"
-                            ></button>
-                        </template>
-                    </div>
-                </div>
-
-                <!-- Tùy chỉnh Kích thước Thẻ Thông Tin Căn Hộ -->
-                <div class="pt-3 border-t border-slate-100 space-y-2.5">
-                    <div class="flex items-center justify-between">
-                        <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                            <i class="fa-solid fa-up-right-and-down-left-from-center text-blue-600 text-xs"></i>
-                            <span>Kích thước thẻ căn</span>
-                        </label>
-                        <div class="flex items-center gap-2">
-                            <span class="px-2 py-0.5 rounded-full text-xs font-black bg-blue-100 text-blue-700 font-mono" x-text="cardScalePercent + '%'"></span>
-                            <button 
-                                type="button" 
-                                @click="cardScalePercent = 100; renderCanvas()" 
-                                x-show="cardScalePercent !== 100"
-                                class="text-[11px] text-slate-400 hover:text-blue-600 underline font-semibold transition"
-                                title="Đặt lại kích thước chuẩn 100%"
-                            >Đặt lại</button>
-                        </div>
-                    </div>
-
-                    <!-- Thanh kéo Slider to nhỏ tùy biến -->
-                    <div class="flex items-center gap-2.5">
-                        <button 
-                            type="button" 
-                            @click="cardScalePercent = Math.max(40, cardScalePercent - 10); renderCanvas()"
-                            class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center shrink-0 transition text-xs"
-                            title="Thu nhỏ 10%"
-                        >
-                            <i class="fa-solid fa-minus"></i>
-                        </button>
-                        <input 
-                            type="range" 
-                            min="40" 
-                            max="250" 
-                            step="5" 
-                            x-model.number="cardScalePercent" 
-                            @input="renderCanvas()"
-                            class="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
-                        >
-                        <button 
-                            type="button" 
-                            @click="cardScalePercent = Math.min(250, cardScalePercent + 10); renderCanvas()"
-                            class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center shrink-0 transition text-xs"
-                            title="Phóng to 10%"
-                        >
-                            <i class="fa-solid fa-plus"></i>
-                        </button>
-                    </div>
-
-                    <!-- 5 nút chọn nhanh tỉ lệ (Presets) -->
-                    <div class="grid grid-cols-5 gap-1.5 text-center">
-                        <template x-for="p in [
-                            { label: 'Nhỏ', val: 70 },
-                            { label: 'Vừa', val: 85 },
-                            { label: 'Chuẩn', val: 100 },
-                            { label: 'To', val: 130 },
-                            { label: 'Lớn', val: 160 }
-                        ]" :key="p.val">
-                            <button 
-                                type="button" 
-                                @click="cardScalePercent = p.val; renderCanvas()"
-                                :class="cardScalePercent === p.val ? 'bg-blue-600 text-white font-black shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-bold'"
-                                class="py-1 px-1 rounded-lg text-[11px] transition"
-                            >
-                                <span x-text="p.label"></span>
-                                <span class="block text-[9px] opacity-80" x-text="p.val + '%'"></span>
-                            </button>
-                        </template>
-                    </div>
-
-                    <p class="text-[11px] text-slate-400 italic flex items-center gap-1">
-                        <i class="fa-solid fa-circle-info text-[10px] text-blue-500"></i>
-                        <span>Mẹo: Kéo góc dưới thẻ trên ảnh để phóng to/nhỏ trực tiếp, kéo thân thẻ để đổi vị trí!</span>
-                    </p>
-                </div>
-
-                <!-- Info Card Banner Position & Pin Size -->
-                <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Vị trí thẻ thông tin</label>
-                        <select x-model="cardPosition" @change="renderCanvas()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500">
-                            <option value="bottom-left">Góc dưới - Trái</option>
-                            <option value="bottom-right">Góc dưới - Phải</option>
-                            <option value="top-left">Góc trên - Trái</option>
-                            <option value="top-right">Góc trên - Phải</option>
-                            <option value="custom">Tự do (Kéo thả)</option>
-                            <option value="none">Không hiển thị thẻ</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Kích thước ghim</label>
-                        <select x-model="pinSize" @change="renderCanvas()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500">
-                            <option value="small">Nhỏ gọn</option>
-                            <option value="medium">Vừa (Chuẩn)</option>
-                            <option value="large">To nổi bật</option>
-                            <option value="xlarge">Cực đại (XL)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Save Action Buttons -->
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
-                <button 
-                    type="button" 
-                    @click="saveUnit(false)"
-                    :disabled="isSaving || !hasImage"
-                    class="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold text-sm transition shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
-                >
-                    <i class="fa-solid fa-floppy-disk"></i>
-                    <span x-text="isSaving ? 'Đang xuất và lưu ảnh...' : 'Lưu & Hoàn tất'"></span>
-                </button>
-
-                <button 
-                    type="button" 
-                    @click="saveUnit(true)"
-                    :disabled="isSaving || !hasImage"
-                    class="w-full py-2.5 px-4 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs transition border border-indigo-200 flex items-center justify-center gap-2"
-                >
-                    <i class="fa-solid fa-arrows-rotate"></i>
-                    <span>Lưu & Tạo tiếp căn khác trên mặt bằng này</span>
-                </button>
+                <template x-if="studioTargetMode === 'unit'">
+                    <button 
+                        type="button" 
+                        @click="saveUnit(false)"
+                        :disabled="isSaving || !hasImage"
+                        class="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold text-sm transition shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
+                    >
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span x-text="isSaving ? 'Đang lưu...' : 'Lưu chỉ căn này'"></span>
+                    </button>
+                </template>
 
                 <button 
                     type="button" 
@@ -1019,8 +1129,8 @@
                         <i class="fa-solid fa-map"></i>
                     </div>
                     <div>
-                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Ảnh mặt bằng gốc</h4>
-                        <p class="text-[11px] text-slate-400">Chọn mặt bằng có sẵn hoặc tải ảnh mới</p>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Ảnh mặt bằng tầng</h4>
+                        <p class="text-[11px] text-slate-400">Chọn mặt bằng tầng hoặc tải ảnh mới</p>
                     </div>
                 </div>
 
@@ -1049,22 +1159,24 @@
                 <!-- Canvas Top Bar Controls -->
                 <div class="px-5 py-3 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between text-xs text-slate-300 z-10">
                     <div class="flex items-center gap-3">
-                        <span class="flex items-center gap-1.5 text-emerald-400 font-semibold text-[11px] sm:text-xs">
-                            <i class="fa-solid fa-circle-info"></i>
-                            <span>Nhấp chuột để ghim vị trí • Kéo thẻ căn để đổi chỗ • Kéo góc dưới thẻ để chỉnh to nhỏ</span>
+                        <span class="flex items-center gap-1.5 text-amber-400 font-semibold text-[11px] sm:text-xs">
+                            <i class="fa-solid fa-mouse-pointer"></i>
+                            <span>Kéo chuột để vẽ khung • Kéo thân khung để di chuyển • Kéo 4 góc để đổi kích thước • Kéo đuôi mũi tên để đổi góc chỉ</span>
                         </span>
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <span class="text-slate-400 text-[11px]" x-show="hasImage" x-text="'Tọa độ: X: ' + Math.round(marker.x) + 'px, Y: ' + Math.round(marker.y) + 'px'"></span>
+                        <span class="text-slate-400 text-[11px] font-mono" x-show="hasImage" x-text="(locatorStyle === 'box' || locatorStyle === 'box_arrow') ? ('Khung: X:' + Math.round(locatorBox.x) + ' Y:' + Math.round(locatorBox.y) + ' W:' + Math.round(locatorBox.w) + ' H:' + Math.round(locatorBox.h)) : ('Tọa độ: X:' + Math.round(marker.x) + ' Y:' + Math.round(marker.y))"></span>
                         <button 
                             type="button" 
-                            @click="resetMarker()"
+                            @click="centerLocatorBox()"
                             x-show="hasImage"
                             class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-semibold"
                         >
-                            Đặt lại tâm
+                            Đưa về tâm
                         </button>
+                    </div>
+                </div>
                     </div>
                 </div>
 
@@ -1510,6 +1622,7 @@ function unitCreatorStudio() {
                 'id' => $u->id,
                 'unit_code' => $u->unit_code,
                 'unit_type' => $u->unit_type,
+                'unit_axis' => $u->unit_axis,
                 'block' => $u->block,
                 'floor' => $u->floor,
                 'area' => $u->area,
@@ -1521,6 +1634,8 @@ function unitCreatorStudio() {
                 'price_note' => $u->price_note,
                 'has_image' => !empty($u->image),
                 'image_url' => $u->image_url,
+                'layout_3d_image' => $u->layout_3d_image,
+                'layout_3d_image_url' => $u->layout_3d_image_url,
                 'composer_data' => $u->composer_data,
                 'highlight_data' => $u->highlight_data,
             ];
@@ -1557,6 +1672,7 @@ function unitCreatorStudio() {
         isDirectUploading: false,
 
         // Poster Composer State
+        posterRenderId: 0,
         allTemplates: {!! json_encode($templates) !!},
         allPerspectives: {!! json_encode($perspectives) !!},
         allFloorplans: {!! json_encode($floorplans) !!},
@@ -1751,13 +1867,28 @@ function unitCreatorStudio() {
             const id = (slot.id || '').toLowerCase();
 
             // Bỏ qua các ô bóc mái 3D hoặc layout căn hộ nội thất
-            if (name.includes('bóc mái') || name.includes('boc mai') || name.includes('3d') || name.includes('căn hộ') || name.includes('can ho') || key === 'boc_mai' || key === 'can_ho') {
+            if (name.includes('bóc mái') || name.includes('boc mai') || name.includes('3d') || name.includes('căn hộ') || name.includes('can ho') || key === 'boc_mai' || key === 'can_ho' || key === 'layout_3d') {
                 return false;
             }
 
             if (key === 'mat_bang_tang' || key === 'mat_bang' || key === 'floorplan' || key === 'locator' || key === 'chi_can') return true;
             if (name.includes('mặt bằng') || name.includes('mat bang') || name.includes('chỉ căn') || name.includes('chi can') || name.includes('sơ đồ') || name.includes('tầng')) return true;
+
+            // Nếu template chỉ có 2 ô và ô này là ô kích thước lớn (ô chính hiển thị mặt bằng tầng / chỉ căn)
+            const tmpl = this.currentTemplate;
+            const allSlots = tmpl?.slots_config?.image_slots || [];
+            if (allSlots.length <= 2 && (slot.width >= 500 || slot.height >= 500)) {
+                return true;
+            }
+
             return false;
+        },
+
+        isBocMaiSlot(slot) {
+            if (!slot) return false;
+            const name = (slot.name || '').toLowerCase();
+            const key = (slot.key || '').toLowerCase();
+            return key === 'boc_mai' || key === 'layout_3d' || name.includes('bóc mái') || name.includes('boc mai') || name.includes('3d');
         },
 
         findMatchingFloorplan(unit) {
@@ -1776,6 +1907,7 @@ function unitCreatorStudio() {
                 floorNum = parseInt(numMatch[0], 10);
             }
             const floorLower = floorRaw.toLowerCase();
+            const blockRaw = String(unit?.block || '').trim().toLowerCase();
 
             let bestMatch = null;
             let bestScore = -1;
@@ -1784,8 +1916,19 @@ function unitCreatorStudio() {
                 const name = (fp.name || '').toLowerCase();
                 const range = (fp.floor_range || '').toLowerCase();
                 const desc = (fp.description || '').toLowerCase();
-                const text = `${name} ${range} ${desc}`;
+                const fpBlock = (fp.block || '').toLowerCase();
+                const text = `${name} ${range} ${desc} ${fpBlock}`;
                 let score = 0;
+
+                // Khớp tòa / phân khu (block) nếu có
+                if (blockRaw) {
+                    const blockNumMatch = blockRaw.match(/\d+/);
+                    if (text.includes(blockRaw)) {
+                        score += 30;
+                    } else if (blockNumMatch && (text.includes('sky ' + blockNumMatch[0]) || text.includes('s' + blockNumMatch[0]))) {
+                        score += 30;
+                    }
+                }
 
                 // 1. Khớp chính xác chuỗi tầng (vd: "05a", "tầng 05a", "5")
                 if (floorLower && (text.includes(floorLower) || text.includes('tầng ' + floorLower) || text.includes('tang ' + floorLower))) {
@@ -1806,7 +1949,7 @@ function unitCreatorStudio() {
                         const min = parseInt(rm[1], 10);
                         const max = parseInt(rm[2], 10);
                         if (floorNum >= min && floorNum <= max) {
-                            score += 50;
+                            score += 60;
                         }
                     }
                 }
@@ -1844,6 +1987,8 @@ function unitCreatorStudio() {
             for (const slot of slots) {
                 const slotId = slot.id;
                 const isFp = (fpSlot && slot.id === fpSlot.id);
+                const isBocMai = this.isBocMaiSlot(slot);
+                const bocMaiUrl = u.layout_3d_image_url || u.layout_3d_image;
 
                 if (isFp) {
                     // Ưu tiên 1: Người dùng đã chủ động gán tay ảnh cho ô này trong phiên làm việc
@@ -1858,21 +2003,55 @@ function unitCreatorStudio() {
                     else if (matchedFp && matchedFp.image_url) {
                         resolved[slotId] = matchedFp.image_url;
                     }
-                    // Ưu tiên 4: Dùng slot đã lưu nếu có
-                    else if (savedSlots[slotId]) {
+                    // Ưu tiên 4: Dùng slot đã lưu nếu có (nếu là ảnh mặt bằng)
+                    else if (savedSlots[slotId] && (savedSlots[slotId].includes('floorplan') || savedSlots[slotId].includes('fp_'))) {
                         resolved[slotId] = savedSlots[slotId];
                     }
                     // Ưu tiên 5: Dùng ảnh mặt bằng đầu tiên trong dự án
                     else if (this.allFloorplans && this.allFloorplans.length > 0) {
                         resolved[slotId] = this.allFloorplans[0].image_url;
                     }
-                } else {
-                    // Ô không phải mặt bằng: phối cảnh, tiện ích, căn hộ, bóc mái 3D...
-                    const isBocMai = slot.key === 'boc_mai' || (slot.name && (slot.name.toLowerCase().includes('bóc mái') || slot.name.toLowerCase().includes('boc mai')));
+                    else if (savedSlots[slotId]) {
+                        resolved[slotId] = savedSlots[slotId];
+                    }
+                } else if (isBocMai) {
+                    // Ô bóc mái 3D:
+                    // Ưu tiên 1: Đã gán tay trong phiên làm việc
                     if (u._manuallyAssignedSlots && u._manuallyAssignedSlots[slotId] && savedSlots[slotId]) {
                         resolved[slotId] = savedSlots[slotId];
-                    } else if (isBocMai && u.layout_3d_image_url) {
-                        resolved[slotId] = u.layout_3d_image_url;
+                    }
+                    // Ưu tiên 2: Căn đã có ảnh bóc mái riêng
+                    else if (bocMaiUrl) {
+                        resolved[slotId] = bocMaiUrl;
+                    }
+                    // Ưu tiên 3: Đồng bộ ảnh bóc mái từ các căn khác cùng trục căn (unit_axis)
+                    else {
+                        const axis = u.unit_axis;
+                        let axisBocMai = null;
+                        if (axis && this.importedUnits) {
+                            const sibling = this.importedUnits.find(other => 
+                                other.id !== u.id && other.unit_axis === axis && (other.layout_3d_image_url || other.layout_3d_image)
+                            );
+                            if (sibling) {
+                                axisBocMai = sibling.layout_3d_image_url || sibling.layout_3d_image;
+                            }
+                        }
+                        if (axisBocMai) {
+                            resolved[slotId] = axisBocMai;
+                        }
+                        // Ưu tiên 4: Slot đã lưu nếu là ảnh bóc mái thực sự
+                        else if (savedSlots[slotId] && (savedSlots[slotId].includes('layout_3d') || savedSlots[slotId].includes('boc_mai'))) {
+                            resolved[slotId] = savedSlots[slotId];
+                        }
+                        // Không gán ảnh phối cảnh toàn khu vào ô bóc mái 3D căn hộ
+                        else {
+                            resolved[slotId] = null;
+                        }
+                    }
+                } else {
+                    // Các ô khác: phối cảnh, tiện ích...
+                    if (u._manuallyAssignedSlots && u._manuallyAssignedSlots[slotId] && savedSlots[slotId]) {
+                        resolved[slotId] = savedSlots[slotId];
                     } else if (savedSlots[slotId]) {
                         resolved[slotId] = savedSlots[slotId];
                     } else if (this.sharedSlotImages && this.sharedSlotImages[slotId]) {
@@ -1953,23 +2132,62 @@ function unitCreatorStudio() {
             this.renderPosterCanvas();
         },
 
+        normalizeMediaUrl(url) {
+            if (!url) return '';
+            const adminIdx = window.location.pathname.indexOf('/admin/');
+            const basePath = adminIdx !== -1 ? window.location.pathname.substring(0, adminIdx) : '';
+            const mediaBase = window.location.origin + basePath + '/unit-locators/media/';
+
+            const mediaPattern = '/unit-locators/media/';
+            const idx = url.indexOf(mediaPattern);
+            if (idx !== -1) {
+                const subPath = url.substring(idx + mediaPattern.length);
+                return mediaBase + subPath;
+            }
+
+            // Nếu url là đường dẫn tương đối trong storage (vd: floorplans/826/..., perspectives/826/..., layout_3d/826/...)
+            if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('data:') && !url.startsWith('blob:')) {
+                const clean = url.replace(/^storage\//, '').replace(/^\/+/, '');
+                return mediaBase + clean;
+            }
+
+            return url;
+        },
+
         loadImageAsync(url) {
             if (!url) return Promise.resolve(null);
+            url = this.normalizeMediaUrl(url);
             if (this.imageCache[url]) return Promise.resolve(this.imageCache[url]);
 
             return new Promise((resolve) => {
                 const img = new Image();
-                img.crossOrigin = 'anonymous';
+                // Chỉ set crossOrigin nếu khác origin để tránh browser CORS cache collision với ảnh thông thường
+                if (url.startsWith('http') && !url.startsWith(window.location.origin)) {
+                    img.crossOrigin = 'anonymous';
+                }
                 img.onload = () => {
                     this.imageCache[url] = img;
                     resolve(img);
                 };
-                img.onerror = () => resolve(null);
+                img.onerror = () => {
+                    if (img.crossOrigin) {
+                        const retryImg = new Image();
+                        retryImg.onload = () => {
+                            this.imageCache[url] = retryImg;
+                            resolve(retryImg);
+                        };
+                        retryImg.onerror = () => resolve(null);
+                        retryImg.src = url;
+                    } else {
+                        resolve(null);
+                    }
+                };
                 img.src = url;
             });
         },
 
         async renderPosterCanvas() {
+            const currentRenderId = ++this.posterRenderId;
             const canvas = document.getElementById('posterCanvas');
             if (!canvas) return;
 
@@ -1986,6 +2204,7 @@ function unitCreatorStudio() {
             let bgDrawn = false;
             if (tmpl.image_url && tmpl.image_url.indexOf('placeholder') === -1) {
                 const bgImg = await this.loadImageAsync(tmpl.image_url);
+                if (this.posterRenderId !== currentRenderId) return;
                 if (bgImg) {
                     ctx.drawImage(bgImg, 0, 0, canvasW, canvasH);
                     bgDrawn = true;
@@ -2025,6 +2244,7 @@ function unitCreatorStudio() {
             // 2. VẼ TỪNG KHUNG ẢNH (IMAGE SLOTS)
             const slots = cfg.image_slots || [];
             for (const slot of slots) {
+                if (this.posterRenderId !== currentRenderId) return;
                 ctx.save();
                 const x = slot.x;
                 const y = slot.y;
@@ -2037,8 +2257,10 @@ function unitCreatorStudio() {
                 ctx.clip();
 
                 const imgUrl = this.slotImages[slot.id];
+                let imgDrawn = false;
                 if (imgUrl) {
                     const slotImg = await this.loadImageAsync(imgUrl);
+                    if (this.posterRenderId !== currentRenderId) return;
                     if (slotImg) {
                         // Tính tỷ lệ Cover (Fit fill)
                         const imgRatio = slotImg.naturalWidth / slotImg.naturalHeight;
@@ -2056,9 +2278,12 @@ function unitCreatorStudio() {
                             dy = y - (dh - h) / 2;
                         }
                         ctx.drawImage(slotImg, dx, dy, dw, dh);
+                        imgDrawn = true;
                     }
-                } else {
-                    // Placeholder nếu ô chưa có ảnh
+                }
+
+                if (!imgDrawn) {
+                    // Placeholder nếu ô chưa có ảnh hoặc ảnh tải thất bại
                     ctx.fillStyle = 'rgba(15, 23, 42, 0.65)';
                     ctx.fillRect(x, y, w, h);
                     const titleSize = Math.max(18, Math.min(44, Math.round(w / 35)));
@@ -2085,6 +2310,8 @@ function unitCreatorStudio() {
                     ctx.restore();
                 }
             }
+
+            if (this.posterRenderId !== currentRenderId) return;
 
             // 3. VẼ CÁC KHỐI CHỮ THÔNG TIN (TEXT SLOTS)
             const tSlots = cfg.text_slots || {};
@@ -2254,6 +2481,7 @@ function unitCreatorStudio() {
             const canvas = document.getElementById('posterCanvas');
             const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
 
+            const curUnit = (this.importedUnits && this.importedUnits[this.currentUnitIndex]) || {};
             const payload = {
                 project_id: '{{ $project->id }}',
                 unit_code: this.posterForm.unit_code,
@@ -2265,6 +2493,8 @@ function unitCreatorStudio() {
                 price_note: this.posterForm.price_note,
                 block: this.posterForm.block,
                 floor: this.posterForm.floor,
+                unit_axis: this.posterForm.unit_axis || curUnit.unit_axis || '',
+                layout_3d_image: curUnit.layout_3d_image || '',
                 image_data: dataUrl,
                 composer_data: JSON.stringify({
                     template_id: this.selectedTemplateId,
@@ -2591,6 +2821,8 @@ function unitCreatorStudio() {
                     price_note: this.posterForm.price_note,
                     block: this.posterForm.block,
                     floor: this.posterForm.floor,
+                    unit_axis: u.unit_axis || this.posterForm.unit_axis || '',
+                    layout_3d_image: u.layout_3d_image || '',
                     image_data: dataUrl,
                     composer_data: JSON.stringify({
                         template_id: this.selectedTemplateId,
@@ -2906,6 +3138,8 @@ function unitCreatorStudio() {
                     price_note: this.posterForm.price_note,
                     block: this.posterForm.block,
                     floor: this.posterForm.floor,
+                    unit_axis: u.unit_axis || this.posterForm.unit_axis || '',
+                    layout_3d_image: u.layout_3d_image || '',
                     image_data: dataUrl,
                     composer_data: JSON.stringify({
                         template_id: this.selectedTemplateId,
@@ -3082,8 +3316,11 @@ function unitCreatorStudio() {
 
         loadSavedFloorplan(url) {
             if (!url) return;
+            url = this.normalizeMediaUrl(url);
             const img = new Image();
-            img.crossOrigin = 'anonymous';
+            if (url.startsWith('http') && !url.startsWith(window.location.origin)) {
+                img.crossOrigin = 'anonymous';
+            }
             img.onload = () => {
                 this.imgObj = img;
                 this.hasImage = true;
