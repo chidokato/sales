@@ -752,12 +752,12 @@
                 </div>
 
                 <!-- Trợ giúp giải thích tính năng -->
-                <div class="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/60 text-[11px] text-blue-900 leading-snug flex items-start gap-2">
+                <!-- <div class="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/60 text-[11px] text-blue-900 leading-snug flex items-start gap-2">
                     <i class="fa-solid fa-circle-check text-blue-600 mt-0.5 shrink-0"></i>
                     <div>
                         <strong class="font-bold">Đồng bộ cùng trục căn:</strong> Khi định vị theo trục căn, <u>tất cả các căn cùng trục qua mọi tầng</u> sẽ có cùng vị trí chính xác trên mặt bằng.
                     </div>
-                </div>
+                </div> -->
 
                 <!-- KHI CHỌN CHẾ ĐỘ 1: THEO TRỤC CĂN -->
                 <div x-show="studioTargetMode === 'axis'" class="space-y-2.5 pt-1 border-t border-slate-100">
@@ -786,7 +786,7 @@
                     </div>
 
                     <!-- Thẻ tóm tắt trục căn đang chọn -->
-                    <template x-if="selectedAxis">
+                    <template x-if="false && selectedAxis">
                         <div class="p-2.5 rounded-xl bg-slate-900 text-white text-xs space-y-1">
                             <div class="flex items-center justify-between">
                                 <span class="font-black text-amber-300 text-sm" x-text="'Đang định vị: Trục ' + selectedAxis"></span>
@@ -799,15 +799,17 @@
                     </template>
 
                     <!-- Nút Lưu & Đồng bộ nhanh cho Trục căn -->
-                    <button 
-                        type="button" 
-                        @click="saveAxisLocator()"
-                        :disabled="isSaving || !hasImage || !selectedAxis"
-                        class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-xs transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2"
-                    >
-                        <i class="fa-solid fa-arrows-rotate"></i>
-                        <span x-text="isSaving ? 'Đang lưu & đồng bộ...' : ('Lưu & Đồng bộ cho toàn bộ Trục ' + (selectedAxis || ''))"></span>
-                    </button>
+                    <template x-if="false">
+                        <button 
+                            type="button" 
+                            @click="saveAxisLocator()"
+                            :disabled="isSaving || !hasImage || !selectedAxis"
+                            class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-xs transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2"
+                        >
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span x-text="isSaving ? 'Đang lưu & đồng bộ...' : ('Lưu & Đồng bộ cho toàn bộ Trục ' + (selectedAxis || ''))"></span>
+                        </button>
+                    </template>
                 </div>
 
                 <!-- KHI CHỌN CHẾ ĐỘ 2: THEO TỪNG CĂN -->
@@ -851,18 +853,18 @@
                 <!-- Kiểu định vị -->
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">Kiểu đánh dấu vị trí căn</label>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-3 gap-2">
                         <!-- Chỉ còn lại 1 nút cho kiểu khung -->
                         <button 
                             type="button" 
                             @click="locatorStyle = 'box'; hasArrow = false; renderCanvas()"
                             :class="locatorStyle === 'box' ? 'border-rose-600 bg-rose-50 text-rose-700 font-black ring-1 ring-rose-500/30' : 'border-slate-200 text-slate-600 hover:bg-slate-50 font-bold'"
-                            class="col-span-2 p-2 rounded-xl border text-xs text-left transition flex items-center gap-2"
+                            class="p-2 rounded-xl border text-xs text-left transition flex items-center gap-2"
                         >
                             <span class="text-lg">🔲</span>
                             <div>
-                                <span class="block font-black leading-tight">Khung viền đỏ</span>
-                                <span class="text-[10px] opacity-75 font-normal">Bao quanh căn</span>
+                                <span class="block font-black leading-tight">Khung</span>
+                                <span class="text-[10px] opacity-75 font-normal">Viền đỏ</span>
                             </div>
                         </button>
                         <button 
@@ -873,8 +875,8 @@
                         >
                             <span class="text-lg">🎯</span>
                             <div>
-                                <span class="block font-black leading-tight">Vòng mục tiêu</span>
-                                <span class="text-[10px] opacity-75 font-normal">Chấm tâm căn</span>
+                                <span class="block font-black leading-tight">Mục tiêu</span>
+                                <span class="text-[10px] opacity-75 font-normal">Chấm tâm</span>
                             </div>
                         </button>
                         <button 
@@ -885,8 +887,8 @@
                         >
                             <span class="text-lg">🏷️</span>
                             <div>
-                                <span class="block font-black leading-tight">Thẻ mã căn</span>
-                                <span class="text-[10px] opacity-75 font-normal">Badge nổi bật</span>
+                                <span class="block font-black leading-tight">Thẻ tên</span>
+                                <span class="text-[10px] opacity-75 font-normal">Badge nổi</span>
                             </div>
                         </button>
                     </div>
@@ -1048,7 +1050,7 @@
             </div>
 
             <!-- Card 3: Thẻ thông tin tóm tắt căn hộ (Info Card Banner) -->
-            <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+            <!-- <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
                 <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
                     <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
                         <i class="fa-solid fa-id-card text-indigo-600"></i>
@@ -1071,7 +1073,7 @@
                     </div>
                     <input type="range" min="40" max="250" step="5" x-model.number="cardScalePercent" @input="renderCanvas()" class="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer">
                 </div>
-            </div>
+            </div> -->
 
             <!-- Card 4: Nút Lưu & Xuất Ảnh -->
             <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-2.5">
