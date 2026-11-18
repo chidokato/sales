@@ -1271,12 +1271,17 @@
 
                 <!-- Column format hint -->
                 <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-1.5 text-slate-600">
-                    <div class="font-bold text-slate-800 flex items-center gap-1.5">
-                        <i class="fa-solid fa-circle-info text-emerald-600"></i>
-                        <span>Cột dữ liệu tự động nhận diện theo mẫu:</span>
+                    <div class="flex items-center justify-between pb-1 border-b border-slate-200/60">
+                        <div class="font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-info text-emerald-600"></i>
+                            <span>Cột dữ liệu tự động nhận diện theo mẫu:</span>
+                        </div>
+                        <button type="button" @click="downloadSampleExcel()" class="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1 hover:underline">
+                            <i class="fa-solid fa-file-excel"></i> Tải file Excel mẫu chuẩn (.xlsx)
+                        </button>
                     </div>
                     <div class="flex flex-wrap gap-1 text-[11px]">
-                        <span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">Trục/Tòa</span>
+                        <span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">Tòa</span>
                         <span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">Tầng</span>
                         <span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">Căn số</span>
                         <span class="px-2 py-0.5 rounded bg-white border border-emerald-400 font-mono font-bold text-emerald-700">Mã Căn *</span>
@@ -1285,8 +1290,9 @@
                         <span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">Giá (chưa VAT)</span>
                         <span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">Hướng</span>
                         <span class="px-2 py-0.5 rounded bg-white border border-slate-200 font-mono">View</span>
+                        <span class="px-2 py-0.5 rounded bg-white border border-indigo-300 font-mono font-bold text-indigo-700">Trục căn</span>
                     </div>
-                    <p class="text-[10px] text-slate-400 italic">Mỗi căn sẽ tự động liên kết với 1 ảnh poster chỉ căn tương ứng.</p>
+                    <p class="text-[10px] text-slate-400 italic">Hỗ trợ đầy đủ định dạng Excel theo đúng biểu mẫu dự án của bạn (10 cột: Tòa, Tầng, Căn số, Mã Căn, Loại căn, Diện tích, Giá, Hướng, View, Trục căn).</p>
                 </div>
             </div>
         </div>
@@ -1321,31 +1327,37 @@
                     <table class="w-full text-left border-collapse text-xs whitespace-nowrap">
                         <thead class="bg-slate-100 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px] sticky top-0 z-10">
                             <tr>
-                                <th class="py-2 px-3 text-center w-12">STT</th>
+                                <th class="py-2 px-2 text-center w-10">STT</th>
+                                <th class="py-2 px-2.5">Tòa</th>
+                                <th class="py-2 px-2 text-center">Tầng</th>
+                                <th class="py-2 px-2 text-center">Căn số</th>
                                 <th class="py-2 px-3">Mã Căn</th>
-                                <th class="py-2 px-3">Tòa / Tháp</th>
-                                <th class="py-2 px-3">Tầng</th>
-                                <th class="py-2 px-3">Loại Căn</th>
-                                <th class="py-2 px-3 text-right">Diện Tích</th>
+                                <th class="py-2 px-2 text-center">Trục căn</th>
+                                <th class="py-2 px-2.5">Loại Căn</th>
+                                <th class="py-2 px-2.5 text-right">Diện Tích</th>
                                 <th class="py-2 px-3 text-right">Giá Bán</th>
-                                <th class="py-2 px-3">Hướng</th>
+                                <th class="py-2 px-2">Hướng</th>
                                 <th class="py-2 px-3">View</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
                             <template x-for="(u, idx) in previewExcelUnits" :key="idx">
                                 <tr class="hover:bg-emerald-50/50 transition">
-                                    <td class="py-1.5 px-3 text-center font-mono text-slate-400" x-text="idx + 1"></td>
+                                    <td class="py-1.5 px-2 text-center font-mono text-slate-400" x-text="idx + 1"></td>
+                                    <td class="py-1.5 px-2.5 font-bold text-slate-700" x-text="u.block || '-'"></td>
+                                    <td class="py-1.5 px-2 text-center text-slate-600" x-text="u.floor || '-'"></td>
+                                    <td class="py-1.5 px-2 text-center text-slate-600" x-text="u.unit_number || '-'"></td>
                                     <td class="py-1.5 px-3 font-black text-slate-900" x-text="u.unit_code"></td>
-                                    <td class="py-1.5 px-3 text-slate-600" x-text="u.block || '-'"></td>
-                                    <td class="py-1.5 px-3 text-slate-600" x-text="u.floor || '-'"></td>
-                                    <td class="py-1.5 px-3">
+                                    <td class="py-1.5 px-2 text-center">
+                                        <span class="px-1.5 py-0.5 rounded font-black text-[10px] bg-indigo-50 text-indigo-700 border border-indigo-200" x-text="u.unit_axis || '-'"></span>
+                                    </td>
+                                    <td class="py-1.5 px-2.5">
                                         <span class="px-1.5 py-0.5 rounded font-bold text-[10px] bg-amber-100 text-amber-800" x-text="u.unit_type || '2PN'"></span>
                                     </td>
-                                    <td class="py-1.5 px-3 text-right font-bold text-slate-800" x-text="u.area ? u.area + ' m²' : '-'"></td>
+                                    <td class="py-1.5 px-2.5 text-right font-bold text-slate-800" x-text="u.area ? u.area + ' m²' : '-'"></td>
                                     <td class="py-1.5 px-3 text-right font-black text-blue-700" x-text="u.price_text || '-'"></td>
-                                    <td class="py-1.5 px-3 text-slate-600" x-text="u.direction || '-'"></td>
-                                    <td class="py-1.5 px-3 text-slate-600" x-text="u.view || '-'"></td>
+                                    <td class="py-1.5 px-2 text-slate-600" x-text="u.direction || '-'"></td>
+                                    <td class="py-1.5 px-3 text-slate-600 truncate max-w-[140px]" :title="u.view" x-text="u.view || '-'"></td>
                                 </tr>
                             </template>
                         </tbody>
@@ -3043,12 +3055,14 @@ function unitCreatorStudio() {
                     const colMap = {};
                     headerRow.forEach((colName, idx) => {
                         const norm = colName.toLowerCase().replace(/[\s\-_/\\()]/g, '');
-                        if (norm.includes('trụctòa') || norm.includes('tòa') || norm.includes('tháp') || norm.includes('block') || norm.includes('trục')) {
+                        if (norm.includes('trụccăn') || norm === 'trục' || norm.includes('axis')) {
+                            colMap.unit_axis = idx;
+                        } else if (norm.includes('cănsố') || norm.includes('sốcăn') || norm === 'căn') {
+                            colMap.unit_number = idx;
+                        } else if (norm.includes('trụctòa') || norm.includes('tòa') || norm.includes('tháp') || norm.includes('block')) {
                             colMap.block = idx;
                         } else if (norm.includes('tầng') || norm.includes('floor')) {
                             colMap.floor = idx;
-                        } else if (norm.includes('cănsố') || norm.includes('sốcăn')) {
-                            colMap.unit_number = idx;
                         } else if (norm.includes('mãcăn') || norm.includes('mã') || norm.includes('unitcode')) {
                             colMap.unit_code = idx;
                         } else if (norm.includes('loạicăn') || norm.includes('loại') || norm.includes('phòngngủ') || norm.includes('pn')) {
@@ -3078,6 +3092,11 @@ function unitCreatorStudio() {
                         let block = colMap.block !== undefined ? String(row[colMap.block] || '').trim() : '';
                         let floor = colMap.floor !== undefined ? String(row[colMap.floor] || '').trim() : '';
                         let unitNumber = colMap.unit_number !== undefined ? String(row[colMap.unit_number] || '').trim() : '';
+                        let unitAxis = colMap.unit_axis !== undefined ? String(row[colMap.unit_axis] || '').trim() : '';
+
+                        if (!unitAxis && unitNumber) {
+                            unitAxis = unitNumber;
+                        }
 
                         if (!code && (block || floor || unitNumber)) {
                             code = [block, floor, unitNumber].filter(Boolean).join('.');
@@ -3118,6 +3137,8 @@ function unitCreatorStudio() {
 
                         parsedUnits.push({
                             unit_code: code,
+                            unit_number: unitNumber,
+                            unit_axis: unitAxis,
                             unit_type: unitType,
                             block: block,
                             floor: floor,
@@ -3146,6 +3167,26 @@ function unitCreatorStudio() {
                 }
             };
             reader.readAsArrayBuffer(file);
+        },
+
+        downloadSampleExcel() {
+            if (typeof XLSX === 'undefined') {
+                Swal.fire('Lỗi', 'Thư viện SheetJS chưa sẵn sàng!', 'error');
+                return;
+            }
+            const sampleData = [
+                ['Tòa', 'Tầng', 'Căn số', 'Mã Căn', 'Loại căn', 'Diện tích', 'Giá (chưa VAT)', 'Hướng', 'View', 'Trục căn'],
+                ['C1.3', '28', '4', 'C1.3-28-04', '1PN+ 1WC', 42, 1725000000, 'Đông', 'Tổ hợp tiện ích Victory Central', '04'],
+                ['C1.2', '23', '15', 'C1.2-23-15', '2PN, 2WC', 60.9, 2445000000, 'Nam', 'Tổ hợp tiện ích Victory Central', '15'],
+                ['C1.2', '19', '4', 'C1.2-19-04', '2PN, 2WC', 62.3, 2130000000, 'Bắc', 'Phân khu Glory Sky', '04'],
+                ['C1.3', '24', '3', 'C1.3-24-03', '1PN+ 1WC', 42, 1716000000, 'Đông', 'Tổ hợp tiện ích Victory Central', '03'],
+                ['C1.3', '27', '9', 'C1.3-27-09', '1PN+ 1WC', 47.1, 1710000000, 'Tây', 'Nội khu', '09'],
+                ['C2.3', '25', '12', 'C2.3-25-12', '1PN+ 1WC', 47.1, 1641000000, 'Tây', 'Nội khu', '12']
+            ];
+            const ws = XLSX.utils.aoa_to_sheet(sampleData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Danh sách căn');
+            XLSX.writeFile(wb, 'Mau_nhap_can_ho_{{ Str::slug($project->name) }}.xlsx');
         },
 
         confirmImportExcel(generateBatch = false) {

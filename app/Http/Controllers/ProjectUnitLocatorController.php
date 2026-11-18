@@ -336,6 +336,11 @@ class ProjectUnitLocatorController extends Controller
             } elseif (!empty($item['boc_mai'])) {
                 $data['layout_3d_image'] = $item['boc_mai'];
             }
+            if (!empty($item['floorplan_image'])) {
+                $data['floorplan_image'] = $item['floorplan_image'];
+            } elseif (!empty($item['dinh_vi'])) {
+                $data['floorplan_image'] = $item['dinh_vi'];
+            }
 
             if ($existing) {
                 $existing->update($data);
@@ -390,6 +395,9 @@ class ProjectUnitLocatorController extends Controller
         }
         if (in_array('layout_3d_image', $applyFields) && $request->filled('layout_3d_image')) {
             $data['layout_3d_image'] = trim($request->input('layout_3d_image'));
+        }
+        if (in_array('floorplan_image', $applyFields) && $request->filled('floorplan_image')) {
+            $data['floorplan_image'] = trim($request->input('floorplan_image'));
         }
         if (in_array('unit_type', $applyFields) && $request->filled('unit_type')) {
             $data['unit_type'] = trim($request->input('unit_type'));
@@ -579,6 +587,19 @@ class ProjectUnitLocatorController extends Controller
             $layout3dPath = $existingUnit->layout_3d_image;
         }
 
+        $floorplanPath = null;
+        if ($request->hasFile('floorplan_file')) {
+            $file = $request->file('floorplan_file');
+            $filename = 'locator_' . $request->project_id . '_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $floorplanPath = $file->storeAs('floorplans/' . $request->project_id, $filename, 'public');
+        } elseif ($request->filled('floorplan_image')) {
+            $floorplanPath = trim($request->floorplan_image);
+        } elseif ($request->boolean('remove_floorplan')) {
+            $floorplanPath = null;
+        } elseif ($existingUnit) {
+            $floorplanPath = $existingUnit->floorplan_image;
+        }
+
         $unitData = [
             'project_id' => $request->project_id,
             'project_name' => $projectName,
@@ -600,6 +621,7 @@ class ProjectUnitLocatorController extends Controller
             'status' => $request->status ?: 'available',
             'image' => $imagePath,
             'layout_3d_image' => $layout3dPath,
+            'floorplan_image' => $floorplanPath,
             'base_image' => $request->base_image,
             'highlight_data' => $highlightData,
             'composer_data' => $composerData,
@@ -1147,6 +1169,71 @@ class ProjectUnitLocatorController extends Controller
                 : "Đã cập nhật ảnh bóc mái căn {$unit->unit_code} thành công!",
             'unit' => $unit,
             'layout_3d_image_url' => $unit->layout_3d_image_url,
+            'synced_count' => $syncedCount,
+        ]);
+    }
+
+    /**
+     * Cập nhật / Tải lên nhanh ảnh định vị trên mặt bằng cho 1 căn (Ajax)
+     */
+    public function updateFloorplanImage(Request $request, $id)
+    {
+        $unit = ProjectUnitLocator::findOrFail($id);
+
+        $request->validate([
+            'floorplan_file' => 'nullable|image|max:15360',
+            'floorplan_image' => 'nullable|string',
+            'sync_axis' => 'nullable',
+            'sync_floor' => 'nullable',
+        ]);
+
+        $imagePath = $unit->floorplan_image;
+
+        if ($request->hasFile('floorplan_file')) {
+            if (!empty($unit->floorplan_image) && Storage::disk('public')->exists($unit->floorplan_image)) {
+                Storage::disk('public')->delete($unit->floorplan_image);
+            }
+            $file = $request->file('floorplan_file');
+            $filename = 'locator_' . $unit->project_id . '_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $imagePath = $file->storeAs('floorplans/' . $unit->project_id, $filename, 'public');
+        } elseif ($request->filled('floorplan_image')) {
+            $imagePath = trim($request->floorplan_image);
+        } elseif ($request->boolean('remove_image')) {
+            if (!empty($unit->floorplan_image) && Storage::disk('public')->exists($unit->floorplan_image)) {
+                Storage::disk('public')->delete($unit->floorplan_image);
+            }
+            $imagePath = null;
+        }
+
+        $unit->floorplan_image = $imagePath;
+        $unit->save();
+
+        $syncedCount = 1;
+        $syncAxis = $request->boolean('sync_axis') || $request->input('sync_axis') === '1' || $request->input('sync_axis') === 'true';
+        $syncFloor = $request->boolean('sync_floor') || $request->input('sync_floor') === '1' || $request->input('sync_floor') === 'true';
+
+        if ($syncAxis && !empty($unit->unit_axis)) {
+            $syncedCount = ProjectUnitLocator::where('project_id', $unit->project_id)
+                ->where('unit_axis', $unit->unit_axis)
+                ->update(['floorplan_image' => $imagePath]);
+        } elseif ($syncFloor && !empty($unit->floor)) {
+            $query = ProjectUnitLocator::where('project_id', $unit->project_id)
+                ->where('floor', $unit->floor);
+            if (!empty($unit->block)) {
+                $query->where('block', $unit->block);
+            }
+            $syncedCount = $query->update(['floorplan_image' => $imagePath]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => ($syncAxis && !empty($unit->unit_axis))
+                ? "Đã cập nhật ảnh định vị mặt bằng cho {$syncedCount} căn thuộc trục căn {$unit->unit_axis}!"
+                : (($syncFloor && !empty($unit->floor))
+                    ? "Đã cập nhật ảnh định vị mặt bằng cho {$syncedCount} căn thuộc tầng {$unit->floor}!"
+                    : "Đã cập nhật ảnh định vị mặt bằng căn {$unit->unit_code} thành công!"),
+            'unit' => $unit,
+            'floorplan_image_url' => $unit->floorplan_image_url,
             'synced_count' => $syncedCount,
         ]);
     }

@@ -42,6 +42,7 @@
                     <th class="py-2.5 px-2 text-center">Tầng</th>
                     <th class="py-2.5 px-2 text-center">Trục</th>
                     <th class="py-2.5 px-2 text-center">Ảnh bóc mái</th>
+                    <th class="py-2.5 px-2 text-center">Định vị MB</th>
                     <th class="py-2.5 px-2.5">Diện tích</th>
                     <th class="py-2.5 px-2">Hướng BC</th>
                     <th class="py-2.5 px-2">Hướng cửa</th>
@@ -163,6 +164,46 @@
                         >
                             <i class="fa-solid fa-cube text-[9px]"></i>
                             <span>+ Bóc mái</span>
+                        </button>
+                        @endif
+                    </td>
+
+                    <!-- Ảnh định vị mặt bằng (Floorplan locator image) -->
+                    <td class="py-1.5 px-2 text-center" id="unit-locator-cell-{{ $unit->id }}">
+                        @if ($unit->floorplan_image_url)
+                        <div class="inline-flex items-center gap-1">
+                            <div 
+                                class="w-8 h-8 rounded-lg overflow-hidden bg-slate-900 border border-teal-200 shrink-0 shadow-2xs cursor-pointer relative group/locator"
+                                @click="openLightbox('{{ $unit->floorplan_image_url }}', 'Định vị MB căn {{ $unit->unit_code }}', {{ json_encode($unit) }})"
+                                title="Xem ảnh định vị mặt bằng căn {{ $unit->unit_code }} (Click phóng to)"
+                            >
+                                <img 
+                                    src="{{ $unit->floorplan_image_url }}" 
+                                    alt="Định vị MB {{ $unit->unit_code }}" 
+                                    class="w-full h-full object-cover group-hover/locator:scale-110 transition duration-300"
+                                >
+                                <div class="absolute inset-0 bg-black/35 flex items-center justify-center opacity-0 group-hover/locator:opacity-100 transition">
+                                    <i class="fa-solid fa-magnifying-glass-plus text-white text-[8px]"></i>
+                                </div>
+                            </div>
+                            <button 
+                                type="button"
+                                @click="openQuickLocatorModal({{ json_encode($unit) }})"
+                                class="w-5 h-5 rounded bg-slate-50 hover:bg-teal-50 text-slate-400 hover:text-teal-600 transition flex items-center justify-center border border-slate-200 hover:border-teal-300"
+                                title="Đổi ảnh định vị mặt bằng hoặc đồng bộ theo trục"
+                            >
+                                <i class="fa-solid fa-pen text-[9px]"></i>
+                            </button>
+                        </div>
+                        @else
+                        <button 
+                            type="button" 
+                            @click="openQuickLocatorModal({{ json_encode($unit) }})"
+                            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-teal-600 hover:text-teal-700 bg-teal-50/70 hover:bg-teal-100/80 border border-dashed border-teal-300 transition"
+                            title="Thêm ảnh định vị mặt bằng"
+                        >
+                            <i class="fa-solid fa-map text-[9px]"></i>
+                            <span>+ Định vị</span>
                         </button>
                         @endif
                     </td>
@@ -422,6 +463,44 @@
                         type="button"
                         @click="openQuickBocMaiModal({{ json_encode($unit) }})"
                         class="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded border border-dashed border-indigo-300 transition"
+                    >
+                        <i class="fa-solid fa-plus text-[9px]"></i>
+                        <span>Thêm ảnh</span>
+                    </button>
+                    @endif
+                </div>
+
+                <!-- Ảnh định vị mặt bằng -->
+                <div id="unit-card-locator-{{ $unit->id }}" class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                    <div class="flex items-center gap-1.5 text-slate-600">
+                        <i class="fa-solid fa-map text-teal-500 text-xs"></i>
+                        <span class="font-bold">Định vị mặt bằng:</span>
+                    </div>
+                    @if ($unit->floorplan_image_url)
+                    <div class="flex items-center gap-1.5">
+                        <button 
+                            type="button"
+                            @click="openLightbox('{{ $unit->floorplan_image_url }}', 'Định vị MB căn {{ $unit->unit_code }}', {{ json_encode($unit) }})"
+                            class="inline-flex items-center gap-1 text-[11px] font-bold text-teal-600 hover:text-teal-800"
+                            title="Xem ảnh định vị mặt bằng lớn"
+                        >
+                            <span>Xem MB</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                        </button>
+                        <button 
+                            type="button"
+                            @click="openQuickLocatorModal({{ json_encode($unit) }})"
+                            class="w-5 h-5 rounded bg-white hover:bg-teal-50 text-slate-400 hover:text-teal-600 flex items-center justify-center border border-slate-200 transition"
+                            title="Đổi ảnh hoặc đồng bộ theo trục"
+                        >
+                            <i class="fa-solid fa-pen text-[9px]"></i>
+                        </button>
+                    </div>
+                    @else
+                    <button 
+                        type="button"
+                        @click="openQuickLocatorModal({{ json_encode($unit) }})"
+                        class="inline-flex items-center gap-1 text-[11px] font-bold text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-dashed border-teal-300 transition"
                     >
                         <i class="fa-solid fa-plus text-[9px]"></i>
                         <span>Thêm ảnh</span>

@@ -1202,6 +1202,243 @@
         </div>
     </div>
 
+    <!-- ==================== QUICK ĐỊNH VỊ MẶT BẰNG MODAL (AJAX, KHÔNG LOAD TRANG) ==================== -->
+    <div 
+        x-show="quickLocatorModalOpen" 
+        x-cloak 
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
+        @keydown.escape.window="closeQuickLocatorModal()"
+        @click.self="closeQuickLocatorModal()"
+    >
+        <div class="relative max-w-lg w-full bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-2xl transition-all">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-teal-50/60 to-white">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-teal-600 text-white flex items-center justify-center shadow-md shadow-teal-500/20">
+                        <i class="fa-solid fa-map-location-dot text-base"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
+                            <span>Ảnh định vị trên mặt bằng</span>
+                            <template x-if="activeLocatorUnit">
+                                <span class="text-xs px-2 py-0.5 rounded-md bg-teal-100 text-teal-800 font-black" x-text="activeLocatorUnit.unit_code"></span>
+                            </template>
+                        </h4>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Căn hộ: <span class="font-bold text-slate-700" x-text="activeLocatorUnit?.unit_code || '—'"></span>
+                            • Trục căn: <span class="font-black text-teal-600" x-text="activeLocatorUnit?.unit_axis || 'Chưa đặt'"></span>
+                        </p>
+                    </div>
+                </div>
+                <button type="button" @click="closeQuickLocatorModal()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+                <!-- Preview current image if existing -->
+                <template x-if="activeLocatorUnit && activeLocatorUnit.floorplan_image_url">
+                    <div class="p-3 bg-teal-50/40 rounded-2xl border border-teal-100 flex items-center gap-3.5">
+                        <div class="w-14 h-14 rounded-xl overflow-hidden bg-slate-900 border border-teal-200 shrink-0 shadow-xs cursor-pointer" @click="openLightbox(activeLocatorUnit.floorplan_image_url, 'Định vị MB căn ' + activeLocatorUnit.unit_code, activeLocatorUnit)">
+                            <img :src="activeLocatorUnit.floorplan_image_url" alt="Định vị MB hiện tại" class="w-full h-full object-cover hover:scale-105 transition">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800 mb-1">
+                                Ảnh định vị MB hiện tại
+                            </span>
+                            <div class="text-xs text-slate-600 truncate font-medium">Bấm ảnh để xem kích thước lớn</div>
+                        </div>
+                        <button 
+                            type="button" 
+                            @click="deleteCurrentLocator()" 
+                            class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs transition border border-rose-200/80"
+                            title="Xóa ảnh định vị của căn này"
+                        >
+                            <i class="fa-regular fa-trash-can mr-1"></i> Xóa ảnh
+                        </button>
+                    </div>
+                </template>
+
+                <!-- Source Selector Tabs -->
+                <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+                    <button 
+                        type="button" 
+                        @click="locatorSourceTab = 'upload'" 
+                        :class="locatorSourceTab === 'upload' ? 'bg-teal-600 text-white shadow-xs font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'"
+                        class="px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition"
+                    >
+                        <i class="fa-solid fa-cloud-arrow-up text-xs"></i>
+                        <span>Tải ảnh từ máy tính</span>
+                    </button>
+                    <button 
+                        type="button" 
+                        @click="locatorSourceTab = 'floorplans'" 
+                        :class="locatorSourceTab === 'floorplans' ? 'bg-teal-600 text-white shadow-xs font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'"
+                        class="px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition"
+                    >
+                        <i class="fa-solid fa-layer-group text-xs"></i>
+                        <span>Mặt bằng Tầng ({{ $floorplans->count() }})</span>
+                    </button>
+                    @if ($perspectives->isNotEmpty())
+                    <button 
+                        type="button" 
+                        @click="locatorSourceTab = 'perspectives'" 
+                        :class="locatorSourceTab === 'perspectives' ? 'bg-teal-600 text-white shadow-xs font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'"
+                        class="px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition"
+                    >
+                        <i class="fa-solid fa-images text-xs"></i>
+                        <span>Kho Phối Cảnh ({{ $perspectives->count() }})</span>
+                    </button>
+                    @endif
+                </div>
+
+                <!-- Tab 1: Upload File -->
+                <div x-show="locatorSourceTab === 'upload'" class="space-y-3">
+                    <div 
+                        class="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition"
+                        :class="locatorFilePreview ? 'border-teal-400 bg-teal-50/20' : 'border-slate-300 hover:border-teal-400 bg-slate-50/50 hover:bg-teal-50/30'"
+                        @click="$refs.quickLocatorFileInput.click()"
+                    >
+                        <input 
+                            x-ref="quickLocatorFileInput" 
+                            type="file" 
+                            accept="image/png,image/jpeg,image/webp" 
+                            class="hidden" 
+                            @change="handleQuickLocatorFile($event)"
+                        >
+                        <template x-if="!locatorFilePreview">
+                            <div class="space-y-2">
+                                <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 mx-auto flex items-center justify-center text-xl shadow-2xs">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                </div>
+                                <div class="text-xs font-bold text-slate-700">Bấm để chọn file ảnh định vị mặt bằng từ máy tính</div>
+                                <p class="text-[11px] text-slate-400">Hỗ trợ PNG, JPG, WEBP (tối đa 15MB)</p>
+                            </div>
+                        </template>
+                        <template x-if="locatorFilePreview">
+                            <div class="space-y-2">
+                                <img :src="locatorFilePreview" class="max-h-48 mx-auto rounded-xl border border-teal-200 shadow-sm object-contain bg-white">
+                                <p class="text-xs font-bold text-teal-700 flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                    <span x-text="selectedLocatorFileName"></span>
+                                </p>
+                                <span class="text-[11px] text-slate-400">Bấm để chọn ảnh khác</span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Choose from Mặt bằng Tầng -->
+                <div x-show="locatorSourceTab === 'floorplans'" class="space-y-2">
+                    @if ($floorplans->isEmpty())
+                    <div class="p-6 text-center bg-slate-50 rounded-2xl border border-slate-200">
+                        <i class="fa-solid fa-layer-group text-slate-300 text-3xl mb-2"></i>
+                        <p class="text-xs text-slate-500">Dự án này chưa có mặt bằng tầng nào.</p>
+                        <p class="text-[11px] text-slate-400 mt-1">Hãy chuyển sang tab "Tải ảnh từ máy tính" ở trên.</p>
+                    </div>
+                    @else
+                    <div class="text-xs text-slate-500 font-medium">Bấm vào 1 mặt bằng tầng dưới đây để chọn làm ảnh định vị:</div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto p-1">
+                        @foreach ($floorplans as $fp)
+                        <div 
+                            @click="selectFloorplanForLocator('{{ $fp->image_path }}', '{{ $fp->image_url }}')"
+                            :class="selectedFloorplanPath === '{{ $fp->image_path }}' ? 'ring-2 ring-teal-600 border-teal-500 shadow-md' : 'border-slate-200 hover:border-teal-300'"
+                            class="group relative rounded-xl border bg-slate-900 overflow-hidden cursor-pointer aspect-4/3 transition-all"
+                            title="{{ $fp->name }}"
+                        >
+                            <img src="{{ $fp->image_url }}" alt="{{ $fp->name }}" class="w-full h-full object-cover group-hover:scale-105 transition">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex flex-col justify-end p-2">
+                                <span class="text-[11px] font-bold text-white truncate drop-shadow-sm">{{ $fp->name }}</span>
+                                @if ($fp->floor_range)
+                                <span class="text-[9px] font-semibold text-teal-300">{{ $fp->floor_range }}</span>
+                                @endif
+                            </div>
+                            <template x-if="selectedFloorplanPath === '{{ $fp->image_path }}'">
+                                <div class="absolute top-1 right-1 w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center text-[10px] shadow-sm">
+                                    <i class="fa-solid fa-check"></i>
+                                </div>
+                            </template>
+                        </div>
+                        @endforeach
+                    </div>
+                    @endif
+                </div>
+
+                <!-- Tab 3: Choose from Kho Phối Cảnh & Tiện Ích -->
+                @if ($perspectives->isNotEmpty())
+                <div x-show="locatorSourceTab === 'perspectives'" class="space-y-2">
+                    <div class="text-xs text-slate-500 font-medium">Bấm vào 1 ảnh dưới đây để chọn:</div>
+                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-2.5 max-h-56 overflow-y-auto p-1">
+                        @foreach ($perspectives as $persp)
+                        <div 
+                            @click="selectFloorplanForLocator('{{ $persp->image_path }}', '{{ $persp->image_url }}')"
+                            :class="selectedFloorplanPath === '{{ $persp->image_path }}' ? 'ring-2 ring-teal-600 border-teal-500 shadow-md' : 'border-slate-200 hover:border-teal-300'"
+                            class="group relative rounded-xl border bg-slate-900 overflow-hidden cursor-pointer aspect-4/3 transition-all"
+                            title="{{ $persp->name }}"
+                        >
+                            <img src="{{ $persp->image_url }}" alt="{{ $persp->name }}" class="w-full h-full object-cover group-hover:scale-105 transition">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-1.5">
+                                <span class="text-[10px] font-bold text-white truncate drop-shadow-sm">{{ $persp->name }}</span>
+                            </div>
+                            <template x-if="selectedFloorplanPath === '{{ $persp->image_path }}'">
+                                <div class="absolute top-1 right-1 w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center text-[10px] shadow-sm">
+                                    <i class="fa-solid fa-check"></i>
+                                </div>
+                            </template>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
+                <!-- Sync Axis Option Checkbox -->
+                <div class="p-3.5 bg-gradient-to-r from-teal-50/60 to-emerald-50/60 rounded-2xl border border-teal-100/80">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            x-model="syncAxisLocator" 
+                            class="mt-0.5 w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                        >
+                        <div class="text-xs">
+                            <div class="font-extrabold text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-arrows-rotate text-teal-600 text-xs"></i>
+                                <span>Đồng bộ cho tất cả các căn cùng trục</span>
+                                <template x-if="activeLocatorUnit && activeLocatorUnit.unit_axis">
+                                    <span class="px-1.5 py-0.2 rounded bg-teal-600 text-white font-black text-[11px]" x-text="'Trục ' + activeLocatorUnit.unit_axis"></span>
+                                </template>
+                            </div>
+                            <p class="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
+                                Thường các căn cùng trục căn ở các tầng khác nhau có vị trí định vị trên mặt bằng giống nhau. Bật tùy chọn này sẽ tự động cập nhật ảnh định vị cho toàn bộ các căn cùng trục.
+                            </p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-100">
+                <button type="button" @click="closeQuickLocatorModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-100 transition">
+                    Đóng
+                </button>
+                <button 
+                    type="button" 
+                    @click="saveQuickLocator()"
+                    :disabled="isSavingLocator || (!selectedLocatorFile && !selectedFloorplanPath)"
+                    class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-extrabold shadow-md shadow-teal-500/20 transition cursor-pointer"
+                >
+                    <template x-if="isSavingLocator">
+                        <i class="fa-solid fa-spinner fa-spin text-xs"></i>
+                    </template>
+                    <template x-if="!isSavingLocator">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i>
+                    </template>
+                    <span>Lưu ảnh định vị</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- FLOATING ACTION BAR: Khi có căn được chọn -->
     <div 
         x-show="selectedUnitIds.length > 0" 
@@ -2323,6 +2560,17 @@ function unitProjectHub() {
         syncAxisBocMai: true,
         isSavingBocMai: false,
 
+        // Quick Định Vị Mặt Bằng Modal States
+        quickLocatorModalOpen: false,
+        activeLocatorUnit: null,
+        locatorSourceTab: 'upload',
+        selectedLocatorFile: null,
+        selectedLocatorFileName: '',
+        locatorFilePreview: null,
+        selectedFloorplanPath: '',
+        syncAxisLocator: true,
+        isSavingLocator: false,
+
         // AJAX Search & Filter State
         isLoadingUnits: false,
 
@@ -3092,6 +3340,262 @@ function unitProjectHub() {
                     const addBtn = cardEl.querySelector('button');
                     if (addBtn) {
                         addBtn.onclick = () => this.openQuickBocMaiModal({ id: id, unit_code: '', unit_axis: axis, layout_3d_image_url: null });
+                    }
+                }
+            }
+        },
+
+        openQuickLocatorModal(unit) {
+            this.activeLocatorUnit = unit;
+            this.locatorSourceTab = 'upload';
+            this.selectedLocatorFile = null;
+            this.selectedLocatorFileName = '';
+            this.locatorFilePreview = null;
+            this.selectedFloorplanPath = '';
+            this.syncAxisLocator = true;
+            this.isSavingLocator = false;
+            this.quickLocatorModalOpen = true;
+        },
+
+        closeQuickLocatorModal() {
+            this.quickLocatorModalOpen = false;
+            this.activeLocatorUnit = null;
+            this.selectedLocatorFile = null;
+            this.selectedLocatorFileName = '';
+            this.locatorFilePreview = null;
+            this.selectedFloorplanPath = '';
+            this.isSavingLocator = false;
+        },
+
+        handleQuickLocatorFile(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.selectedLocatorFile = file;
+                this.selectedLocatorFileName = file.name;
+                this.selectedFloorplanPath = '';
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.locatorFilePreview = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        },
+
+        selectFloorplanForLocator(path, url) {
+            this.selectedFloorplanPath = path;
+            this.selectedLocatorFile = null;
+            this.selectedLocatorFileName = '';
+            this.locatorFilePreview = url;
+        },
+
+        saveQuickLocator() {
+            if (!this.activeLocatorUnit) return;
+            if (!this.selectedLocatorFile && !this.selectedFloorplanPath) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Chưa chọn ảnh',
+                    text: 'Vui lòng chọn 1 file ảnh từ máy tính hoặc từ Mặt bằng tầng/Kho phối cảnh!',
+                    confirmButtonText: 'Đã hiểu'
+                });
+                return;
+            }
+
+            this.isSavingLocator = true;
+            const formData = new FormData();
+            if (this.selectedLocatorFile) {
+                formData.append('floorplan_file', this.selectedLocatorFile);
+            } else if (this.selectedFloorplanPath) {
+                formData.append('floorplan_image', this.selectedFloorplanPath);
+            }
+            formData.append('sync_axis', this.syncAxisLocator ? '1' : '0');
+
+            fetch(`{{ url('admin/unit-locators') }}/${this.activeLocatorUnit.id}/floorplan-image`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.isSavingLocator = false;
+                if (data.success) {
+                    Toast.fire({
+                        icon: 'success',
+                        title: data.message || 'Đã cập nhật ảnh định vị mặt bằng!'
+                    });
+
+                    const newUrl = data.floorplan_image_url;
+                    const unitId = this.activeLocatorUnit.id;
+                    const unitAxis = this.activeLocatorUnit.unit_axis;
+
+                    if (this.syncAxisLocator && unitAxis) {
+                        document.querySelectorAll(`[data-unit-axis="${unitAxis}"]`).forEach(el => {
+                            const id = el.getAttribute('data-unit-id');
+                            if (id) {
+                                this.updateUnitLocatorDOM(id, newUrl, unitAxis);
+                            }
+                        });
+                    } else {
+                        this.updateUnitLocatorDOM(unitId, newUrl, unitAxis);
+                    }
+
+                    this.closeQuickLocatorModal();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: data.message || 'Không thể cập nhật ảnh định vị mặt bằng.'
+                    });
+                }
+            })
+            .catch(err => {
+                this.isSavingLocator = false;
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi kết nối',
+                    text: 'Có lỗi xảy ra khi lưu ảnh. Vui lòng thử lại.'
+                });
+            });
+        },
+
+        deleteCurrentLocator() {
+            if (!this.activeLocatorUnit) return;
+            confirmAction({
+                title: `Xóa ảnh định vị căn ${this.activeLocatorUnit.unit_code}?`,
+                text: this.syncAxisLocator && this.activeLocatorUnit.unit_axis 
+                    ? `Ảnh sẽ bị xóa khỏi tất cả căn cùng trục ${this.activeLocatorUnit.unit_axis}.`
+                    : 'Ảnh định vị của căn này sẽ bị xóa.',
+                icon: 'warning',
+                confirmButtonText: 'Đồng ý xóa',
+                confirmButtonColor: '#ef4444'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    const formData = new FormData();
+                    formData.append('remove_image', '1');
+                    formData.append('sync_axis', this.syncAxisLocator ? '1' : '0');
+
+                    fetch(`{{ url('admin/unit-locators') }}/${this.activeLocatorUnit.id}/floorplan-image`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Toast.fire({
+                                icon: 'success',
+                                title: 'Đã xóa ảnh định vị!'
+                            });
+
+                            const unitId = this.activeLocatorUnit.id;
+                            const unitAxis = this.activeLocatorUnit.unit_axis;
+                            if (this.syncAxisLocator && unitAxis) {
+                                document.querySelectorAll(`[data-unit-axis="${unitAxis}"]`).forEach(el => {
+                                    const id = el.getAttribute('data-unit-id');
+                                    if (id) {
+                                        this.updateUnitLocatorDOM(id, null, unitAxis);
+                                    }
+                                });
+                            } else {
+                                this.updateUnitLocatorDOM(unitId, null, unitAxis);
+                            }
+
+                            this.closeQuickLocatorModal();
+                        }
+                    });
+                }
+            });
+        },
+
+        updateUnitLocatorDOM(id, url, axis) {
+            // Update Table View cell
+            const cell = document.getElementById(`unit-locator-cell-${id}`);
+            if (cell) {
+                if (url) {
+                    cell.innerHTML = `
+                        <div class="inline-flex items-center gap-1">
+                            <div class="w-8 h-8 rounded-lg overflow-hidden bg-slate-900 border border-teal-200 shrink-0 shadow-2xs cursor-pointer relative group/locator">
+                                <img src="${url}" alt="Định vị MB" class="w-full h-full object-cover group-hover/locator:scale-110 transition duration-300">
+                                <div class="absolute inset-0 bg-black/35 flex items-center justify-center opacity-0 group-hover/locator:opacity-100 transition">
+                                    <i class="fa-solid fa-magnifying-glass-plus text-white text-[8px]"></i>
+                                </div>
+                            </div>
+                            <button type="button" class="w-5 h-5 rounded bg-slate-50 hover:bg-teal-50 text-slate-400 hover:text-teal-600 transition flex items-center justify-center border border-slate-200 hover:border-teal-300" title="Đổi ảnh định vị mặt bằng hoặc đồng bộ theo trục">
+                                <i class="fa-solid fa-pen text-[9px]"></i>
+                            </button>
+                        </div>
+                    `;
+                    const imgBox = cell.querySelector('.group\\/locator');
+                    if (imgBox) {
+                        imgBox.onclick = () => this.openLightbox(url, `Định vị MB`, { id: id, unit_axis: axis, floorplan_image_url: url });
+                    }
+                    const editBtn = cell.querySelector('button');
+                    if (editBtn) {
+                        editBtn.onclick = () => this.openQuickLocatorModal({ id: id, unit_code: '', unit_axis: axis, floorplan_image_url: url });
+                    }
+                } else {
+                    cell.innerHTML = `
+                        <button type="button" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold text-teal-600 hover:text-teal-700 bg-teal-50/70 hover:bg-teal-100/80 border border-dashed border-teal-300 transition" title="Thêm ảnh định vị mặt bằng">
+                            <i class="fa-solid fa-map text-[9px]"></i>
+                            <span>+ Định vị</span>
+                        </button>
+                    `;
+                    const addBtn = cell.querySelector('button');
+                    if (addBtn) {
+                        addBtn.onclick = () => this.openQuickLocatorModal({ id: id, unit_code: '', unit_axis: axis, floorplan_image_url: null });
+                    }
+                }
+            }
+
+            // Update Grid View card
+            const cardEl = document.getElementById(`unit-card-locator-${id}`);
+            if (cardEl) {
+                if (url) {
+                    cardEl.innerHTML = `
+                        <div class="flex items-center gap-1.5 text-slate-600">
+                            <i class="fa-solid fa-map text-teal-500 text-xs"></i>
+                            <span class="font-bold">Định vị mặt bằng:</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" class="inline-flex items-center gap-1 text-[11px] font-bold text-teal-600 hover:text-teal-800" title="Xem ảnh định vị mặt bằng lớn">
+                                <span>Xem MB</span>
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                            </button>
+                            <button type="button" class="w-5 h-5 rounded bg-white hover:bg-teal-50 text-slate-400 hover:text-teal-600 flex items-center justify-center border border-slate-200 transition" title="Đổi ảnh hoặc đồng bộ theo trục">
+                                <i class="fa-solid fa-pen text-[9px]"></i>
+                            </button>
+                        </div>
+                    `;
+                    const viewBtn = cardEl.querySelectorAll('button')[0];
+                    if (viewBtn) {
+                        viewBtn.onclick = () => this.openLightbox(url, `Định vị MB`, { id: id, unit_axis: axis, floorplan_image_url: url });
+                    }
+                    const editBtn = cardEl.querySelectorAll('button')[1];
+                    if (editBtn) {
+                        editBtn.onclick = () => this.openQuickLocatorModal({ id: id, unit_code: '', unit_axis: axis, floorplan_image_url: url });
+                    }
+                } else {
+                    cardEl.innerHTML = `
+                        <div class="flex items-center gap-1.5 text-slate-600">
+                            <i class="fa-solid fa-map text-teal-500 text-xs"></i>
+                            <span class="font-bold">Định vị mặt bằng:</span>
+                        </div>
+                        <button type="button" class="inline-flex items-center gap-1 text-[11px] font-bold text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded border border-dashed border-teal-300 transition">
+                            <i class="fa-solid fa-plus text-[9px]"></i>
+                            <span>Thêm ảnh</span>
+                        </button>
+                    `;
+                    const addBtn = cardEl.querySelector('button');
+                    if (addBtn) {
+                        addBtn.onclick = () => this.openQuickLocatorModal({ id: id, unit_code: '', unit_axis: axis, floorplan_image_url: null });
                     }
                 }
             }
