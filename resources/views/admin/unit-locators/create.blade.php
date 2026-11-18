@@ -2353,16 +2353,36 @@ function unitCreatorStudio() {
                         const imgRatio = slotImg.naturalWidth / slotImg.naturalHeight;
                         const slotRatio = w / h;
                         let dw, dh, dx, dy;
-                        if (imgRatio > slotRatio) {
-                            dh = h;
-                            dw = h * imgRatio;
-                            dx = x - (dw - w) / 2;
-                            dy = y;
+
+                        // Nếu là ảnh bóc mái (ví dụ slot.id có chứa 'boc_mai' hoặc tương tự)
+                        const isBocMai = slot.id && String(slot.id).toLowerCase().includes('boc_mai');
+
+                        if (isBocMai) {
+                            // Chế độ Contain: giữ nguyên tỷ lệ, không cắt ảnh, phần trống để trong suốt
+                            if (imgRatio > slotRatio) {
+                                dw = w;
+                                dh = w / imgRatio;
+                                dx = x;
+                                dy = y + (h - dh) / 2;
+                            } else {
+                                dh = h;
+                                dw = h * imgRatio;
+                                dx = x + (w - dw) / 2;
+                                dy = y;
+                            }
                         } else {
-                            dw = w;
-                            dh = w / imgRatio;
-                            dx = x;
-                            dy = y - (dh - h) / 2;
+                            // Chế độ Cover cũ (cắt ảnh)
+                            if (imgRatio > slotRatio) {
+                                dh = h;
+                                dw = h * imgRatio;
+                                dx = x - (dw - w) / 2;
+                                dy = y;
+                            } else {
+                                dw = w;
+                                dh = w / imgRatio;
+                                dx = x;
+                                dy = y - (dh - h) / 2;
+                            }
                         }
                         ctx.drawImage(slotImg, dx, dy, dw, dh);
                         imgDrawn = true;
@@ -2587,7 +2607,8 @@ function unitCreatorStudio() {
                 block: this.posterForm.block,
                 floor: this.posterForm.floor,
                 unit_axis: this.posterForm.unit_axis || curUnit.unit_axis || '',
-                layout_3d_image: curUnit.layout_3d_image || '',
+                // Fix: Đảm bảo lấy layout_3d_image từ slotImages của tất cả các slot có key là boc_mai
+                layout_3d_image: (this.slotImages) ? Object.values(this.slotImages).find((val, key) => (key && String(key).toLowerCase().includes('boc_mai'))) || (curUnit.layout_3d_image || '') : (curUnit.layout_3d_image || ''),
                 image_data: dataUrl,
                 composer_data: JSON.stringify({
                     template_id: this.selectedTemplateId,
