@@ -14,6 +14,15 @@
     </a>
 
     <a 
+        href="{{ route('admin.unit-locators.create', ['projectId' => $project->id, 'mode' => 'studio']) }}"
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold shadow-xs transition"
+        title="Định vị vị trí căn trên mặt bằng theo từng trục căn (đồng bộ cho toàn bộ căn cùng trục)"
+    >
+        <i class="fa-solid fa-arrows-split-up-and-left text-xs"></i>
+        <span>Định vị theo trục căn</span>
+    </a>
+
+    <a 
         href="{{ route('admin.unit-locators.create', $project->id) }}"
         onclick="if (window.__selectedUnitIds && window.__selectedUnitIds.length > 0) { window.location.href = '{{ route('admin.unit-locators.create', $project->id) }}?units=' + window.__selectedUnitIds.join(','); return false; }"
         class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold shadow-xs transition"

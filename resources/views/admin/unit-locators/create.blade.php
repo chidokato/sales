@@ -1177,8 +1177,6 @@
                         </button>
                     </div>
                 </div>
-                    </div>
-                </div>
 
                 <!-- Empty State before floorplan selected -->
                 <div 
@@ -1634,12 +1632,40 @@ function unitCreatorStudio() {
                 'price_note' => $u->price_note,
                 'has_image' => !empty($u->image),
                 'image_url' => $u->image_url,
+                'base_image' => $u->base_image,
                 'layout_3d_image' => $u->layout_3d_image,
                 'layout_3d_image_url' => $u->layout_3d_image_url,
                 'composer_data' => $u->composer_data,
                 'highlight_data' => $u->highlight_data,
             ];
         })) !!},
+        axisLocatorsMap: {!! json_encode($axisLocators ?? []) !!},
+
+        // Bounding Box & Axis Locator State
+        locatorStyle: 'box_arrow', // 'box_arrow', 'box', 'bullseye', 'badge'
+        locatorBox: { x: 0, y: 0, w: 120, h: 180 },
+        hasArrow: true,
+        arrowDir: 'bottom-left',
+        arrowStart: { x: 0, y: 0 },
+        arrowHead: { x: 0, y: 0 },
+        boxBorderWidth: 6,
+        boxBorderRadius: 8,
+        boxHasFill: true,
+        boxHasLabel: true,
+        studioTargetMode: 'axis', // 'axis' or 'unit'
+        selectedAxis: '',
+        syncAxisLocatorOption: true,
+        inheritedFromAxis: false,
+        currentFloorplanPath: '',
+        currentFloorplanUrl: '',
+        isDrawingBox: false,
+        isDraggingBox: false,
+        isResizingBox: false,
+        activeResizeCorner: null,
+        isDraggingArrowTail: false,
+        dragBoxStart: { x: 0, y: 0, boxX: 0, boxY: 0, arrowStartX: 0, arrowStartY: 0, arrowHeadX: 0, arrowHeadY: 0 },
+        resizeBoxStart: { x: 0, y: 0, box: { x: 0, y: 0, w: 0, h: 0 } },
+        drawStart: { x: 0, y: 0 },
         currentUnitIndex: 0,
         showUnitsCol: true,
         unitSearchText: '',
@@ -1709,6 +1735,42 @@ function unitCreatorStudio() {
             price_text: '3.5 Tỷ',
             status: 'available',
             note: ''
+        },
+
+        get allAxes() {
+            const map = {};
+            (this.importedUnits || []).forEach(u => {
+                const ax = (u.unit_axis || '').trim();
+                if (!ax) return;
+                if (!map[ax]) {
+                    map[ax] = {
+                        axis: ax,
+                        count: 0,
+                        has_locator: !!(this.axisLocatorsMap && this.axisLocatorsMap[ax] && this.axisLocatorsMap[ax].has_locator)
+                    };
+                }
+                map[ax].count++;
+            });
+            if (this.axisLocatorsMap) {
+                Object.keys(this.axisLocatorsMap).forEach(ax => {
+                    if (!map[ax]) {
+                        map[ax] = {
+                            axis: ax,
+                            count: this.axisLocatorsMap[ax].unit_count || 0,
+                            has_locator: !!this.axisLocatorsMap[ax].has_locator
+                        };
+                    }
+                });
+            }
+            return Object.values(map).sort((a, b) => {
+                return a.axis.localeCompare(b.axis, undefined, { numeric: true, sensitivity: 'base' });
+            });
+        },
+
+        getAxisUnitCount(axis) {
+            if (!axis) return 0;
+            const ax = this.allAxes.find(a => a.axis === axis);
+            return ax ? ax.count : 0;
         },
 
         get currentTemplate() {
@@ -1825,6 +1887,24 @@ function unitCreatorStudio() {
                     this.selectedIndices = [0];
                 }
                 this.selectUnitByIndex(targetIdx);
+
+                // Khởi tạo trục căn đang chọn
+                const initialUnit = this.importedUnits[targetIdx];
+                if (initialUnit && initialUnit.unit_axis) {
+                    this.selectedAxis = initialUnit.unit_axis;
+                } else if (this.allAxes && this.allAxes.length > 0) {
+                    this.selectedAxis = this.allAxes[0].axis;
+                }
+
+                @if(request('axis'))
+                this.mode = 'studio';
+                this.studioTargetMode = 'axis';
+                this.selectedAxis = '{{ request('axis') }}';
+                @endif
+
+                if (this.selectedAxis && this.axisLocatorsMap && this.axisLocatorsMap[this.selectedAxis]) {
+                    this.loadAxisLocator(this.selectedAxis);
+                }
             }
 
             @if(request('import') === 'excel')
@@ -1834,6 +1914,8 @@ function unitCreatorStudio() {
             this.$nextTick(() => {
                 if (this.mode === 'poster') {
                     this.renderPosterCanvas();
+                } else if (this.mode === 'studio') {
+                    this.renderCanvas();
                 }
             });
 
@@ -2279,6 +2361,11 @@ function unitCreatorStudio() {
                         }
                         ctx.drawImage(slotImg, dx, dy, dw, dh);
                         imgDrawn = true;
+
+                        // Tự động vẽ đè khung định vị chỉ căn nếu là ô Mặt bằng tầng
+                        if (this.isFloorplanSlot(slot)) {
+                            this.drawLocatorOnPosterSlot(ctx, slot, slotImg, dx, dy, dw, dh);
+                        }
                     }
                 }
 
@@ -2623,6 +2710,7 @@ function unitCreatorStudio() {
 
             // Đồng bộ thông tin sang form Studio Chấm Ghim
             this.form.unit_code = u.unit_code || '';
+            this.form.unit_axis = u.unit_axis || '';
             this.form.area = u.area !== null && u.area !== undefined ? String(u.area) : '';
             this.form.direction = u.direction || '';
             this.form.block = u.block || '';
@@ -2630,20 +2718,55 @@ function unitCreatorStudio() {
             this.form.price_text = u.price_text || (u.price ? this.formatPriceVND(u.price) : '');
             if (u.bedroom) this.form.bedroom = u.bedroom;
 
+            if (u.unit_axis) {
+                this.selectedAxis = u.unit_axis;
+            }
+
+            this.inheritedFromAxis = false;
+            let hl = null;
             if (u.highlight_data) {
                 try {
-                    const hl = (typeof u.highlight_data === 'string') ? JSON.parse(u.highlight_data) : u.highlight_data;
-                    if (hl) {
-                        if (hl.marker) this.marker = { ...hl.marker };
-                        if (hl.pinStyle) this.pinStyle = hl.pinStyle;
-                        if (hl.pinColor) this.pinColor = hl.pinColor;
-                        if (hl.pinSize) this.pinSize = hl.pinSize;
-                        if (hl.cardPosition) this.cardPosition = hl.cardPosition;
-                        if (hl.cardScalePercent) this.cardScalePercent = hl.cardScalePercent;
-                        if (hl.cardCustomX !== undefined) this.cardCustomX = hl.cardCustomX;
-                        if (hl.cardCustomY !== undefined) this.cardCustomY = hl.cardCustomY;
-                    }
+                    hl = (typeof u.highlight_data === 'string') ? JSON.parse(u.highlight_data) : u.highlight_data;
                 } catch(e) {}
+            }
+            // Nếu căn chưa có highlight_data nhưng trục căn có highlight_data -> tự động kế thừa!
+            if ((!hl || (!hl.locatorBox && !hl.locator_box && !hl.marker)) && u.unit_axis && this.axisLocatorsMap && this.axisLocatorsMap[u.unit_axis]) {
+                const axData = this.axisLocatorsMap[u.unit_axis];
+                if (axData && axData.highlight_data) {
+                    try {
+                        hl = (typeof axData.highlight_data === 'string') ? JSON.parse(axData.highlight_data) : axData.highlight_data;
+                        this.inheritedFromAxis = u.unit_axis;
+                    } catch(e) {}
+                }
+            }
+
+            if (hl) {
+                if (hl.marker) this.marker = { ...hl.marker };
+                if (hl.locatorStyle) this.locatorStyle = hl.locatorStyle;
+                if (hl.locatorBox || hl.locator_box) {
+                    const lb = hl.locatorBox || hl.locator_box;
+                    this.locatorBox = {
+                        x: lb.x || 0,
+                        y: lb.y || 0,
+                        w: lb.w || lb.width || 120,
+                        h: lb.h || lb.height || 180
+                    };
+                }
+                if (hl.hasArrow !== undefined) this.hasArrow = hl.hasArrow;
+                if (hl.arrowDir) this.arrowDir = hl.arrowDir;
+                if (hl.arrowStart) this.arrowStart = { ...hl.arrowStart };
+                if (hl.arrowHead) this.arrowHead = { ...hl.arrowHead };
+                if (hl.boxBorderWidth) this.boxBorderWidth = hl.boxBorderWidth;
+                if (hl.boxBorderRadius !== undefined) this.boxBorderRadius = hl.boxBorderRadius;
+                if (hl.boxHasFill !== undefined) this.boxHasFill = hl.boxHasFill;
+                if (hl.boxHasLabel !== undefined) this.boxHasLabel = hl.boxHasLabel;
+                if (hl.pinStyle) this.pinStyle = hl.pinStyle;
+                if (hl.pinColor) this.pinColor = hl.pinColor;
+                if (hl.pinSize) this.pinSize = hl.pinSize;
+                if (hl.cardPosition) this.cardPosition = hl.cardPosition;
+                if (hl.cardScalePercent) this.cardScalePercent = hl.cardScalePercent;
+                if (hl.cardCustomX !== undefined) this.cardCustomX = hl.cardCustomX;
+                if (hl.cardCustomY !== undefined) this.cardCustomY = hl.cardCustomY;
             }
 
             // Tự động nạp mặt bằng tương ứng vào Studio Mode nếu đang ở studio hoặc đổi căn
@@ -3317,6 +3440,15 @@ function unitCreatorStudio() {
         loadSavedFloorplan(url) {
             if (!url) return;
             url = this.normalizeMediaUrl(url);
+            this.currentFloorplanUrl = url;
+            const fp = (this.allFloorplans || []).find(f => f.image_url === url || this.normalizeMediaUrl(f.image_url) === url);
+            if (fp && fp.image) {
+                this.currentFloorplanPath = fp.image;
+            } else {
+                const match = url.match(/(floorplans\/.*$)/) || url.match(/(storage\/.*$)/);
+                if (match) this.currentFloorplanPath = match[1].replace('storage/', '');
+            }
+
             const img = new Image();
             if (url.startsWith('http') && !url.startsWith(window.location.origin)) {
                 img.crossOrigin = 'anonymous';
@@ -3324,7 +3456,12 @@ function unitCreatorStudio() {
             img.onload = () => {
                 this.imgObj = img;
                 this.hasImage = true;
-                this.marker = { x: img.naturalWidth / 2, y: img.naturalHeight / 2 };
+                if (!this.marker || (this.marker.x === 0 && this.marker.y === 0)) {
+                    this.marker = { x: img.naturalWidth / 2, y: img.naturalHeight / 2 };
+                }
+                if (!this.locatorBox || this.locatorBox.w === 0 || this.locatorBox.w === 120) {
+                    this.initDefaultBox();
+                }
                 this.$nextTick(() => this.renderCanvas());
             };
             img.src = url;
@@ -3341,6 +3478,9 @@ function unitCreatorStudio() {
                     this.imgObj = img;
                     this.hasImage = true;
                     this.marker = { x: img.naturalWidth / 2, y: img.naturalHeight / 2 };
+                    if (!this.locatorBox || this.locatorBox.w === 0 || this.locatorBox.w === 120) {
+                        this.initDefaultBox();
+                    }
                     this.$nextTick(() => this.renderCanvas());
                 };
                 img.src = e.target.result;
@@ -3375,10 +3515,235 @@ function unitCreatorStudio() {
                    y >= this.cardRect.y && y <= this.cardRect.y + this.cardRect.h;
         },
 
+        isPointInBox(x, y) {
+            const b = this.locatorBox;
+            if (!b || b.w <= 0 || b.h <= 0) return false;
+            return x >= b.x && x <= (b.x + b.w) && y >= b.y && y <= (b.y + b.h);
+        },
+
+        getBoxResizeCorner(x, y) {
+            const b = this.locatorBox;
+            if (!b || b.w <= 0 || b.h <= 0) return null;
+            const r = 20; // Sai số bấm góc
+            if (Math.hypot(x - b.x, y - b.y) <= r) return 'tl';
+            if (Math.hypot(x - (b.x + b.w), y - b.y) <= r) return 'tr';
+            if (Math.hypot(x - b.x, y - (b.y + b.h)) <= r) return 'bl';
+            if (Math.hypot(x - (b.x + b.w), y - (b.y + b.h)) <= r) return 'br';
+            return null;
+        },
+
+        isPointNearArrowTail(x, y) {
+            if (!this.hasArrow || !this.arrowStart) return false;
+            return Math.hypot(x - this.arrowStart.x, y - this.arrowStart.y) <= 24;
+        },
+
+        switchStudioTargetMode(mode) {
+            this.studioTargetMode = mode;
+            if (mode === 'axis') {
+                if (!this.selectedAxis) {
+                    const u = this.importedUnits[this.currentUnitIndex];
+                    if (u && u.unit_axis) {
+                        this.selectedAxis = u.unit_axis;
+                    } else if (this.allAxes && this.allAxes.length > 0) {
+                        this.selectedAxis = this.allAxes[0].axis;
+                    }
+                }
+                if (this.selectedAxis) {
+                    this.loadAxisLocator(this.selectedAxis);
+                }
+            } else if (mode === 'unit') {
+                const u = this.importedUnits[this.currentUnitIndex];
+                if (u) {
+                    this.selectUnitByIndex(this.currentUnitIndex);
+                }
+            }
+            this.renderCanvas();
+        },
+
+        selectAxis(axis) {
+            this.selectedAxis = axis;
+            this.loadAxisLocator(axis);
+            this.renderCanvas();
+        },
+
+        loadAxisLocator(axis) {
+            if (!axis) return;
+            const axData = this.axisLocatorsMap ? this.axisLocatorsMap[axis] : null;
+            if (axData && axData.highlight_data) {
+                let hl = axData.highlight_data;
+                if (typeof hl === 'string') {
+                    try { hl = JSON.parse(hl); } catch(e) {}
+                }
+                if (hl) {
+                    if (hl.locatorStyle) this.locatorStyle = hl.locatorStyle;
+                    if (hl.locatorBox || hl.locator_box) {
+                        const lb = hl.locatorBox || hl.locator_box;
+                        this.locatorBox = {
+                            x: lb.x || 0,
+                            y: lb.y || 0,
+                            w: lb.w || lb.width || 120,
+                            h: lb.h || lb.height || 180
+                        };
+                    }
+                    if (hl.hasArrow !== undefined) this.hasArrow = hl.hasArrow;
+                    if (hl.arrowDir) this.arrowDir = hl.arrowDir;
+                    if (hl.arrowStart) this.arrowStart = { ...hl.arrowStart };
+                    if (hl.arrowHead) this.arrowHead = { ...hl.arrowHead };
+                    if (hl.boxBorderWidth) this.boxBorderWidth = hl.boxBorderWidth;
+                    if (hl.boxBorderRadius !== undefined) this.boxBorderRadius = hl.boxBorderRadius;
+                    if (hl.boxHasFill !== undefined) this.boxHasFill = hl.boxHasFill;
+                    if (hl.boxHasLabel !== undefined) this.boxHasLabel = hl.boxHasLabel;
+                    if (hl.pinColor) this.pinColor = hl.pinColor;
+                }
+                if (axData.base_image && this.allFloorplans) {
+                    const matched = this.allFloorplans.find(f => f.image === axData.base_image || f.image_url?.includes(axData.base_image));
+                    if (matched && matched.image_url && this.currentFloorplanUrl !== this.normalizeMediaUrl(matched.image_url)) {
+                        this.loadSavedFloorplan(matched.image_url);
+                        return;
+                    }
+                }
+            } else {
+                if (this.imgObj) {
+                    this.initDefaultBox();
+                }
+            }
+        },
+
+        initDefaultBox() {
+            if (!this.imgObj) return;
+            const w = Math.round(this.imgObj.naturalWidth * 0.08) || 120;
+            const h = Math.round(w * 1.5) || 180;
+            const x = Math.round((this.imgObj.naturalWidth - w) / 2);
+            const y = Math.round((this.imgObj.naturalHeight - h) / 2);
+            this.locatorBox = { x, y, w, h };
+            this.setArrowDirection(this.arrowDir || 'bottom-left');
+        },
+
+        setArrowDirection(dir) {
+            this.arrowDir = dir;
+            const b = this.locatorBox;
+            if (!b) return;
+            if (dir === 'bottom-left') {
+                this.arrowHead = { x: Math.round(b.x), y: Math.round(b.y + b.h * 0.8) };
+                this.arrowStart = { x: Math.round(b.x - b.w * 0.9), y: Math.round(b.y + b.h * 1.35) };
+            } else if (dir === 'bottom-right') {
+                this.arrowHead = { x: Math.round(b.x + b.w), y: Math.round(b.y + b.h * 0.8) };
+                this.arrowStart = { x: Math.round(b.x + b.w * 1.9), y: Math.round(b.y + b.h * 1.35) };
+            } else if (dir === 'top-left') {
+                this.arrowHead = { x: Math.round(b.x), y: Math.round(b.y + b.h * 0.2) };
+                this.arrowStart = { x: Math.round(b.x - b.w * 0.9), y: Math.round(b.y - b.h * 0.4) };
+            } else if (dir === 'top-right') {
+                this.arrowHead = { x: Math.round(b.x + b.w), y: Math.round(b.y + b.h * 0.2) };
+                this.arrowStart = { x: Math.round(b.x + b.w * 1.9), y: Math.round(b.y - b.h * 0.4) };
+            }
+            this.renderCanvas();
+        },
+
+        scaleLocatorBox(factor) {
+            const b = this.locatorBox;
+            if (!b) return;
+            const cx = b.x + b.w / 2;
+            const cy = b.y + b.h / 2;
+            b.w = Math.max(30, Math.round(b.w * factor));
+            b.h = Math.max(30, Math.round(b.h * factor));
+            b.x = Math.round(cx - b.w / 2);
+            b.y = Math.round(cy - b.h / 2);
+            this.setArrowDirection(this.arrowDir);
+            this.renderCanvas();
+        },
+
+        centerLocatorBox() {
+            if (!this.imgObj) return;
+            const b = this.locatorBox;
+            b.x = Math.round((this.imgObj.naturalWidth - b.w) / 2);
+            b.y = Math.round((this.imgObj.naturalHeight - b.h) / 2);
+            this.setArrowDirection(this.arrowDir);
+            this.renderCanvas();
+        },
+
+        startDrawNewBox() {
+            this.isDrawingBox = true;
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: 'Hãy bấm và kéo chuột trên mặt bằng để vẽ khung mới!',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        },
+
+        goToStudioWithCurrentUnit() {
+            this.mode = 'studio';
+            const u = this.importedUnits[this.currentUnitIndex];
+            if (u && u.unit_axis) {
+                this.studioTargetMode = 'axis';
+                this.selectedAxis = u.unit_axis;
+                this.loadAxisLocator(u.unit_axis);
+            } else {
+                this.studioTargetMode = 'unit';
+            }
+            const matchedFp = this.findMatchingFloorplan(u);
+            if (matchedFp && matchedFp.image_url) {
+                this.loadSavedFloorplan(matchedFp.image_url);
+            } else {
+                this.$nextTick(() => this.renderCanvas());
+            }
+        },
+
         handleCanvasMouseDown(event) {
             if (!this.imgObj) return;
             const { x, y } = this.getCanvasCoordinates(event);
             const canvas = document.getElementById('studioCanvas');
+
+            // 0. NẾU Ở KIỂU ĐỊNH VỊ KHUNG CHỮ NHẬT / MŨI TÊN (BOX / BOX_ARROW)
+            if (this.locatorStyle === 'box' || this.locatorStyle === 'box_arrow') {
+                if (this.isDrawingBox) {
+                    this.drawStart = { x, y };
+                    this.locatorBox = { x: Math.round(x), y: Math.round(y), w: 10, h: 10 };
+                    return;
+                }
+
+                // Kiểm tra bấm vào đuôi mũi tên để kéo/xoay
+                if (this.hasArrow && this.isPointNearArrowTail(x, y)) {
+                    this.isDraggingArrowTail = true;
+                    if (canvas) canvas.style.cursor = 'crosshair';
+                    return;
+                }
+
+                // Kiểm tra bấm vào 4 góc để co giãn (Resize)
+                const corner = this.getBoxResizeCorner(x, y);
+                if (corner) {
+                    this.isResizingBox = true;
+                    this.activeResizeCorner = corner;
+                    this.resizeBoxStart = { x, y, box: { ...this.locatorBox } };
+                    if (canvas) canvas.style.cursor = (corner === 'tl' || corner === 'br') ? 'nwse-resize' : 'nesw-resize';
+                    return;
+                }
+
+                // Kiểm tra bấm vào thân khung để kéo di chuyển (Move)
+                if (this.isPointInBox(x, y)) {
+                    this.isDraggingBox = true;
+                    this.dragBoxStart = {
+                        x: x,
+                        y: y,
+                        boxX: this.locatorBox.x,
+                        boxY: this.locatorBox.y,
+                        arrowStartX: this.arrowStart ? this.arrowStart.x : 0,
+                        arrowStartY: this.arrowStart ? this.arrowStart.y : 0,
+                        arrowHeadX: this.arrowHead ? this.arrowHead.x : 0,
+                        arrowHeadY: this.arrowHead ? this.arrowHead.y : 0
+                    };
+                    if (canvas) canvas.style.cursor = 'move';
+                    return;
+                }
+
+                // Bấm ra ngoài -> tự động kích hoạt chế độ kéo vẽ khung mới
+                this.isDrawingBox = true;
+                this.drawStart = { x, y };
+                this.locatorBox = { x: Math.round(x), y: Math.round(y), w: 10, h: 10 };
+                return;
+            }
 
             // 1. Kiểm tra bấm vào góc co giãn kích thước thẻ (Resize Handle)
             if (this.isPointInResizeHandle(x, y)) {
@@ -3416,6 +3781,108 @@ function unitCreatorStudio() {
             const canvas = document.getElementById('studioCanvas');
             if (!canvas) return;
 
+            // Xử lý kéo vẽ hoặc thao tác Bounding Box & Mũi tên
+            if (this.locatorStyle === 'box' || this.locatorStyle === 'box_arrow') {
+                if (this.isDrawingBox) {
+                    const left = Math.min(this.drawStart.x, x);
+                    const top = Math.min(this.drawStart.y, y);
+                    const w = Math.abs(x - this.drawStart.x);
+                    const h = Math.abs(y - this.drawStart.y);
+                    this.locatorBox = {
+                        x: Math.round(left),
+                        y: Math.round(top),
+                        w: Math.max(20, Math.round(w)),
+                        h: Math.max(20, Math.round(h))
+                    };
+                    this.setArrowDirection(this.arrowDir || 'bottom-left');
+                    this.renderCanvas();
+                    return;
+                }
+
+                if (this.isDraggingArrowTail) {
+                    this.arrowStart = { x: Math.round(x), y: Math.round(y) };
+                    this.renderCanvas();
+                    return;
+                }
+
+                if (this.isResizingBox) {
+                    const start = this.resizeBoxStart;
+                    const dx = x - start.x;
+                    const dy = y - start.y;
+                    let newBox = { ...start.box };
+                    if (this.activeResizeCorner === 'br') {
+                        newBox.w = Math.max(20, start.box.w + dx);
+                        newBox.h = Math.max(20, start.box.h + dy);
+                    } else if (this.activeResizeCorner === 'tr') {
+                        newBox.w = Math.max(20, start.box.w + dx);
+                        const newH = start.box.h - dy;
+                        if (newH >= 20) {
+                            newBox.y = start.box.y + dy;
+                            newBox.h = newH;
+                        }
+                    } else if (this.activeResizeCorner === 'bl') {
+                        const newW = start.box.w - dx;
+                        if (newW >= 20) {
+                            newBox.x = start.box.x + dx;
+                            newBox.w = newW;
+                        }
+                        newBox.h = Math.max(20, start.box.h + dy);
+                    } else if (this.activeResizeCorner === 'tl') {
+                        const newW = start.box.w - dx;
+                        const newH = start.box.h - dy;
+                        if (newW >= 20) {
+                            newBox.x = start.box.x + dx;
+                            newBox.w = newW;
+                        }
+                        if (newH >= 20) {
+                            newBox.y = start.box.y + dy;
+                            newBox.h = newH;
+                        }
+                    }
+                    this.locatorBox = {
+                        x: Math.round(newBox.x),
+                        y: Math.round(newBox.y),
+                        w: Math.round(newBox.w),
+                        h: Math.round(newBox.h)
+                    };
+                    this.setArrowDirection(this.arrowDir || 'bottom-left');
+                    this.renderCanvas();
+                    return;
+                }
+
+                if (this.isDraggingBox) {
+                    const dx = x - this.dragBoxStart.x;
+                    const dy = y - this.dragBoxStart.y;
+                    this.locatorBox.x = Math.round(this.dragBoxStart.boxX + dx);
+                    this.locatorBox.y = Math.round(this.dragBoxStart.boxY + dy);
+                    if (this.arrowStart) {
+                        this.arrowStart.x = Math.round(this.dragBoxStart.arrowStartX + dx);
+                        this.arrowStart.y = Math.round(this.dragBoxStart.arrowStartY + dy);
+                    }
+                    if (this.arrowHead) {
+                        this.arrowHead.x = Math.round(this.dragBoxStart.arrowHeadX + dx);
+                        this.arrowHead.y = Math.round(this.dragBoxStart.arrowHeadY + dy);
+                    }
+                    this.renderCanvas();
+                    return;
+                }
+
+                // Cập nhật con trỏ chuột hover
+                if (this.hasArrow && this.isPointNearArrowTail(x, y)) {
+                    canvas.style.cursor = 'crosshair';
+                } else {
+                    const corner = this.getBoxResizeCorner(x, y);
+                    if (corner) {
+                        canvas.style.cursor = (corner === 'tl' || corner === 'br') ? 'nwse-resize' : 'nesw-resize';
+                    } else if (this.isPointInBox(x, y)) {
+                        canvas.style.cursor = 'move';
+                    } else {
+                        canvas.style.cursor = 'crosshair';
+                    }
+                }
+                return;
+            }
+
             // Xử lý kéo góc để co giãn kích thước thẻ (Resize)
             if (this.isResizingCard) {
                 const baseW = 380;
@@ -3449,6 +3916,16 @@ function unitCreatorStudio() {
         },
 
         handleCanvasMouseUp(event) {
+            if (this.locatorStyle === 'box' || this.locatorStyle === 'box_arrow') {
+                this.isDrawingBox = false;
+                this.isDraggingBox = false;
+                this.isResizingBox = false;
+                this.isDraggingArrowTail = false;
+                this.activeResizeCorner = null;
+                this.renderCanvas();
+                return;
+            }
+
             this.isResizingCard = false;
             this.isDraggingCard = false;
             const canvas = document.getElementById('studioCanvas');
@@ -3465,6 +3942,7 @@ function unitCreatorStudio() {
         },
 
         handleCanvasClick(event) {
+            if (this.locatorStyle === 'box' || this.locatorStyle === 'box_arrow') return;
             if (this.isDraggingCard || this.isResizingCard) return;
             const { x, y } = this.getCanvasCoordinates(event);
             if (this.isPointInCard(x, y) || this.isPointInResizeHandle(x, y)) return;
@@ -3484,7 +3962,7 @@ function unitCreatorStudio() {
         },
 
         handleTouchMove(event) {
-            if (event.touches.length === 1 && (this.isDraggingCard || this.isResizingCard)) {
+            if (event.touches.length === 1 && (this.isDraggingCard || this.isResizingCard || this.isDraggingBox || this.isResizingBox || this.isDrawingBox || this.isDraggingArrowTail)) {
                 if (event.cancelable) event.preventDefault();
                 const touch = event.touches[0];
                 this.handleCanvasMouseMove({
@@ -3502,6 +3980,7 @@ function unitCreatorStudio() {
             if (!this.imgObj) return;
             this.marker.x = this.imgObj.naturalWidth / 2;
             this.marker.y = this.imgObj.naturalHeight / 2;
+            this.centerLocatorBox();
             this.renderCanvas();
         },
 
@@ -3521,13 +4000,360 @@ function unitCreatorStudio() {
             // 1. Vẽ ảnh nền mặt bằng gốc
             ctx.drawImage(this.imgObj, 0, 0, w, h);
 
-            // 2. Vẽ điểm Ghim / Marker Chỉ Căn
-            this.drawMarker(ctx, this.marker.x, this.marker.y);
+            // 2. Vẽ Định Vị Chỉ Căn (Khung Bounding Box viền đỏ + Mũi tên hoặc Marker)
+            if (this.locatorStyle === 'box' || this.locatorStyle === 'box_arrow') {
+                const labelText = (this.studioTargetMode === 'axis' && this.selectedAxis)
+                    ? ('Trục ' + this.selectedAxis)
+                    : (this.form.unit_code || (this.selectedAxis ? ('Trục ' + this.selectedAxis) : ''));
+                this.drawBoundingBox(ctx, this.locatorBox, {
+                    borderColor: this.pinColor || '#ef4444',
+                    borderWidth: this.boxBorderWidth || 6,
+                    borderRadius: this.boxBorderRadius !== undefined ? this.boxBorderRadius : 8,
+                    hasFill: this.boxHasFill,
+                    hasLabel: this.boxHasLabel,
+                    labelText: labelText,
+                    hasArrow: this.hasArrow,
+                    arrowStart: this.arrowStart,
+                    arrowHead: this.arrowHead,
+                    showHandles: true
+                });
+            } else {
+                this.drawMarker(ctx, this.marker.x, this.marker.y);
+            }
 
-            // 3. Vẽ Thẻ Thông Tin Căn Hộ (Info Card Banner)
-            if (this.cardPosition !== 'none') {
+            // 3. Vẽ Thẻ Thông Tin Căn Hộ (chỉ khi ở mode Từng Căn)
+            if (this.cardPosition !== 'none' && this.studioTargetMode === 'unit') {
                 this.drawInfoCard(ctx, w, h);
             }
+        },
+
+        drawBoundingBox(ctx, box, opts = {}) {
+            if (!box || box.w <= 0 || box.h <= 0) return;
+            const color = opts.borderColor || '#ef4444';
+            const borderWidth = opts.borderWidth || 6;
+            const borderRadius = opts.borderRadius !== undefined ? opts.borderRadius : 8;
+            const hasFill = opts.hasFill !== false;
+            const hasLabel = opts.hasLabel !== false;
+            const labelText = opts.labelText || '';
+            const hasArrow = opts.hasArrow !== false;
+            const showHandles = !!opts.showHandles;
+
+            ctx.save();
+
+            // 1. Vẽ khung chữ nhật bo góc
+            this.drawCustomRoundRect(ctx, box.x, box.y, box.w, box.h, borderRadius);
+
+            // Nền highlight mờ bên trong
+            if (hasFill) {
+                ctx.fillStyle = this.hexToRgba(color, 0.16);
+                ctx.fill();
+            }
+
+            // Nét viền đỏ nổi bật
+            ctx.strokeStyle = color;
+            ctx.lineWidth = borderWidth;
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            // 2. Vẽ Mũi tên đỏ chỉ vào căn (như ảnh mẫu)
+            if (hasArrow && (opts.arrowStart || this.arrowStart) && (opts.arrowHead || this.arrowHead)) {
+                const aStart = opts.arrowStart || this.arrowStart;
+                const aHead = opts.arrowHead || this.arrowHead;
+                const aWidth = opts.arrowWidth || Math.max(4, Math.round(borderWidth * 0.8));
+                this.drawArrow(ctx, aStart.x, aStart.y, aHead.x, aHead.y, color, aWidth);
+
+                // Nếu trong chế độ chỉnh sửa Studio: vẽ tay nắm ở đuôi mũi tên
+                if (showHandles) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(aStart.x, aStart.y, 10, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fill();
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(aStart.x, aStart.y, 3, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+
+            // 3. Vẽ nhãn mã / trục căn ở đỉnh khung nếu bật
+            if (hasLabel && labelText) {
+                const fSize = Math.max(12, Math.min(28, Math.round(box.w / 4)));
+                ctx.font = `bold ${fSize}px sans-serif`;
+                const tMetrics = ctx.measureText(labelText);
+                const padX = Math.round(fSize * 0.5);
+                const padY = Math.round(fSize * 0.25);
+                const badgeW = tMetrics.width + padX * 2;
+                const badgeH = fSize + padY * 2;
+                const badgeX = box.x + (box.w - badgeW) / 2;
+                const badgeY = Math.max(10, box.y - badgeH - (borderWidth / 2) - 4);
+
+                ctx.shadowColor = 'rgba(0,0,0,0.35)';
+                ctx.shadowBlur = 6;
+                this.drawCustomRoundRect(ctx, badgeX, badgeY, badgeW, badgeH, 6);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(labelText, badgeX + badgeW / 2, badgeY + badgeH / 2);
+            }
+
+            // 4. Nếu trong chế độ chỉnh sửa Studio: vẽ 4 tay nắm góc (Resize Handles)
+            if (showHandles) {
+                const handleSize = Math.max(10, Math.min(16, Math.round(borderWidth * 2)));
+                const half = handleSize / 2;
+                const corners = [
+                    { x: box.x, y: box.y },
+                    { x: box.x + box.w, y: box.y },
+                    { x: box.x, y: box.y + box.h },
+                    { x: box.x + box.w, y: box.y + box.h }
+                ];
+                corners.forEach(c => {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(c.x - half, c.y - half, handleSize, handleSize);
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(c.x - half, c.y - half, handleSize, handleSize);
+                });
+            }
+
+            ctx.restore();
+        },
+
+        drawArrow(ctx, fromX, fromY, toX, toY, color = '#ef4444', lineWidth = 5) {
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            const headLen = Math.max(18, lineWidth * 4); // Chiều dài mũi tên tam giác
+
+            ctx.save();
+            ctx.shadowColor = 'rgba(0,0,0,0.35)';
+            ctx.shadowBlur = 6;
+
+            // 1. Thân mũi tên (Shaft line)
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            const shaftEndX = toX - (headLen * 0.6) * Math.cos(angle);
+            const shaftEndY = toY - (headLen * 0.6) * Math.sin(angle);
+            ctx.lineTo(shaftEndX, shaftEndY);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // 2. Chóp mũi tên tam giác (Arrowhead)
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(
+                toX - headLen * Math.cos(angle - Math.PI / 7),
+                toY - headLen * Math.sin(angle - Math.PI / 7)
+            );
+            ctx.lineTo(
+                toX - (headLen * 0.7) * Math.cos(angle),
+                toY - (headLen * 0.7) * Math.sin(angle)
+            );
+            ctx.lineTo(
+                toX - headLen * Math.cos(angle + Math.PI / 7),
+                toY - headLen * Math.sin(angle + Math.PI / 7)
+            );
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.restore();
+        },
+
+        drawLocatorOnPosterSlot(ctx, slot, slotImg, dx, dy, dw, dh) {
+            const imgUrl = this.slotImages[slot.id];
+            if (imgUrl && imgUrl.includes('unit_canvas_')) return;
+
+            const u = this.importedUnits[this.currentUnitIndex];
+            if (!u && !this.selectedAxis) return;
+
+            let hl = null;
+            if (u && u.highlight_data) {
+                try {
+                    hl = (typeof u.highlight_data === 'string') ? JSON.parse(u.highlight_data) : u.highlight_data;
+                } catch(e) {}
+            }
+
+            const unitAxis = (u && u.unit_axis) || this.selectedAxis;
+            if ((!hl || (!hl.locatorBox && !hl.locator_box && !hl.marker)) && unitAxis && this.axisLocatorsMap && this.axisLocatorsMap[unitAxis]) {
+                const axData = this.axisLocatorsMap[unitAxis];
+                if (axData && axData.highlight_data) {
+                    try {
+                        hl = (typeof axData.highlight_data === 'string') ? JSON.parse(axData.highlight_data) : axData.highlight_data;
+                    } catch(e) {}
+                }
+            }
+
+            if (!hl && (this.locatorBox && this.locatorBox.w > 0 && this.locatorBox.h > 0)) {
+                hl = {
+                    locatorStyle: this.locatorStyle,
+                    locatorBox: this.locatorBox,
+                    hasArrow: this.hasArrow,
+                    arrowDir: this.arrowDir,
+                    arrowStart: this.arrowStart,
+                    arrowHead: this.arrowHead,
+                    boxBorderWidth: this.boxBorderWidth,
+                    boxBorderRadius: this.boxBorderRadius,
+                    boxHasFill: this.boxHasFill,
+                    boxHasLabel: this.boxHasLabel,
+                    pinColor: this.pinColor
+                };
+            }
+
+            if (!hl) return;
+
+            const scale = dw / slotImg.naturalWidth;
+            const lStyle = hl.locatorStyle || 'box_arrow';
+            const color = hl.pinColor || '#ef4444';
+
+            if (lStyle === 'box' || lStyle === 'box_arrow') {
+                const box = hl.locatorBox || hl.locator_box;
+                if (!box) return;
+
+                const scaledBox = {
+                    x: dx + (box.x * scale),
+                    y: dy + (box.y * scale),
+                    w: box.w * scale,
+                    h: box.h * scale
+                };
+
+                const scaledArrowStart = hl.arrowStart ? {
+                    x: dx + (hl.arrowStart.x * scale),
+                    y: dy + (hl.arrowStart.y * scale)
+                } : null;
+
+                const scaledArrowHead = hl.arrowHead ? {
+                    x: dx + (hl.arrowHead.x * scale),
+                    y: dy + (hl.arrowHead.y * scale)
+                } : null;
+
+                const labelText = (u && u.unit_code) ? u.unit_code : (unitAxis ? ('Trục ' + unitAxis) : '');
+
+                this.drawBoundingBox(ctx, scaledBox, {
+                    borderColor: color,
+                    borderWidth: Math.max(3, Math.round((hl.boxBorderWidth || 6) * scale)),
+                    borderRadius: Math.max(3, Math.round((hl.boxBorderRadius || 8) * scale)),
+                    hasFill: hl.boxHasFill !== false,
+                    hasLabel: hl.boxHasLabel !== false,
+                    labelText: labelText,
+                    hasArrow: hl.hasArrow !== false,
+                    arrowStart: scaledArrowStart,
+                    arrowHead: scaledArrowHead,
+                    arrowWidth: Math.max(3, Math.round(5 * scale)),
+                    showHandles: false
+                });
+            } else if (hl.marker) {
+                const mx = dx + (hl.marker.x * scale);
+                const my = dy + (hl.marker.y * scale);
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(mx, my, Math.max(10, 20 * scale), 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = Math.max(2, 3 * scale);
+                ctx.stroke();
+                ctx.restore();
+            }
+        },
+
+        saveAxisLocator() {
+            if (!this.hasImage) {
+                Swal.fire('Lỗi', 'Vui lòng chọn ảnh mặt bằng trước!', 'error');
+                return;
+            }
+
+            if (!this.selectedAxis) {
+                Swal.fire('Chưa chọn trục căn', 'Vui lòng chọn một trục căn cần định vị!', 'warning');
+                return;
+            }
+
+            this.isSaving = true;
+
+            const hlData = {
+                locatorStyle: this.locatorStyle,
+                locatorBox: this.locatorBox,
+                hasArrow: this.hasArrow,
+                arrowDir: this.arrowDir,
+                arrowStart: this.arrowStart,
+                arrowHead: this.arrowHead,
+                boxBorderWidth: this.boxBorderWidth,
+                boxBorderRadius: this.boxBorderRadius,
+                boxHasFill: this.boxHasFill,
+                boxHasLabel: this.boxHasLabel,
+                pinColor: this.pinColor,
+                pinStyle: this.pinStyle,
+                pinSize: this.pinSize
+            };
+
+            const payload = {
+                unit_axis: this.selectedAxis,
+                base_image: this.currentFloorplanPath || '',
+                highlight_data: JSON.stringify(hlData)
+            };
+
+            fetch('{{ route('admin.unit-locators.sync-axis-locator', $project->id) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                this.isSaving = false;
+                if (data.success) {
+                    if (!this.axisLocatorsMap) this.axisLocatorsMap = {};
+                    this.axisLocatorsMap[this.selectedAxis] = {
+                        unit_axis: this.selectedAxis,
+                        has_locator: true,
+                        highlight_data: hlData,
+                        base_image: this.currentFloorplanPath,
+                        unit_count: (data.count !== undefined ? data.count : (data.updated_count || this.getAxisUnitCount(this.selectedAxis)))
+                    };
+
+                    if (this.importedUnits) {
+                        this.importedUnits.forEach(u => {
+                            if (u.unit_axis === this.selectedAxis) {
+                                u.highlight_data = hlData;
+                                if (this.currentFloorplanPath) u.base_image = this.currentFloorplanPath;
+                            }
+                        });
+                    }
+
+                    const updatedCount = (data.count !== undefined ? data.count : (data.updated_count || 0));
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Đã đồng bộ Trục căn!',
+                        html: `Đã lưu định vị và đồng bộ thành công cho <b>${updatedCount}</b> căn hộ thuộc <b>Trục ${this.selectedAxis}</b>!`,
+                        timer: 3000,
+                        showConfirmButton: true,
+                        confirmButtonText: 'Đóng'
+                    });
+                } else {
+                    Swal.fire('Lỗi', data.message || 'Không thể đồng bộ trục căn', 'error');
+                }
+            })
+            .catch(err => {
+                this.isSaving = false;
+                Swal.fire('Lỗi kết nối', err.message, 'error');
+            });
         },
 
         drawMarker(ctx, x, y) {
@@ -3809,9 +4635,33 @@ function unitCreatorStudio() {
             const canvas = document.getElementById('studioCanvas');
             const dataUrl = canvas.toDataURL('image/png', 0.95);
 
+            const hlData = {
+                marker: this.marker,
+                locatorStyle: this.locatorStyle,
+                locatorBox: this.locatorBox,
+                hasArrow: this.hasArrow,
+                arrowDir: this.arrowDir,
+                arrowStart: this.arrowStart,
+                arrowHead: this.arrowHead,
+                boxBorderWidth: this.boxBorderWidth,
+                boxBorderRadius: this.boxBorderRadius,
+                boxHasFill: this.boxHasFill,
+                boxHasLabel: this.boxHasLabel,
+                pinStyle: this.pinStyle,
+                pinColor: this.pinColor,
+                pinSize: this.pinSize,
+                cardPosition: this.cardPosition,
+                cardScalePercent: this.cardScalePercent,
+                cardCustomX: this.cardCustomX,
+                cardCustomY: this.cardCustomY
+            };
+
             const payload = {
                 project_id: '{{ $project->id }}',
                 unit_code: this.form.unit_code,
+                unit_axis: this.form.unit_axis || this.selectedAxis || '',
+                sync_axis_locator: this.syncAxisLocatorOption,
+                base_image: this.currentFloorplanPath || '',
                 area: this.form.area,
                 direction: this.form.direction,
                 door_direction: this.form.door_direction,
@@ -3823,16 +4673,7 @@ function unitCreatorStudio() {
                 status: this.form.status,
                 note: this.form.note,
                 image_data: dataUrl,
-                highlight_data: JSON.stringify({
-                    marker: this.marker,
-                    pinStyle: this.pinStyle,
-                    pinColor: this.pinColor,
-                    pinSize: this.pinSize,
-                    cardPosition: this.cardPosition,
-                    cardScalePercent: this.cardScalePercent,
-                    cardCustomX: this.cardCustomX,
-                    cardCustomY: this.cardCustomY
-                })
+                highlight_data: JSON.stringify(hlData)
             };
 
             fetch('{{ route('admin.unit-locators.store') }}', {
@@ -3850,15 +4691,38 @@ function unitCreatorStudio() {
                 if (data.success) {
                     if (this.importedUnits && this.importedUnits[this.currentUnitIndex]) {
                         this.importedUnits[this.currentUnitIndex].has_image = true;
+                        this.importedUnits[this.currentUnitIndex].highlight_data = hlData;
+                        if (this.currentFloorplanPath) {
+                            this.importedUnits[this.currentUnitIndex].base_image = this.currentFloorplanPath;
+                        }
                         if (data.unit && data.unit.image_url) {
                             this.importedUnits[this.currentUnitIndex].image_url = data.unit.image_url;
+                        }
+                    }
+
+                    const savedAxis = this.form.unit_axis || this.selectedAxis;
+                    if (this.syncAxisLocatorOption && savedAxis) {
+                        if (!this.axisLocatorsMap) this.axisLocatorsMap = {};
+                        this.axisLocatorsMap[savedAxis] = {
+                            unit_axis: savedAxis,
+                            has_locator: true,
+                            highlight_data: hlData,
+                            base_image: this.currentFloorplanPath
+                        };
+                        if (this.importedUnits) {
+                            this.importedUnits.forEach(u => {
+                                if (u.unit_axis === savedAxis) {
+                                    u.highlight_data = hlData;
+                                    if (this.currentFloorplanPath) u.base_image = this.currentFloorplanPath;
+                                }
+                            });
                         }
                     }
 
                     Swal.fire({
                         icon: 'success',
                         title: 'Đã lưu chỉ căn!',
-                        text: `Chỉ căn ${this.form.unit_code} đã được tạo và lưu thành công vào hệ thống.`,
+                        text: `Chỉ căn ${this.form.unit_code} đã được tạo và lưu thành công vào hệ thống.` + (this.syncAxisLocatorOption && savedAxis ? ` Đã đồng bộ cho các căn thuộc Trục ${savedAxis}!` : ''),
                         showCancelButton: createNext,
                         confirmButtonText: createNext ? 'Tạo căn tiếp theo' : 'Xem danh sách',
                         cancelButtonText: 'Ở lại trang này'

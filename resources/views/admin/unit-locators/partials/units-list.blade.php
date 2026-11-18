@@ -112,9 +112,16 @@
                     <!-- Trục căn -->
                     <td class="py-1.5 px-2 text-center">
                         @if ($unit->unit_axis)
-                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-black bg-indigo-50 text-indigo-700 border border-indigo-200/80 shadow-2xs" title="Trục căn: {{ $unit->unit_axis }}">
-                            {{ $unit->unit_axis }}
-                        </span>
+                        <a 
+                            href="{{ route('admin.unit-locators.create', ['projectId' => $project->id, 'mode' => 'studio', 'axis' => $unit->unit_axis]) }}"
+                            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-black bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-900 border border-indigo-200/80 shadow-2xs transition"
+                            title="Trục {{ $unit->unit_axis }} (Bấm để xem/định vị trên mặt bằng tầng)"
+                        >
+                            <span>{{ $unit->unit_axis }}</span>
+                            @if (!empty($unit->highlight_data))
+                            <i class="fa-solid fa-crosshairs text-[9px] text-rose-600" title="Đã có định vị trên mặt bằng"></i>
+                            @endif
+                        </a>
                         @else
                         <span class="text-slate-300 font-medium">—</span>
                         @endif
