@@ -32,6 +32,7 @@ class ProjectUnitLocator extends Model
         'status',
         'image',
         'layout_3d_image',
+        'floorplan_image',
         'base_image',
         'highlight_data',
         'composer_data',
@@ -54,6 +55,7 @@ class ProjectUnitLocator extends Model
     protected $appends = [
         'image_url',
         'layout_3d_image_url',
+        'floorplan_image_url',
         'base_image_url',
         'status_info',
         'display_price',
@@ -101,6 +103,46 @@ class ProjectUnitLocator extends Model
         } catch (\Exception $e) {
             return asset('storage/' . $this->layout_3d_image);
         }
+    }
+
+    /**
+     * URL ảnh định vị trên mặt bằng
+     */
+    public function getFloorplanImageUrlAttribute(): ?string
+    {
+        if (!empty($this->floorplan_image)) {
+            if (str_starts_with($this->floorplan_image, 'http://') || str_starts_with($this->floorplan_image, 'https://')) {
+                return $this->floorplan_image;
+            }
+
+            try {
+                return route('admin.unit-locators.media', ['path' => $this->floorplan_image]);
+            } catch (\Exception $e) {
+                return asset('storage/' . $this->floorplan_image);
+            }
+        }
+
+        // Fallback 1: base_image nếu có
+        if (!empty($this->base_image)) {
+            return $this->base_image_url;
+        }
+
+        // Fallback 2: composer_data slot_6 hoặc slot mặt bằng nếu đã từng tạo
+        if (!empty($this->composer_data)) {
+            $comp = is_string($this->composer_data) ? json_decode($this->composer_data, true) : $this->composer_data;
+            if (!empty($comp['slotImages'])) {
+                if (!empty($comp['slotImages']['slot_6'])) {
+                    return $comp['slotImages']['slot_6'];
+                }
+                foreach ($comp['slotImages'] as $k => $v) {
+                    if ($v && (str_contains($v, 'floorplan') || str_contains($v, 'fp_') || $k === 'slot_2')) {
+                        return $v;
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
