@@ -2481,7 +2481,8 @@ function unitCreatorStudio() {
 
             // 3.2 Loại Căn (Unit Type: 2PN)
             if (tSlots.unit_type) {
-                drawTextItem(tSlots.unit_type, this.posterForm.unit_type || '2PN');
+                const typePos = { ...tSlots.unit_type, isBadge: false };
+                drawTextItem(typePos, this.posterForm.unit_type || '2PN');
             }
 
             // 3.3 Hướng (Direction)
