@@ -45,6 +45,7 @@ class FrontendController extends Controller
                         'name',
                         'slug',
                         'img',
+                        'content',
                         'price',
                         'price_max',
                         'address',
@@ -86,10 +87,71 @@ class FrontendController extends Controller
                 }
             }
 
-            // Gắn số lượng căn cho từng dự án
+            // Gắn số lượng căn & trích xuất ảnh tổng quan, thông tin chi tiết
             $projects = $rawProjects->map(function ($item) use ($locatorCounts) {
                 $item->unit_locator_count = $locatorCounts[$item->id] ?? 0;
                 $item->has_locators = true;
+
+                // 1. Trích xuất ảnh trong phần tổng quan (Overview Image)
+                $overviewImg = null;
+                if (!empty($item->content)) {
+                    // Ưu tiên ảnh nằm ngay trong/sau mục TỔNG QUAN
+                    if (preg_match('/(?:tổng\s*quan|tong\s*quan)[^<]*?<\/p>.*?<img[^>]+src=[\'"]([^\'"]+)[\'"]/is', $item->content, $m)) {
+                        $overviewImg = $m[1];
+                    } elseif (preg_match('/<img[^>]+src=[\'"]([^\'"]+)[\'"]/i', $item->content, $m)) {
+                        $overviewImg = $m[1];
+                    }
+                }
+
+                // Nếu không có trong content, tìm trong kho phối cảnh (ProjectPerspective)
+                if (empty($overviewImg)) {
+                    $persp = ProjectPerspective::where('project_id', $item->id)
+                        ->where(function($q) {
+                            $q->where('name', 'like', '%tong the%')
+                              ->orWhere('name', 'like', '%tổng thể%')
+                              ->orWhere('name', 'like', '%tong quan%')
+                              ->orWhere('name', 'like', '%tổng quan%');
+                        })->first();
+                    if (!$persp) {
+                        $persp = ProjectPerspective::where('project_id', $item->id)->first();
+                    }
+                    if ($persp) {
+                        $overviewImg = $persp->image_url;
+                    }
+                }
+
+                // Fallback nếu có img trong bài viết
+                if (empty($overviewImg) && !empty($item->img)) {
+                    if (str_starts_with($item->img, 'http://') || str_starts_with($item->img, 'https://')) {
+                        $overviewImg = $item->img;
+                    } else {
+                        $overviewImg = 'https://indochinerealestate.vn/uploads/' . $item->img;
+                    }
+                }
+
+                $item->overview_image = $overviewImg;
+
+                // 2. Trích xuất bảng thông tin tổng quan (Overview Table)
+                $tableData = [];
+                if (!empty($item->content)) {
+                    preg_match_all('/<tr>\s*<td>(.*?)<\/td>\s*<td>(.*?)<\/td>\s*<\/tr>/is', $item->content, $rows, PREG_SET_ORDER);
+                    foreach ($rows as $r) {
+                        $rawKey = trim(strip_tags(html_entity_decode($r[1])));
+                        $val = trim(strip_tags(html_entity_decode($r[2])));
+                        $cleanKey = trim(str_replace([':', "\xc2\xa0", '&nbsp;'], '', $rawKey));
+                        if ($cleanKey && $val) {
+                            $tableData[$cleanKey] = $val;
+                        }
+                    }
+                }
+
+                $item->overview_table = $tableData;
+                $item->developer = $tableData['Đơn vị phát triển'] ?? $tableData['Chủ đầu tư'] ?? 'MIK Group';
+                $item->overview_scale = $tableData['Quy mô'] ?? ($item->total_product ? number_format($item->total_product) . ' căn' : '6 tòa (30 - 35 tầng)');
+                $item->unit_types_text = $tableData['Loại hình'] ?? 'Studio, 1 - 3 PN';
+                $item->legal_status = $tableData['Pháp lý'] ?? 'Sở hữu lâu dài';
+                $item->location_detail = $tableData['Vị trí'] ?? ($item->address ?: 'Mặt đường Đại lộ Thăng Long, Nam An Khánh, Hoài Đức, Hà Nội');
+
                 return $item;
             })->values();
 
