@@ -852,23 +852,12 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">Kiểu đánh dấu vị trí căn</label>
                     <div class="grid grid-cols-2 gap-2">
-                        <button 
-                            type="button" 
-                            @click="locatorStyle = 'box_arrow'; hasArrow = true; renderCanvas()"
-                            :class="locatorStyle === 'box_arrow' ? 'border-rose-600 bg-rose-50 text-rose-700 font-black ring-1 ring-rose-500/30' : 'border-slate-200 text-slate-600 hover:bg-slate-50 font-bold'"
-                            class="p-2 rounded-xl border text-xs text-left transition flex items-center gap-2"
-                        >
-                            <span class="text-lg">↗️</span>
-                            <div>
-                                <span class="block font-black leading-tight">Khung + Mũi tên</span>
-                                <span class="text-[10px] opacity-75 font-normal">Đúng như ảnh mẫu</span>
-                            </div>
-                        </button>
+                        <!-- Chỉ còn lại 1 nút cho kiểu khung -->
                         <button 
                             type="button" 
                             @click="locatorStyle = 'box'; hasArrow = false; renderCanvas()"
                             :class="locatorStyle === 'box' ? 'border-rose-600 bg-rose-50 text-rose-700 font-black ring-1 ring-rose-500/30' : 'border-slate-200 text-slate-600 hover:bg-slate-50 font-bold'"
-                            class="p-2 rounded-xl border text-xs text-left transition flex items-center gap-2"
+                            class="col-span-2 p-2 rounded-xl border text-xs text-left transition flex items-center gap-2"
                         >
                             <span class="text-lg">🔲</span>
                             <div>
@@ -939,15 +928,12 @@
                     <!-- Tùy chọn Mũi tên chỉ căn -->
                     <div class="space-y-1.5">
                         <div class="flex items-center justify-between">
-                            <label class="text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer">
-                                <input type="checkbox" x-model="hasArrow" @change="renderCanvas()" class="w-3.5 h-3.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500">
-                                <span>Mũi tên chỉ vào căn</span>
-                            </label>
-                            <span class="text-[10px] text-slate-400">Kéo đuôi mũi tên trên ảnh</span>
+                            <!-- Mũi tên đã được bỏ -->
                         </div>
                         
-                        <!-- 4 Hướng mũi tên nhanh -->
-                        <div x-show="hasArrow" class="grid grid-cols-4 gap-1 text-[11px]">
+
+                        <!-- 4 Hướng mũi tên nhanh (bị ẩn) -->
+                        <div x-show="false && hasArrow" class="grid grid-cols-4 gap-1 text-[11px]">
                             <button type="button" @click="setArrowDirection('bottom-left')" :class="arrowDir === 'bottom-left' ? 'bg-rose-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'" class="py-1 rounded transition text-center truncate">↙ Dưới-T</button>
                             <button type="button" @click="setArrowDirection('bottom-right')" :class="arrowDir === 'bottom-right' ? 'bg-rose-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'" class="py-1 rounded transition text-center truncate">↘ Dưới-P</button>
                             <button type="button" @click="setArrowDirection('top-left')" :class="arrowDir === 'top-left' ? 'bg-rose-600 text-white font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'" class="py-1 rounded transition text-center truncate">↖ Trên-T</button>
@@ -4103,7 +4089,7 @@ function unitCreatorStudio() {
             ctx.stroke();
 
             // 2. Vẽ Mũi tên đỏ chỉ vào căn (như ảnh mẫu)
-            if (hasArrow && (opts.arrowStart || this.arrowStart) && (opts.arrowHead || this.arrowHead)) {
+            if (false && hasArrow && (opts.arrowStart || this.arrowStart) && (opts.arrowHead || this.arrowHead)) {
                 const aStart = opts.arrowStart || this.arrowStart;
                 const aHead = opts.arrowHead || this.arrowHead;
                 const aWidth = opts.arrowWidth || Math.max(4, Math.round(borderWidth * 0.8));

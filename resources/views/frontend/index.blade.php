@@ -460,7 +460,7 @@
 
                     <!-- Danh sách Dự án BĐS dạng Lưới (Cuộn nội bộ nếu nhiều dự án) -->
                     <div class="flex-1 min-h-0 overflow-y-auto custom-scroll pr-1">
-                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         @foreach($projects as $project)
                             <div 
                                 x-show="filterProject('{{ addslashes($project->name) }}', '{{ addslashes($project->address ?? '') }}', {{ $project->has_locators ? 'true' : 'false' }})"
@@ -555,6 +555,7 @@
                                         @if($project->has_locators)
                                             <button 
                                                 type="button" 
+                                                id="btn-project-locator-{{ $project->id }}"
                                                 @click="selectProjectAndSwitchLocator({{ $project->id }}, '{{ addslashes($project->name) }}')"
                                                 class="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-500/20 transition"
                                             >
@@ -2258,17 +2259,41 @@
                 },
 
                 // Chọn dự án và nhảy ngay tới mục Sơ đồ chỉ căn / mặt bằng
-                selectProjectAndSwitchLocator(projectId, projectName) {
+                async selectProjectAndSwitchLocator(projectId, projectName) {
+                    console.log('DEBUG: Selecting Project ID:', projectId, 'Name:', projectName);
                     this.currentProject.id = projectId;
                     this.currentProject.name = projectName;
+                    
+                    // Gọi API lấy dữ liệu dự án mới
+                    try {
+                        const response = await fetch('/idc/public/index.php/api/projects/' + projectId + '/units');
+                        
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        
+                        const data = await response.json();
+                        
+                        console.log('DEBUG: API Data received:', data);
+                        if (data.success) {
+                            this.unitsList = data.units;
+                            this.floorplansList = data.floorplans;
+                            this.stats = data.stats;
+                            this.availableBlocks = data.blocks;
+                            this.availableFloors = data.floors;
+                            this.availableTypes = data.unitTypes;
+                            this.availableAxes = data.axes;
+                            // Cập nhật thông tin dự án đang chọn
+                            if(data.project) {
+                                this.currentProject.name = data.project.name;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error fetching project units:', error);
+                    }
+
                     this.switchMenu('locator');
                     this.locatorSubTab = 'units';
-                    if (this.unitsList && this.unitsList.length > 0 && !this.selectedUnit) {
-                        this.selectedUnit = this.unitsList[0];
-                    }
-                    if (this.floorplansList && this.floorplansList.length > 0 && !this.selectedFloorplan) {
-                        this.selectedFloorplan = this.floorplansList[0];
-                    }
+                    this.selectedUnit = (this.unitsList && this.unitsList.length > 0) ? this.unitsList[0] : null;
+                    this.selectedFloorplan = (this.floorplansList && this.floorplansList.length > 0) ? this.floorplansList[0] : null;
                     this.resetUnitFilters();
                 },
 
