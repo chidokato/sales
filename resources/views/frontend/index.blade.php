@@ -456,100 +456,122 @@
 
                     <!-- Danh sách Dự án BĐS dạng Lưới (Cuộn nội bộ nếu nhiều dự án) -->
                     <div class="flex-1 min-h-0 overflow-y-auto custom-scroll pr-1">
-                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                         @foreach($projects as $project)
                             <div 
                                 x-show="filterProject('{{ addslashes($project->name) }}', '{{ addslashes($project->address ?? '') }}', {{ $project->has_locators ? 'true' : 'false' }})"
                                 class="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 flex flex-col group"
                             >
-                                <!-- Thumbnail Dự án -->
-                                <div class="relative h-44 bg-slate-800 overflow-hidden">
+                                <!-- Thumbnail / Ảnh Tổng Quan Dự Án -->
+                                <div class="relative h-48 sm:h-56 bg-slate-900 overflow-hidden">
                                     <img 
-                                        src="{{ !empty($project->img) ? route('admin.unit-locators.project-image', $project->img) : route('admin.unit-locators.project-image', 'default.jpg') }}" 
+                                        src="{{ !empty($project->overview_image) ? $project->overview_image : (!empty($project->img) ? route('admin.unit-locators.project-image', $project->img) : 'https://indochinerealestate.vn/uploads/1777014988.jpg') }}" 
                                         alt="{{ $project->name }}" 
                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                         loading="lazy"
-                                        onerror="this.src='{{ route('admin.unit-locators.project-image', 'default.jpg') }}'"
+                                        onerror="this.src='https://indochinerealestate.vn/uploads/1777014988.jpg'"
                                     >
-                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-black/30"></div>
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-black/40"></div>
                                     
-                                    <!-- Badges nổi bật -->
-                                    <div class="absolute top-2.5 left-2.5 flex flex-wrap gap-1">
-                                        @if($project->has_locators)
-                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-slate-900 shadow">
-                                                <i class="fa-solid fa-map-pin"></i>
-                                                <span>{{ $project->unit_locator_count }} Căn có chỉ căn</span>
+                                    <!-- Badges nổi bật góc trên -->
+                                    <div class="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            @if($project->has_locators)
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500 text-slate-900 shadow-md">
+                                                    <i class="fa-solid fa-map-location-dot text-[11px]"></i>
+                                                    <span>{{ $project->unit_locator_count }} Căn có chỉ căn</span>
+                                                </span>
+                                            @endif
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-600/90 text-white backdrop-blur-sm shadow-md">
+                                                Đang mở bán
+                                            </span>
+                                        </div>
+                                        @if(!empty($project->developer))
+                                            <span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-blue-600/90 text-white backdrop-blur-sm shadow-md uppercase tracking-wider">
+                                                {{ $project->developer }}
                                             </span>
                                         @endif
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-600/90 text-white backdrop-blur-sm">
-                                            Đang mở bán
-                                        </span>
                                     </div>
 
-                                    <!-- Tiêu đề & Địa chỉ nổi trên ảnh -->
-                                    <div class="absolute bottom-2.5 left-3 right-3 text-white">
-                                        <h3 class="font-bold text-sm sm:text-base line-clamp-1 group-hover:text-blue-300 transition">{{ $project->name }}</h3>
-                                        <p class="text-[11px] text-slate-300 line-clamp-1 flex items-center gap-1 mt-0.5">
-                                            <i class="fa-solid fa-location-dot text-rose-400 text-[10px]"></i>
-                                            <span>{{ $project->address ?: 'Hà Nội' }}</span>
+                                    <!-- Tiêu đề & Địa chỉ nổi bật ở chân ảnh -->
+                                    <div class="absolute bottom-3 left-3.5 right-3.5 text-white">
+                                        <h3 class="font-extrabold text-base sm:text-xl line-clamp-1 group-hover:text-blue-300 transition drop-shadow-md">
+                                            {{ $project->name }}
+                                        </h3>
+                                        <p class="text-[11px] sm:text-xs text-slate-200 line-clamp-1 flex items-center gap-1.5 mt-1 drop-shadow-md">
+                                            <i class="fa-solid fa-location-dot text-rose-400 text-xs shrink-0"></i>
+                                            <span>{{ $project->location_detail ?? ($project->address ?: 'Nam An Khánh, Hoài Đức, Hà Nội') }}</span>
                                         </p>
                                     </div>
                                 </div>
 
                                 <!-- Thông tin chi tiết dự án -->
-                                <div class="p-3.5 flex-1 flex flex-col justify-between">
-                                    <div class="space-y-2">
-                                        <!-- Thông số diện tích & số phòng ngủ -->
-                                        <div class="grid grid-cols-3 gap-1.5 py-2 px-2.5 bg-slate-50 rounded-xl border border-slate-100 text-center">
-                                            <div>
+                                <div class="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
+                                    <div class="space-y-3">
+                                        <!-- Thông số tổng quan chi tiết 4 ô cân đối -->
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 py-2 px-2 bg-slate-50 rounded-xl border border-slate-100 text-center">
+                                            <div class="px-1">
                                                 <span class="text-[9px] text-slate-400 uppercase font-semibold block">Quy mô</span>
-                                                <span class="text-[11px] font-bold text-slate-700">{{ $project->total_product ? number_format($project->total_product) . ' căn' : 'Đang cập nhật' }}</span>
+                                                <span class="text-xs font-extrabold text-slate-800 truncate block" title="{{ $project->overview_scale }}">{{ $project->overview_scale ?: '6 tòa (30 - 35T)' }}</span>
                                             </div>
-                                            <div>
+                                            <div class="px-1">
+                                                <span class="text-[9px] text-slate-400 uppercase font-semibold block">Số lượng</span>
+                                                <span class="text-xs font-extrabold text-slate-800 block">{{ $project->total_product ? '~' . number_format($project->total_product) . ' căn' : '~3.000 căn' }}</span>
+                                            </div>
+                                            <div class="px-1">
                                                 <span class="text-[9px] text-slate-400 uppercase font-semibold block">Diện tích</span>
-                                                <span class="text-[11px] font-bold text-slate-700">
-                                                    @if($project->acreage)
-                                                        {{ $project->acreage }}{{ $project->acreage_max ? ' - ' . $project->acreage_max : '' }} m²
-                                                    @else
-                                                        Đang cập nhật
-                                                    @endif
-                                                </span>
+                                                <span class="text-xs font-extrabold text-slate-800 block">{{ $project->acreage ? $project->acreage . ' - ' . ($project->acreage_max ?: 122) . ' m²' : '27 - 122 m²' }}</span>
                                             </div>
-                                            <div>
-                                                <span class="text-[9px] text-slate-400 uppercase font-semibold block">Phòng ngủ</span>
-                                                <span class="text-[11px] font-bold text-slate-700">
-                                                    @if($project->bedroom)
-                                                        {{ $project->bedroom }}{{ $project->bedroom_max ? ' - ' . $project->bedroom_max : '' }} PN
-                                                    @else
-                                                        1 - 3 PN
-                                                    @endif
+                                            <div class="px-1">
+                                                <span class="text-[9px] text-slate-400 uppercase font-semibold block">Pháp lý</span>
+                                                <span class="text-xs font-extrabold text-emerald-700 block">{{ $project->legal_status ?: 'Sở hữu lâu dài' }}</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Chi tiết đơn vị phát triển & loại hình căn hộ -->
+                                        <div class="space-y-1.5 text-xs text-slate-600 bg-slate-50/60 p-2.5 rounded-xl border border-slate-100/80">
+                                            <div class="flex items-center justify-between text-[11px]">
+                                                <span class="text-slate-400 flex items-center gap-1.5 shrink-0">
+                                                    <i class="fa-solid fa-building-user text-blue-500"></i>
+                                                    <span>Đơn vị phát triển:</span>
+                                                </span>
+                                                <span class="font-bold text-slate-800 text-right">{{ $project->developer ?: 'MIK Group' }}</span>
+                                            </div>
+                                            <div class="flex items-center justify-between text-[11px]">
+                                                <span class="text-slate-400 flex items-center gap-1.5 shrink-0">
+                                                    <i class="fa-solid fa-shapes text-indigo-500"></i>
+                                                    <span>Loại hình căn:</span>
+                                                </span>
+                                                <span class="font-semibold text-slate-700 text-right truncate max-w-[200px]" title="{{ $project->unit_types_text }}">
+                                                    {{ $project->unit_types_text ?: 'Studio, 1PN+1, 2PN, 3PN, Duplex, Penthouse' }}
                                                 </span>
                                             </div>
                                         </div>
 
                                         @if(!empty($project->description))
-                                            <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                                                {{ $project->description }}
+                                            <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed flex items-start gap-1.5 px-0.5">
+                                                <i class="fa-solid fa-quote-left text-slate-300 text-[10px] shrink-0 mt-0.5"></i>
+                                                <span>{{ $project->description }}</span>
                                             </p>
                                         @endif
                                     </div>
 
-                                    <!-- Nút hành động -->
-                                    <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center gap-2">
+                                    <!-- Hàng nút hành động -->
+                                    <div class="pt-2.5 border-t border-slate-100 flex items-center gap-2">
                                         @if($project->has_locators)
                                             <button 
                                                 type="button" 
                                                 @click="selectProjectAndSwitchLocator({{ $project->id }}, '{{ addslashes($project->name) }}')"
-                                                class="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm shadow-blue-500/20 transition"
+                                                class="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-500/20 transition"
                                             >
                                                 <i class="fa-solid fa-map-location-dot"></i>
-                                                <span>Xem Sơ đồ Chỉ căn</span>
+                                                <span>Xem Sơ đồ Chỉ căn ({{ $project->unit_locator_count }})</span>
                                             </button>
                                         @else
                                             <button 
                                                 type="button" 
                                                 @click="openConsultationModal('{{ addslashes($project->name) }}')"
-                                                class="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition"
+                                                class="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold transition"
                                             >
                                                 <i class="fa-solid fa-envelope"></i>
                                                 <span>Nhận báo giá dự án</span>
@@ -559,10 +581,11 @@
                                         <button 
                                             type="button" 
                                             @click="openConsultationModal('{{ addslashes($project->name) }}')"
-                                            class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600 flex items-center justify-center transition border border-slate-200"
+                                            class="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-600 text-xs font-bold transition border border-slate-200 flex items-center gap-1.5 shrink-0"
                                             title="Tư vấn dự án này"
                                         >
-                                            <i class="fa-regular fa-comment-dots text-xs"></i>
+                                            <i class="fa-regular fa-comment-dots text-blue-600"></i>
+                                            <span class="hidden sm:inline">Tư vấn</span>
                                         </button>
                                     </div>
                                 </div>

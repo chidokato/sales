@@ -1383,22 +1383,13 @@ class ProjectUnitLocatorController extends Controller
             }
         }
 
-        // Nếu không có file cục bộ, tạo ảnh SVG placeholder tinh tế với tên viết tắt
-        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
-            <defs>
-                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
-                    <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
-                </linearGradient>
-            </defs>
-            <rect width="400" height="300" fill="url(#grad)" />
-            <circle cx="200" cy="130" r="45" fill="#3b82f6" fill-opacity="0.15" />
-            <path d="M185 145 V115 L200 102 L215 115 V145 H205 V130 H195 V145 Z" fill="#60a5fa" />
-            <text x="200" y="200" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#94a3b8" text-anchor="middle">HÌNH ẢNH DỰ ÁN BĐS</text>
-            <text x="200" y="222" font-family="Arial, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">IDC Real Estate</text>
-        </svg>';
+        // Nếu không có file cục bộ, chuyển hướng về server chính indochinerealestate.vn hoặc ảnh dự án tổng quan
+        if ($filename && $filename !== 'default.jpg') {
+            return redirect('https://indochinerealestate.vn/uploads/' . $filename);
+        }
 
-        return response($svg, 200)->header('Content-Type', 'image/svg+xml');
+        // Ảnh fallback dự án tổng quan
+        return redirect('https://indochinerealestate.vn/uploads/1777014988.jpg');
     }
 
     /**
