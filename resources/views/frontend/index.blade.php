@@ -203,6 +203,7 @@
                     </div>
                 </div>
 
+{{--
                 <!-- Nhóm: Hỗ trợ & Liên hệ -->
                 <div>
                     <div class="px-3 pb-2.5 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
@@ -233,6 +234,7 @@
                         <span class="text-xs text-slate-400">0989.123.456</span>
                     </div>
                 </div>
+--}}
 
             </div>
 
@@ -406,6 +408,7 @@
 
                 <!-- Thao tác nhanh bên phải header: Đổi dự án, Hotline, Tư vấn -->
                 <div class="flex items-center gap-2 shrink-0">
+{{--
                     <!-- Nút Hotline -->
                     <a 
                         href="tel:19008686" 
@@ -424,6 +427,7 @@
                         <i class="fa-solid fa-paper-plane text-[10px]"></i>
                         <span>Tư vấn nhanh</span>
                     </button>
+--}}
                 </div>
             </header>
 
