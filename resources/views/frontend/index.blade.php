@@ -810,16 +810,21 @@
 
                                     <!-- Khung hiển thị ảnh Poster/Sơ đồ chỉ căn: Dùng relative + absolute inset-0 để bảo đảm 100% VỪA MÀN HÌNH - KHÔNG CUỘN -->
                                     <div class="flex-1 min-h-0 relative w-full bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center group border border-slate-800">
-                                        <template x-if="getSelectedPosterSource()">
-                                            <img 
-                                                :src="getSelectedPosterSource()" 
-                                                :alt="selectedUnit.unit_code" 
-                                                class="absolute inset-0 w-full h-full object-contain p-2 select-none cursor-zoom-in"
-                                                @click="openLightbox(getSelectedPosterSource(), 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)"
-                                                loading="lazy"
-                                            >
+                                        <template x-if="getSelectedPosterLayout()">
+                                            <div class="relative h-full max-w-full overflow-hidden shadow-lg" :style="'aspect-ratio:' + getSelectedPosterLayout().width + '/' + getSelectedPosterLayout().height + ';container-type:inline-size;background:linear-gradient(145deg,#3f1703,#7c2d05,#270e02)'">
+                                                <img x-show="getSelectedPosterLayout().background" :src="getSelectedPosterLayout().background" class="absolute inset-0 w-full h-full object-fill pointer-events-none" :alt="selectedUnit.unit_code + ' poster background'">
+                                                <template x-for="image in getSelectedPosterLayout().images" :key="image.id">
+                                                    <img x-show="image.source" :src="image.source" :style="posterImageStyle(image)" class="absolute select-none pointer-events-none" :alt="image.id">
+                                                </template>
+                                                <template x-for="text in getSelectedPosterLayout().texts" :key="text.key">
+                                                    <div :style="posterTextStyle(text)" class="absolute leading-none whitespace-pre-wrap" :class="text.badge ? 'inline-flex items-center justify-center px-[0.45cqw] py-[0.25cqw]' : ''" x-text="text.value"></div>
+                                                </template>
+                                            </div>
                                         </template>
-                                        <template x-if="!getSelectedPosterSource()">
+                                        <template x-if="!getSelectedPosterLayout() && getSelectedPosterSource()">
+                                            <img :src="getSelectedPosterSource()" :alt="selectedUnit.unit_code" class="absolute inset-0 w-full h-full object-contain p-2 select-none cursor-zoom-in" @click="openLightbox(getSelectedPosterSource(), 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)" loading="lazy">
+                                        </template>
+                                        <template x-if="!getSelectedPosterLayout() && !getSelectedPosterSource()">
                                             <div class="flex flex-col items-center justify-center text-slate-500">
                                                 <i class="fa-regular fa-image text-3xl mb-1"></i>
                                                 <span class="text-xs">Chưa có ảnh sơ đồ chỉ căn</span>
@@ -1793,16 +1798,21 @@
                             <!-- CỘT TRÁI (LỚN): ẢNH POSTER & MẶT BẰNG CHỈ CĂN RỘNG RÃI -->
                             <div class="lg:col-span-7 xl:col-span-8 flex flex-col h-full min-h-[420px] max-h-[66vh]">
                                 <div class="flex-1 min-h-0 bg-slate-950 rounded-2xl p-2.5 flex items-center justify-center relative overflow-hidden group border border-slate-800 shadow-inner">
-                                    <template x-if="getSelectedPosterSource()">
-                                        <img 
-                                            :src="getSelectedPosterSource()" 
-                                            :alt="selectedUnit.unit_code" 
-                                            class="w-auto h-auto max-w-full max-h-full object-contain rounded select-none cursor-zoom-in"
-                                            @click="openLightbox(getSelectedPosterSource(), 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)"
-                                            loading="lazy"
-                                        >
+                                    <template x-if="getSelectedPosterLayout()">
+                                        <div class="relative h-full max-w-full overflow-hidden rounded shadow-lg" :style="'aspect-ratio:' + getSelectedPosterLayout().width + '/' + getSelectedPosterLayout().height + ';container-type:inline-size;background:linear-gradient(145deg,#3f1703,#7c2d05,#270e02)'">
+                                            <img x-show="getSelectedPosterLayout().background" :src="getSelectedPosterLayout().background" class="absolute inset-0 w-full h-full object-fill pointer-events-none" :alt="selectedUnit.unit_code + ' poster background'">
+                                            <template x-for="image in getSelectedPosterLayout().images" :key="image.id">
+                                                <img x-show="image.source" :src="image.source" :style="posterImageStyle(image)" class="absolute select-none pointer-events-none" :alt="image.id">
+                                            </template>
+                                            <template x-for="text in getSelectedPosterLayout().texts" :key="text.key">
+                                                <div :style="posterTextStyle(text)" class="absolute leading-none whitespace-pre-wrap" :class="text.badge ? 'inline-flex items-center justify-center px-[0.45cqw] py-[0.25cqw]' : ''" x-text="text.value"></div>
+                                            </template>
+                                        </div>
                                     </template>
-                                    <template x-if="!getSelectedPosterSource()">
+                                    <template x-if="!getSelectedPosterLayout() && getSelectedPosterSource()">
+                                        <img :src="getSelectedPosterSource()" :alt="selectedUnit.unit_code" class="w-auto h-auto max-w-full max-h-full object-contain rounded select-none cursor-zoom-in" @click="openLightbox(getSelectedPosterSource(), 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)" loading="lazy">
+                                    </template>
+                                    <template x-if="!getSelectedPosterLayout() && !getSelectedPosterSource()">
                                         <div class="text-center text-slate-400 text-xs p-8">
                                             <i class="fa-regular fa-image text-4xl mb-2 block"></i>
                                             <span>Chưa có ảnh phôi chỉ căn cho mã căn này</span>
@@ -2178,7 +2188,6 @@
 
                 // Khởi tạo
                 initApp() {
-                    this.$watch('selectedUnit', () => this.renderSelectedPoster());
                     // Kiểm tra URL hash hoặc param
                     const urlParams = new URLSearchParams(window.location.search);
                     const requestedMenu = urlParams.get('menu');
@@ -2203,7 +2212,6 @@
 
                     // Tính bảng vay mặc định
                     this.recalculateLoan();
-                    this.$nextTick(() => this.renderSelectedPoster());
 
                     // Pre-fill form tư vấn nếu đã đăng nhập
                     @auth
@@ -2343,11 +2351,84 @@
                 openUnitDetail(unit) {
                     this.selectedUnit = unit;
                     this.unitDetailModalOpen = true;
-                    this.$nextTick(() => this.renderSelectedPoster());
                 },
 
                 getSelectedPosterSource() {
-                    return this.selectedPosterUrl || this.selectedUnit?.image_url || '';
+                    return this.selectedUnit?.image_url || '';
+                },
+
+                getSelectedPosterLayout() {
+                    const unit = this.selectedUnit;
+                    if (!unit) return null;
+                    let recipe = unit.composer_data;
+                    if (typeof recipe === 'string') { try { recipe = JSON.parse(recipe); } catch (_) { recipe = null; } }
+                    if (!recipe || !recipe.template_id) return null;
+                    let template = (this.templatesList || []).find(item => String(item.id) === String(recipe.template_id));
+                    if (!template && String(recipe.template_id) === 'default') {
+                        template = { id:'default', image_url:'{{ asset('images/default-poster-phoi.jpg') }}', width:1000, height:1400, slots_config:{
+                            canvas:{width:1000,height:1400}, image_slots:[
+                                {id:'slot_1',key:'boc_mai',name:'Mặt bằng bóc mái 3D',x:650,y:160,width:280,height:340,radius:12},
+                                {id:'slot_2',key:'mat_bang_tang',name:'Mặt bằng tầng chỉ căn',x:630,y:525,width:330,height:240,radius:12},
+                                {id:'slot_3',key:'phoi_canh_toa',name:'Phối cảnh tổng thể',x:60,y:380,width:540,height:210,radius:12},
+                                {id:'slot_4',key:'tien_ich_1',name:'Phối cảnh tiện ích',x:60,y:610,width:260,height:230,radius:12},
+                                {id:'slot_5',key:'phan_khu',name:'Mặt bằng phân khu',x:340,y:610,width:260,height:230,radius:12},
+                                {id:'slot_6',key:'phoi_canh_dem',name:'Phối cảnh ban đêm',x:200,y:860,width:760,height:240,radius:12}
+                            ], text_slots:{
+                                unit_code:{x:60,y:45,fontSize:26,color:'#fff'},unit_type:{x:395,y:45,fontSize:24,color:'#78350f'},
+                                direction:{x:60,y:120,fontSize:20,color:'#fff'},view:{x:60,y:155,fontSize:20,color:'#fff'},
+                                area:{x:60,y:190,fontSize:20,color:'#fff'},price:{x:280,y:285,fontSize:44,color:'#fff'}
+                            }
+                        }};
+                    }
+                    if (!template) return null;
+                    let cfg = template.slots_config || {};
+                    if (typeof cfg === 'string') { try { cfg = JSON.parse(cfg); } catch (_) { cfg = {}; } }
+                    const width = Number(cfg.canvas?.width || template.width || 1000);
+                    const height = Number(cfg.canvas?.height || template.height || 1400);
+                    const slotImages = recipe.slotImages || {};
+                    const identity = slot => [slot.id,slot.name,slot.key,slot.type].join(' ');
+                    const images = (cfg.image_slots || []).map(slot => {
+                        const slotIdentity = identity(slot);
+                        const isRoof = /boc.?mai|roof.?plan|layout.?3d/i.test(slotIdentity);
+                        const isFloorplan = /floor.?plan|mat.?bang.?tang/i.test(slotIdentity);
+                        const source = (isRoof && (unit.layout_3d_image_url || unit.layout_3d_image))
+                            || (isFloorplan && (unit.floorplan_image_url || unit.floorplan_image))
+                            || slotImages[slot.id] || '';
+                        return { id:slot.id, source:this.normalizePosterAssetUrl(source), x:Number(slot.x||0)/width*100, y:Number(slot.y||0)/height*100,
+                            width:Number(slot.width||0)/width*100, height:Number(slot.height||0)/height*100, radius:Number(slot.radius||0)/width*100,
+                            fit:/boc.?mai|floor.?plan|mat.?bang|layout.?3d/i.test(slotIdentity) ? 'contain' : 'cover' };
+                    });
+                    const form = { ...(recipe.posterForm || {}), unit_code:unit.unit_code || recipe.posterForm?.unit_code, unit_type:unit.unit_type || recipe.posterForm?.unit_type,
+                        direction:unit.direction || recipe.posterForm?.direction, view:unit.view || recipe.posterForm?.view, area:unit.area || recipe.posterForm?.area,
+                        price_text:unit.price_text || recipe.posterForm?.price_text, price_note:unit.price_note || recipe.posterForm?.price_note,
+                        block:unit.block || recipe.posterForm?.block, floor:unit.floor || recipe.posterForm?.floor };
+                    const valueMap={unit_code:form.unit_code,unit_type:form.unit_type,direction:form.direction,view:form.view,area:form.area,price:form.price_text,price_note:form.price_note,block:form.block,floor:form.floor};
+                    const texts=Object.entries(cfg.text_slots || {}).map(([key,pos]) => {
+                        if (!pos) return null;
+                        const raw=valueMap[key] !== undefined ? valueMap[key] : (pos.sampleText || pos.label || '');
+                        const value=`${pos.prefix && pos.prefix !== 'null' ? pos.prefix : ''}${raw || ''}${pos.suffix && pos.suffix !== 'null' ? pos.suffix : ''}`;
+                        if (!value) return null;
+                        return { key,value,x:Number(pos.x||0)/width*100,y:Number(pos.y||0)/height*100,
+                            fontSize:Number(pos.fontSize||22)/width*100, color:pos.color||'#fff', weight:pos.fontWeight||'bold',
+                            family:pos.fontFamily==='serif'?'Georgia,serif':'sans-serif', align:pos.align||'left',
+                            badge:!!(pos.isBadge && pos.bgColor && pos.bgColor!=='transparent'), bg:pos.bgColor||'transparent',
+                            border:pos.borderColor||'transparent', borderWidth:Number(pos.borderWidth||0)/width*100,
+                            badgeWidth:pos.width ? Number(pos.width)/width*100 : null, badgeHeight:pos.height ? Number(pos.height)/height*100 : null,
+                            radius:Number(pos.radius||8)/width*100 };
+                    }).filter(Boolean);
+                    return { width,height,ratio:width/height, background:this.normalizePosterAssetUrl(template.image_url || template.image || ''), images,texts };
+                },
+
+                posterImageStyle(image) {
+                    return `left:${image.x}%;top:${image.y}%;width:${image.width}%;height:${image.height}%;border-radius:${image.radius}cqw;object-fit:${image.fit};`;
+                },
+
+                posterTextStyle(text) {
+                    const transform = text.align === 'center' ? 'translateX(-50%)' : (text.align === 'right' ? 'translateX(-100%)' : 'none');
+                    const badge = text.badge ? `background:${text.bg};border:${text.borderWidth}cqw solid ${text.border};border-radius:${text.radius}cqw;` : '';
+                    const dimensions = text.badgeWidth ? `width:${text.badgeWidth}%;` : '';
+                    const badgeHeight = text.badgeHeight ? `height:${text.badgeHeight}%;` : '';
+                    return `left:${text.x}%;top:${text.y}%;transform:${transform};font-size:${text.fontSize}cqw;color:${text.color};font-weight:${text.weight};font-family:${text.family};text-align:${text.align};${badge}${dimensions}${badgeHeight}`;
                 },
 
                 normalizePosterAssetUrl(url) {
@@ -2489,8 +2570,9 @@
                 },
 
                 async downloadSelectedPoster() {
-                    if (!this.selectedPosterUrl) await this.renderSelectedPoster();
-                    const source = this.getSelectedPosterSource();
+                    this.selectedPosterUrl = '';
+                    await this.renderSelectedPoster();
+                    const source = this.selectedPosterUrl || this.selectedUnit?.image_url || '';
                     if (!source) return;
                     const link = document.createElement('a'); link.href = source; link.download = `Poster-${(this.selectedUnit?.unit_code || 'can-ho').replace(/[^a-z0-9_-]/gi, '-')}.png`; document.body.appendChild(link); link.click(); link.remove();
                 },
