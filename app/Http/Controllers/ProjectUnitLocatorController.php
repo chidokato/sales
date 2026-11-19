@@ -388,6 +388,51 @@ class ProjectUnitLocatorController extends Controller
         ]);
     }
 
+    /** Save poster composition settings without generating a static poster file. */
+    public function savePosterConfig(Request $request, $projectId)
+    {
+        $validated = $request->validate([
+            'unit_id' => 'required|integer',
+            'unit_code' => 'required|string|max:100',
+            'unit_type' => 'nullable|string|max:100',
+            'direction' => 'nullable|string|max:100',
+            'view' => 'nullable|string|max:255',
+            'area' => 'nullable|string|max:50',
+            'price_text' => 'nullable|string|max:100',
+            'price_note' => 'nullable|string|max:255',
+            'block' => 'nullable|string|max:100',
+            'floor' => 'nullable|string|max:50',
+            'composer_data' => 'required|string',
+        ]);
+
+        $composerData = json_decode($validated['composer_data'], true);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($composerData)) {
+            return response()->json(['success' => false, 'message' => 'Cấu hình poster không hợp lệ.'], 422);
+        }
+
+        $unit = ProjectUnitLocator::where('project_id', $projectId)
+            ->where('id', $validated['unit_id'])
+            ->firstOrFail();
+
+        $unit->unit_code = $validated['unit_code'];
+        $unit->unit_type = $validated['unit_type'] ?? $unit->unit_type;
+        $unit->direction = $validated['direction'] ?? $unit->direction;
+        $unit->view = $validated['view'] ?? $unit->view;
+        $unit->area = is_numeric($validated['area'] ?? null) ? (float) $validated['area'] : $unit->area;
+        $unit->price_text = $validated['price_text'] ?? $unit->price_text;
+        $unit->price_note = $validated['price_note'] ?? $unit->price_note;
+        $unit->block = $validated['block'] ?? $unit->block;
+        $unit->floor = $validated['floor'] ?? $unit->floor;
+        $unit->composer_data = $composerData;
+        $unit->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã lưu cấu hình poster cho căn {$unit->unit_code}.",
+            'unit' => $unit,
+        ]);
+    }
+
     /**
      * Sửa thông tin chỉ căn hàng loạt
      */

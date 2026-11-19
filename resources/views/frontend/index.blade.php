@@ -685,62 +685,32 @@
                                         type="button" 
                                         @click="selectedUnit = unit"
                                         :class="selectedUnit && selectedUnit.id === unit.id ? 'bg-blue-600 text-white shadow-sm border-blue-600 ring-1 ring-blue-600' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'"
-                                        class="w-full p-2 rounded-lg border text-left transition-all duration-150 flex items-center justify-between group"
+                                        class="w-full p-2.5 rounded-lg border text-left transition-all duration-150 flex flex-col gap-0.5 group"
                                     >
-                                        <div class="flex items-center gap-2 min-w-0">
-                                            <!-- Thumbnail ảnh chỉ căn -->
-                                            <div 
-                                                :class="selectedUnit && selectedUnit.id === unit.id ? 'bg-white/20' : 'bg-white border border-slate-200'"
-                                                class="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
-                                            >
-                                                <template x-if="false"> <!-- Ẩn ảnh -->
-                                                    <div 
-                                                        :class="selectedUnit && selectedUnit.id === unit.id ? 'bg-white/20' : 'bg-white border border-slate-200'"
-                                                        class="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
-                                                    >
-                                                        <template x-if="unit.image_url">
-                                                            <img :src="unit.image_url" :alt="unit.unit_code" class="w-full h-full object-contain p-0.5" loading="lazy">
-                                                        </template>
-                                                        <template x-if="!unit.image_url">
-                                                            <i 
-                                                                :class="selectedUnit && selectedUnit.id === unit.id ? 'text-white' : 'text-slate-400'"
-                                                                class="fa-regular fa-image text-xs"
-                                                            ></i>
-                                                        </template>
-                                                    </div>
-                                                </template>
-                                            </div>
-
-                                            <!-- Chi tiết căn hộ -->
-                                            <div class="min-w-0 flex-1 pl-2">
-                                                <div class="flex items-center justify-between gap-1.5">
-                                                    <p class="text-[13px] font-extrabold truncate leading-tight" x-text="unit.unit_code"></p>
-                                                    <span 
-                                                        class="px-1.5 py-0.5 rounded text-[9px] font-bold border shrink-0"
-                                                        :class="selectedUnit && selectedUnit.id === unit.id ? 'bg-white/20 text-white border-white/30' : {
-                                                            'bg-emerald-50 text-emerald-700 border-emerald-200': unit.status === 'available',
-                                                            'bg-amber-50 text-amber-700 border-amber-200': unit.status === 'reserved' || unit.status === 'deposited',
-                                                            'bg-rose-50 text-rose-700 border-rose-200': unit.status === 'sold'
-                                                        }"
-                                                        x-text="unit.status === 'available' ? 'Trống' : (unit.status === 'sold' ? 'Đã bán' : 'Cọc')"
-                                                    ></span>
-                                                </div>
-                                                <p 
-                                                    :class="selectedUnit && selectedUnit.id === unit.id ? 'text-blue-100' : 'text-slate-500'"
-                                                    class="text-[11px] truncate mt-0.5" 
-                                                    x-text="(unit.block ? 'Tòa ' + unit.block + ' ' : '') + '• T' + (unit.floor || '-') + (unit.unit_axis ? ' • Trục ' + unit.unit_axis : '') + ' • ' + (unit.unit_type || '2PN') + (unit.area ? ' • ' + unit.area + 'm²' : '')"
-                                                ></p>
-                                                <p 
-                                                    :class="selectedUnit && selectedUnit.id === unit.id ? 'text-amber-200 font-extrabold' : 'text-blue-600 font-extrabold'"
-                                                    class="text-[12px] truncate mt-0.5"
-                                                    x-text="unit.price_text || unit.display_price || 'Liên hệ'"
-                                                ></p>
-                                            </div>
+                                        <div class="flex items-center justify-between w-full">
+                                            <p class="text-[13px] font-extrabold truncate leading-tight" x-text="unit.unit_code"></p>
+                                            <span 
+                                                class="px-1.5 py-0.5 rounded text-[9px] font-bold border shrink-0"
+                                                :class="selectedUnit && selectedUnit.id === unit.id ? 'bg-white/20 text-white border-white/30' : {
+                                                    'bg-emerald-50 text-emerald-700 border-emerald-200': unit.status === 'available',
+                                                    'bg-amber-50 text-amber-700 border-amber-200': unit.status === 'reserved' || unit.status === 'deposited',
+                                                    'bg-rose-50 text-rose-700 border-rose-200': unit.status === 'sold'
+                                                }"
+                                                x-text="unit.status === 'available' ? 'Trống' : (unit.status === 'sold' ? 'Đã bán' : 'Cọc')"
+                                            ></span>
                                         </div>
-                                        <i 
-                                            :class="selectedUnit && selectedUnit.id === unit.id ? 'text-white' : 'text-slate-300 group-hover:text-slate-500'"
-                                            class="fa-solid fa-chevron-right text-[10px] shrink-0 ml-1"
-                                        ></i>
+                                        <div class="flex items-center justify-between w-full">
+                                            <p 
+                                                :class="selectedUnit && selectedUnit.id === unit.id ? 'text-blue-100' : 'text-slate-500'"
+                                                class="text-[11px] truncate leading-snug" 
+                                                x-text="(unit.block ? 'Tòa ' + unit.block + ' ' : '') + '• T' + (unit.floor || '-') + (unit.unit_axis ? ' • Trục ' + unit.unit_axis : '') + ' • ' + (unit.unit_type || '2PN') + (unit.area ? ' • ' + unit.area + 'm²' : '')"
+                                            ></p>
+                                            <p 
+                                                :class="selectedUnit && selectedUnit.id === unit.id ? 'text-amber-200 font-extrabold' : 'text-blue-600 font-extrabold'"
+                                                class="text-[12px] truncate leading-snug"
+                                                x-text="unit.price_text || unit.display_price || 'Liên hệ'"
+                                            ></p>
+                                        </div>
                                     </button>
                                 </template>
 
@@ -809,7 +779,7 @@
 
                                             <button 
                                                 type="button" 
-                                                @click="openLightbox(selectedUnit.image_url, 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)" 
+                                                @click="openLightbox(getSelectedPosterSource(), 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)" 
                                                 class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white text-[11px] font-bold transition"
                                                 title="Xem phóng to toàn màn hình"
                                             >
@@ -818,7 +788,7 @@
                                             </button>
 
                                             <a 
-                                                :href="selectedUnit.image_url" 
+                                                :href="getSelectedPosterSource()" 
                                                 target="_blank" 
                                                 class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-[11px] font-semibold transition"
                                                 title="Mở ảnh gốc trong tab mới"
@@ -827,30 +797,29 @@
                                                 <span class="hidden sm:inline">Tab mới</span>
                                             </a>
 
-                                            <a 
-                                                :href="selectedUnit.image_url" 
-                                                download 
+                                            <button 
+                                                type="button" @click="downloadSelectedPoster()"
                                                 class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-[11px] font-semibold transition"
                                                 title="Tải ảnh Poster chỉ căn"
                                             >
                                                 <i class="fa-solid fa-download text-[10px]"></i>
                                                 <span class="hidden sm:inline">Tải về</span>
-                                            </a>
+                                            </button>
                                         </div>
                                     </div>
 
                                     <!-- Khung hiển thị ảnh Poster/Sơ đồ chỉ căn: Dùng relative + absolute inset-0 để bảo đảm 100% VỪA MÀN HÌNH - KHÔNG CUỘN -->
                                     <div class="flex-1 min-h-0 relative w-full bg-slate-950 rounded-lg overflow-hidden flex items-center justify-center group border border-slate-800">
-                                        <template x-if="selectedUnit.image_url">
+                                        <template x-if="getSelectedPosterSource()">
                                             <img 
-                                                :src="selectedUnit.image_url" 
+                                                :src="getSelectedPosterSource()" 
                                                 :alt="selectedUnit.unit_code" 
                                                 class="absolute inset-0 w-full h-full object-contain p-2 select-none cursor-zoom-in"
-                                                @click="openLightbox(selectedUnit.image_url, 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)"
+                                                @click="openLightbox(getSelectedPosterSource(), 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)"
                                                 loading="lazy"
                                             >
                                         </template>
-                                        <template x-if="!selectedUnit.image_url">
+                                        <template x-if="!getSelectedPosterSource()">
                                             <div class="flex flex-col items-center justify-center text-slate-500">
                                                 <i class="fa-regular fa-image text-3xl mb-1"></i>
                                                 <span class="text-xs">Chưa có ảnh sơ đồ chỉ căn</span>
@@ -860,7 +829,7 @@
                                         <!-- Nút xem nhanh toàn màn hình trên ảnh khi hover -->
                                         <button 
                                             type="button" 
-                                            @click="openLightbox(selectedUnit.image_url, 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)" 
+                                            @click="openLightbox(getSelectedPosterSource(), 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)" 
                                             class="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-black/75 hover:bg-black text-white text-[10px] font-bold backdrop-blur-sm transition flex items-center gap-1 shadow opacity-0 group-hover:opacity-100"
                                         >
                                             <i class="fa-solid fa-magnifying-glass-plus text-[9px]"></i>
@@ -1824,16 +1793,16 @@
                             <!-- CỘT TRÁI (LỚN): ẢNH POSTER & MẶT BẰNG CHỈ CĂN RỘNG RÃI -->
                             <div class="lg:col-span-7 xl:col-span-8 flex flex-col h-full min-h-[420px] max-h-[66vh]">
                                 <div class="flex-1 min-h-0 bg-slate-950 rounded-2xl p-2.5 flex items-center justify-center relative overflow-hidden group border border-slate-800 shadow-inner">
-                                    <template x-if="selectedUnit.image_url">
+                                    <template x-if="getSelectedPosterSource()">
                                         <img 
-                                            :src="selectedUnit.image_url" 
+                                            :src="getSelectedPosterSource()" 
                                             :alt="selectedUnit.unit_code" 
                                             class="w-auto h-auto max-w-full max-h-full object-contain rounded select-none cursor-zoom-in"
-                                            @click="openLightbox(selectedUnit.image_url, 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)"
+                                            @click="openLightbox(getSelectedPosterSource(), 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)"
                                             loading="lazy"
                                         >
                                     </template>
-                                    <template x-if="!selectedUnit.image_url">
+                                    <template x-if="!getSelectedPosterSource()">
                                         <div class="text-center text-slate-400 text-xs p-8">
                                             <i class="fa-regular fa-image text-4xl mb-2 block"></i>
                                             <span>Chưa có ảnh phôi chỉ căn cho mã căn này</span>
@@ -1841,26 +1810,25 @@
                                     </template>
 
                                     <!-- Nút thao tác nhanh trên ảnh -->
-                                    <template x-if="selectedUnit.image_url">
+                                    <template x-if="getSelectedPosterSource()">
                                         <div class="absolute bottom-3 right-3 flex items-center gap-2">
                                             <button 
                                                 type="button" 
-                                                @click="openLightbox(selectedUnit.image_url, 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)" 
+                                                @click="openLightbox(getSelectedPosterSource(), 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)" 
                                                 class="px-3 py-1.5 rounded-xl bg-black/75 hover:bg-black text-white text-xs font-semibold backdrop-blur-sm shadow transition flex items-center gap-1.5"
                                                 title="Phóng to toàn màn hình"
                                             >
                                                 <i class="fa-solid fa-expand text-[11px]"></i>
                                                 <span>Phóng to</span>
                                             </button>
-                                            <a 
-                                                :href="selectedUnit.image_url" 
-                                                download 
+                                            <button 
+                                                type="button" @click="downloadSelectedPoster()"
                                                 class="px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white text-slate-900 text-xs font-bold shadow transition backdrop-blur-sm flex items-center gap-1.5"
                                                 title="Tải ảnh Poster chất lượng cao"
                                             >
                                                 <i class="fa-solid fa-download text-[11px] text-blue-600"></i>
                                                 <span>Tải ảnh</span>
-                                            </a>
+                                            </button>
                                         </div>
                                     </template>
                                 </div>
@@ -2123,6 +2091,9 @@
 
                 // Danh sách căn hộ của dự án đang chọn
                 unitsList: {!! json_encode($units) !!},
+                templatesList: {!! json_encode($templates) !!},
+                selectedPosterUrl: '',
+                posterRenderSequence: 0,
 
                 // Danh sách mặt bằng tổng thể của dự án
                 floorplansList: {!! json_encode($floorplans) !!},
@@ -2207,6 +2178,7 @@
 
                 // Khởi tạo
                 initApp() {
+                    this.$watch('selectedUnit', () => this.renderSelectedPoster());
                     // Kiểm tra URL hash hoặc param
                     const urlParams = new URLSearchParams(window.location.search);
                     const requestedMenu = urlParams.get('menu');
@@ -2231,6 +2203,7 @@
 
                     // Tính bảng vay mặc định
                     this.recalculateLoan();
+                    this.$nextTick(() => this.renderSelectedPoster());
 
                     // Pre-fill form tư vấn nếu đã đăng nhập
                     @auth
@@ -2283,6 +2256,7 @@
                         if (data.success) {
                             this.unitsList = data.units;
                             this.floorplansList = data.floorplans;
+                            this.templatesList = data.templates || [];
                             this.stats = data.stats;
                             this.availableBlocks = data.blocks;
                             this.availableFloors = data.floors;
@@ -2369,6 +2343,111 @@
                 openUnitDetail(unit) {
                     this.selectedUnit = unit;
                     this.unitDetailModalOpen = true;
+                    this.$nextTick(() => this.renderSelectedPoster());
+                },
+
+                getSelectedPosterSource() {
+                    return this.selectedPosterUrl || this.selectedUnit?.image_url || '';
+                },
+
+                normalizePosterAssetUrl(url) {
+                    if (!url || typeof url !== 'string') return '';
+                    if (/^(https?:|data:|blob:)/i.test(url)) {
+                        const mediaPath = url.match(/\/unit-locators\/media\/(.+)$/);
+                        return mediaPath ? '{{ url('unit-locators/media') }}/' + mediaPath[1] : url;
+                    }
+                    const path = url.replace(/^\/+/, '').replace(/^storage\//, '');
+                    return '{{ url('unit-locators/media') }}/' + path;
+                },
+
+                async loadPosterAsset(url) {
+                    return new Promise(resolve => {
+                        if (!url) return resolve(null);
+                        const image = new Image();
+                        image.crossOrigin = 'anonymous';
+                        image.onload = () => resolve(image);
+                        image.onerror = () => resolve(null);
+                        image.src = this.normalizePosterAssetUrl(url);
+                    });
+                },
+
+                async renderSelectedPoster() {
+                    const unit = this.selectedUnit;
+                    const sequence = ++this.posterRenderSequence;
+                    this.selectedPosterUrl = '';
+                    if (!unit) return;
+                    let recipe = unit.composer_data;
+                    if (typeof recipe === 'string') { try { recipe = JSON.parse(recipe); } catch (_) { recipe = null; } }
+                    if (!recipe || !recipe.template_id) return;
+                    let template = (this.templatesList || []).find(item => String(item.id) === String(recipe.template_id));
+                    if (!template && String(recipe.template_id) === 'default') {
+                        template = {
+                            image_url: '{{ asset('images/default-poster-phoi.jpg') }}', width: 1000, height: 1400,
+                            slots_config: {
+                                canvas: { width: 1000, height: 1400 },
+                                image_slots: [
+                                    { id:'slot_1',key:'boc_mai',name:'Mặt bằng bóc mái 3D',x:650,y:160,width:280,height:340,radius:12 },
+                                    { id:'slot_2',key:'mat_bang_tang',name:'Mặt bằng tầng chỉ căn',x:630,y:525,width:330,height:240,radius:12 },
+                                    { id:'slot_3',key:'phoi_canh_toa',name:'Phối cảnh tổng thể',x:60,y:380,width:540,height:210,radius:12 },
+                                    { id:'slot_4',key:'tien_ich_1',name:'Phối cảnh tiện ích',x:60,y:610,width:260,height:230,radius:12 },
+                                    { id:'slot_5',key:'phan_khu',name:'Mặt bằng phân khu',x:340,y:610,width:260,height:230,radius:12 },
+                                    { id:'slot_6',key:'phoi_canh_dem',name:'Phối cảnh ban đêm',x:200,y:860,width:760,height:240,radius:12 }
+                                ],
+                                text_slots: {
+                                    unit_code:{x:60,y:45,fontSize:26,color:'#fff'}, unit_type:{x:395,y:45,fontSize:24,color:'#78350f'},
+                                    direction:{x:60,y:120,fontSize:20,color:'#fff'}, view:{x:60,y:155,fontSize:20,color:'#fff'},
+                                    area:{x:60,y:190,fontSize:20,color:'#fff'}, price:{x:280,y:285,fontSize:44,color:'#fff'}
+                                }
+                            }
+                        };
+                    }
+                    if (!template) return;
+                    const cfg = typeof template.slots_config === 'string' ? JSON.parse(template.slots_config || '{}') : (template.slots_config || {});
+                    const width = Number(cfg.canvas?.width || template.width || 1000);
+                    const height = Number(cfg.canvas?.height || template.height || 1400);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    const background = await this.loadPosterAsset(template.image_url || template.image || '');
+                    if (background) ctx.drawImage(background, 0, 0, width, height);
+                    else { const gradient = ctx.createLinearGradient(0, 0, width, height); gradient.addColorStop(0, '#3f1703'); gradient.addColorStop(.55, '#7c2d05'); gradient.addColorStop(1, '#270e02'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height); }
+                    const slots = cfg.image_slots || [];
+                    for (const slot of slots) {
+                        const x=Number(slot.x||0), y=Number(slot.y||0), w=Number(slot.width||0), h=Number(slot.height||0);
+                        const path = recipe.slotImages?.[slot.id];
+                        const image = await this.loadPosterAsset(path);
+                        if (sequence !== this.posterRenderSequence) return;
+                        if (!image) continue;
+                        ctx.save();
+                        const radius = Number(slot.radius||0);
+                        ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x,y,w,h,radius); else ctx.rect(x,y,w,h); ctx.clip();
+                        const full = /boc.?mai|floor.?plan|mat.?bang|layout.?3d/i.test([slot.id,slot.name,slot.key,slot.type].join(' '));
+                        const scale = full ? Math.min(w/image.naturalWidth,h/image.naturalHeight) : Math.max(w/image.naturalWidth,h/image.naturalHeight);
+                        const dw=image.naturalWidth*scale, dh=image.naturalHeight*scale;
+                        ctx.drawImage(image, x+(w-dw)/2, y+(h-dh)/2, dw, dh); ctx.restore();
+                        if (slot.border && slot.border !== 'none' && Number(slot.borderWidth)>0) { ctx.strokeStyle=slot.border; ctx.lineWidth=Number(slot.borderWidth); ctx.strokeRect(x,y,w,h); }
+                    }
+                    const form = { ...(recipe.posterForm || {}), unit_code: unit.unit_code || recipe.posterForm?.unit_code, unit_type: unit.unit_type || recipe.posterForm?.unit_type, direction: unit.direction || recipe.posterForm?.direction, view: unit.view || recipe.posterForm?.view, area: unit.area || recipe.posterForm?.area, price_text: unit.price_text || recipe.posterForm?.price_text, price_note: unit.price_note || recipe.posterForm?.price_note, block: unit.block || recipe.posterForm?.block, floor: unit.floor || recipe.posterForm?.floor };
+                    const values = { unit_code:form.unit_code, unit_type:form.unit_type, direction:form.direction, view:form.view, area:form.area, price:form.price_text, price_note:form.price_note, block:form.block, floor:form.floor };
+                    for (const [key,pos] of Object.entries(cfg.text_slots || {})) {
+                        if (!pos || values[key] === undefined) continue;
+                        const text = `${pos.prefix && pos.prefix !== 'null' ? pos.prefix : ''}${values[key] || ''}${pos.suffix && pos.suffix !== 'null' ? pos.suffix : ''}`;
+                        if (!text) continue;
+                        ctx.save(); ctx.font = `${pos.fontWeight || 'bold'} ${Number(pos.fontSize||22)}px ${pos.fontFamily === 'serif' ? 'Georgia, serif' : 'sans-serif'}`;
+                        ctx.fillStyle=pos.color||'#fff'; ctx.textAlign=pos.align||'left'; ctx.textBaseline='top';
+                        if (pos.isBadge && pos.bgColor && pos.bgColor !== 'transparent') { const tw=ctx.measureText(text).width, bw=Number(pos.width||tw+20), bh=Number(pos.height||Number(pos.fontSize||22)+12), bx=pos.align==='center'?Number(pos.x)-bw/2:(pos.align==='right'?Number(pos.x)-bw:Number(pos.x)); ctx.fillStyle=pos.bgColor; ctx.fillRect(bx,Number(pos.y),bw,bh); ctx.fillStyle=pos.color||'#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(text,bx+bw/2,Number(pos.y)+bh/2); }
+                        else ctx.fillText(text,Number(pos.x||0),Number(pos.y||0));
+                        ctx.restore();
+                    }
+                    if (sequence !== this.posterRenderSequence) return;
+                    try { this.selectedPosterUrl = canvas.toDataURL('image/png'); } catch (error) { console.warn('Không thể dựng poster từ cấu hình:', error); }
+                },
+
+                async downloadSelectedPoster() {
+                    if (!this.selectedPosterUrl) await this.renderSelectedPoster();
+                    const source = this.getSelectedPosterSource();
+                    if (!source) return;
+                    const link = document.createElement('a'); link.href = source; link.download = `Poster-${(this.selectedUnit?.unit_code || 'can-ho').replace(/[^a-z0-9_-]/gi, '-')}.png`; document.body.appendChild(link); link.click(); link.remove();
                 },
 
                 // Mở Modal Bài viết

@@ -250,9 +250,9 @@
                                         </span>
                                     </template>
 
-                                    <!-- Biểu tượng đã có ảnh poster -->
+                                    <!-- Biểu tượng đã có cấu hình poster -->
                                     <template x-if="u.has_image">
-                                        <span class="text-[9px] text-emerald-600 font-bold" title="Đã có ảnh poster">
+                                        <span class="text-[9px] text-emerald-600 font-bold" title="Đã lưu cấu hình poster">
                                             <i class="fa-solid fa-circle-check"></i>
                                         </span>
                                     </template>
@@ -307,7 +307,7 @@
             <div class="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500 shrink-0">
                 <span class="flex items-center gap-1">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-                    <span>Đã xong: <strong class="text-emerald-700 font-bold" x-text="importedUnits.filter(u => u.has_image).length"></strong>/<span x-text="importedUnits.length"></span></span>
+                    <span>Đã có cấu hình: <strong class="text-emerald-700 font-bold" x-text="importedUnits.filter(u => u.has_image).length"></strong>/<span x-text="importedUnits.length"></span></span>
                 </span>
                 <button 
                     type="button" 
@@ -498,7 +498,7 @@
                         class="w-full py-2 px-3 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 text-white font-black text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/25"
                     >
                         <i class="fa-solid fa-bolt text-amber-300"></i>
-                        <span x-text="isBatchGenerating ? 'Đang xuất và lưu...' : 'Lưu & Áp dụng cho ' + selectedIndices.length + ' căn đã chọn'"></span>
+                        <span x-text="isBatchGenerating ? 'Đang lưu cấu hình...' : 'Lưu cấu hình cho ' + selectedIndices.length + ' căn đã chọn'"></span>
                     </button>
                 </template>
 
@@ -511,7 +511,7 @@
                         class="w-full py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-black text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20"
                     >
                         <i class="fa-solid fa-floppy-disk text-xs"></i>
-                        <span x-text="isSavingPoster ? 'Đang xuất và lưu...' : 'Lưu & Hoàn tất Chỉ Căn'"></span>
+                        <span x-text="isSavingPoster ? 'Đang lưu cấu hình...' : 'Lưu cấu hình poster'"></span>
                     </button>
                 </template>
 
@@ -524,7 +524,7 @@
                             class="py-1.5 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition flex items-center justify-center gap-1 truncate"
                         >
                             <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
-                            <span>Lưu & Tạo tiếp</span>
+                            <span>Lưu cấu hình & căn tiếp</span>
                         </button>
                     </template>
 
@@ -540,15 +540,6 @@
                         </button>
                     </template>
 
-                    <button 
-                        type="button" 
-                        @click="downloadPosterCanvas()"
-                        class="py-1.5 px-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-[11px] transition flex items-center justify-center gap-1 border border-blue-200 truncate"
-                        title="Tải ảnh PNG của căn đang xem trước"
-                    >
-                        <i class="fa-solid fa-download text-[10px]"></i>
-                        <span>Tải ảnh PNG</span>
-                    </button>
                 </div>
 
                 <template x-if="importedUnits.length > 1 && selectedIndices.length <= 1">
@@ -557,10 +548,10 @@
                         @click="batchGenerateAll()"
                         :disabled="isBatchGenerating || isSavingPoster"
                         class="w-full py-1.5 px-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-[11px] transition flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-600/20"
-                        title="Tự động xuất và lưu ảnh poster chỉ căn cho tất cả các căn"
+                        title="Lưu cấu hình poster cho tất cả các căn"
                     >
                         <i class="fa-solid fa-bolt text-amber-300"></i>
-                        <span x-text="'Xuất toàn bộ ' + importedUnits.length + ' ảnh chỉ căn'"></span>
+                        <span x-text="'Lưu cấu hình cho toàn bộ ' + importedUnits.length + ' căn'"></span>
                     </button>
                 </template>
             </div>
@@ -1205,8 +1196,8 @@
             </div>
 
             <div>
-                <h3 class="text-base font-black text-slate-900" x-text="batchProgress.isDone ? 'Đã hoàn tất tạo ảnh chỉ căn!' : 'Đang tạo hàng loạt ảnh chỉ căn...'"></h3>
-                <p class="text-xs text-slate-500 mt-1" x-text="batchProgress.isDone ? ('Đã xuất thành công ' + batchProgress.successCount + '/' + batchProgress.total + ' ảnh poster chỉ căn!') : ('Đang kết xuất và lưu căn: ' + batchProgress.currentCode + ' (' + batchProgress.current + '/' + batchProgress.total + ')')"></p>
+                <h3 class="text-base font-black text-slate-900" x-text="batchProgress.isDone ? 'Đã lưu cấu hình poster!' : 'Đang lưu cấu hình poster...'"></h3>
+                <p class="text-xs text-slate-500 mt-1" x-text="batchProgress.isDone ? ('Đã lưu ' + batchProgress.successCount + '/' + batchProgress.total + ' cấu hình. Ảnh sẽ được dựng khi khách tải về.') : ('Đang lưu căn: ' + batchProgress.currentCode + ' (' + batchProgress.current + '/' + batchProgress.total + ')')"></p>
             </div>
 
             <!-- Progress bar -->
@@ -1432,7 +1423,7 @@ function unitCreatorStudio() {
                 'price' => $u->price,
                 'price_text' => $u->price_text,
                 'price_note' => $u->price_note,
-                'has_image' => !empty($u->image),
+                'has_image' => !empty($u->composer_data),
                 'image_url' => $u->image_url,
                 'floorplan_image' => $u->floorplan_image,
                 'floorplan_image_url' => $u->floorplan_image_url,
@@ -2486,95 +2477,94 @@ function unitCreatorStudio() {
             ctx.closePath();
         },
 
-        savePosterUnit(createNext = false) {
+        buildPosterFormForUnit(unit) {
+            return {
+                unit_code: unit.unit_code || '',
+                unit_type: unit.unit_type || '',
+                direction: unit.direction || '',
+                view: unit.view || '',
+                area: unit.area !== null && unit.area !== undefined ? String(unit.area) : '',
+                price_text: unit.price_text || (unit.price ? this.formatPriceVND(unit.price) : ''),
+                price_note: unit.price_note || '(Chưa VAT)',
+                block: unit.block || '',
+                floor: unit.floor || '',
+                unit_axis: unit.unit_axis || ''
+            };
+        },
+
+        buildPosterConfigPayload(unit, formData, slotImages) {
+            return {
+                unit_id: unit.id,
+                unit_code: formData.unit_code,
+                unit_type: formData.unit_type,
+                direction: formData.direction,
+                view: formData.view,
+                area: formData.area,
+                price_text: formData.price_text,
+                price_note: formData.price_note,
+                block: formData.block,
+                floor: formData.floor,
+                composer_data: JSON.stringify({
+                    template_id: this.selectedTemplateId,
+                    slotImages: { ...slotImages },
+                    posterForm: { ...formData }
+                })
+            };
+        },
+
+        async savePosterUnit(createNext = false) {
             if (!this.posterForm.unit_code) {
                 Swal.fire('Thiếu thông tin', 'Vui lòng nhập Mã căn!', 'warning');
                 return;
             }
 
+            const curUnit = this.importedUnits?.[this.currentUnitIndex];
+            if (!curUnit || !curUnit.id) {
+                Swal.fire('Chưa có căn trong hệ thống', 'Hãy nhập/lưu danh sách căn trước khi lưu cấu hình poster.', 'warning');
+                return;
+            }
+
             this.isSavingPoster = true;
-            const canvas = document.getElementById('posterCanvas');
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            const formSnapshot = { ...this.posterForm };
+            const payload = this.buildPosterConfigPayload(curUnit, formSnapshot, this.slotImages);
 
-            const curUnit = (this.importedUnits && this.importedUnits[this.currentUnitIndex]) || {};
-            const payload = {
-                project_id: '{{ $project->id }}',
-                unit_code: this.posterForm.unit_code,
-                unit_type: this.posterForm.unit_type,
-                direction: this.posterForm.direction,
-                view: this.posterForm.view,
-                area: this.posterForm.area,
-                price_text: this.posterForm.price_text,
-                price_note: this.posterForm.price_note,
-                block: this.posterForm.block,
-                floor: this.posterForm.floor,
-                unit_axis: this.posterForm.unit_axis || curUnit.unit_axis || '',
-                // Fix: Đảm bảo lấy layout_3d_image từ slotImages của tất cả các slot có key là boc_mai
-                layout_3d_image: (this.slotImages) ? Object.values(this.slotImages).find((val, key) => (key && String(key).toLowerCase().includes('boc_mai'))) || (curUnit.layout_3d_image || '') : (curUnit.layout_3d_image || ''),
-                image_data: dataUrl,
-                composer_data: JSON.stringify({
-                    template_id: this.selectedTemplateId,
-                    slotImages: this.slotImages,
-                    posterForm: this.posterForm
-                })
-            };
-
-            fetch('{{ route('admin.unit-locators.store') }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(data => {
+            try {
+                const response = await fetch('{{ route('admin.unit-locators.save-poster-config', $project->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await response.json();
                 this.isSavingPoster = false;
-                if (data.success) {
-                    if (this.importedUnits && this.importedUnits[this.currentUnitIndex]) {
-                        const cur = this.importedUnits[this.currentUnitIndex];
-                        cur.has_image = true;
-                        cur.composer_data = payload.composer_data;
-                        cur._slotImages = { ...this.slotImages };
-                        if (data.image_url) cur.image_url = data.image_url;
-                    }
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Đã tạo poster chỉ căn thành công!',
-                        text: `Chỉ căn ${this.posterForm.unit_code} đã được xuất thành ảnh độ nét cao và lưu vào hệ thống!`,
-                        showCancelButton: createNext,
-                        confirmButtonText: createNext ? 'Tạo căn tiếp theo' : 'Xem danh sách',
-                        cancelButtonText: 'Ở lại chỉnh sửa'
-                    }).then((result) => {
-                        if (createNext) {
-                            if (this.importedUnits && this.currentUnitIndex < this.importedUnits.length - 1) {
-                                this.selectUnitByIndex(this.currentUnitIndex + 1);
-                            } else {
-                                // Tăng mã căn tự động
-                                const code = this.posterForm.unit_code;
-                                const match = code.match(/^(.*?)(\d+)$/);
-                                if (match) {
-                                    const prefix = match[1];
-                                    const num = parseInt(match[2], 10) + 1;
-                                    this.posterForm.unit_code = prefix + String(num).padStart(match[2].length, '0');
-                                }
-                                this.renderPosterCanvas();
-                            }
-                        } else if (result.isConfirmed) {
-                            window.location.href = '{{ route('admin.unit-locators.project', $project->id) }}';
+                if (!response.ok || !data.success) throw new Error(data.message || 'Không thể lưu cấu hình poster.');
+
+                curUnit.has_image = true;
+                curUnit.composer_data = payload.composer_data;
+                curUnit._slotImages = { ...this.slotImages };
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Đã lưu cấu hình poster!',
+                    text: `Ảnh căn ${formSnapshot.unit_code} sẽ được dựng khi khách tải ảnh.`,
+                    showCancelButton: createNext,
+                    confirmButtonText: createNext ? 'Tiếp tục căn sau' : 'Đóng',
+                    cancelButtonText: 'Ở lại chỉnh sửa'
+                }).then(result => {
+                    if (createNext && result.isConfirmed) {
+                        if (this.currentUnitIndex < this.importedUnits.length - 1) {
+                            this.selectUnitByIndex(this.currentUnitIndex + 1);
                         }
-                    });
-                } else {
-                    Swal.fire('Lỗi', data.message || 'Không thể lưu poster', 'error');
-                }
-            })
-            .catch(err => {
+                    }
+                });
+            } catch (error) {
                 this.isSavingPoster = false;
-                Swal.fire('Lỗi máy chủ', err.message, 'error');
-            });
+                Swal.fire('Lỗi', error.message, 'error');
+            }
         },
-
         downloadPosterCanvas() {
             const canvas = document.getElementById('posterCanvas');
             const link = document.createElement('a');
@@ -2808,118 +2798,60 @@ function unitCreatorStudio() {
             });
         },
 
-        async batchSaveSelectedUnits() {
-            if (!this.selectedIndices || this.selectedIndices.length === 0) return;
-            const total = this.selectedIndices.length;
-
-            const confirm = await Swal.fire({
-                title: `Lưu & áp dụng ảnh cho ${total} căn đã chọn?`,
-                html: `Hệ thống sẽ dùng phôi hiện tại và các khung ảnh đã gán để xuất và lưu ảnh poster chỉ căn cho <b>${total} căn</b> đang chọn.<br><br><span class="text-xs text-slate-500">Thông tin riêng của từng căn (mã căn, loại căn, diện tích, giá) sẽ được giữ nguyên vẹn.</span>`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: `🚀 Bắt đầu lưu ${total} căn`,
-                cancelButtonText: 'Hủy'
+        async saveUnitPosterConfig(unit) {
+            if (!unit?.id) throw new Error(`Căn ${unit?.unit_code || ''} chưa được lưu trong hệ thống.`);
+            const formData = this.buildPosterFormForUnit(unit);
+            const slotImages = this.resolveUnitSlotImages(unit);
+            const payload = this.buildPosterConfigPayload(unit, formData, slotImages);
+            const response = await fetch('{{ route('admin.unit-locators.save-poster-config', $project->id) }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                body: JSON.stringify(payload)
             });
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.message || `Không lưu được căn ${unit.unit_code}.`);
+            unit.has_image = true;
+            unit.composer_data = payload.composer_data;
+            unit._slotImages = { ...slotImages };
+            return result;
+        },
 
+        async saveUnitConfigsBatch(units, title) {
+            const targets = (units || []).filter(Boolean);
+            if (!targets.length) return;
+            const confirm = await Swal.fire({
+                title: `${title} ${targets.length} căn?`,
+                html: `Hệ thống sẽ lưu cấu hình phôi và ảnh đã gán cho <b>${targets.length} căn</b>. Ảnh poster chỉ được dựng khi khách tải về.`,
+                icon: 'question', showCancelButton: true,
+                confirmButtonText: `Lưu cấu hình`, cancelButtonText: 'Hủy'
+            });
             if (!confirm.isConfirmed) return;
 
             this.isBatchGenerating = true;
             this.batchModalOpen = true;
-            this.batchProgress = {
-                current: 0,
-                total: total,
-                percent: 0,
-                currentCode: '',
-                successCount: 0,
-                failCount: 0,
-                isDone: false
-            };
-
-            const canvas = document.getElementById('posterCanvas');
-
-            for (let i = 0; i < total; i++) {
-                const idx = this.selectedIndices[i];
-                const u = this.importedUnits[idx];
-                if (!u) continue;
-
+            this.batchProgress = { current: 0, total: targets.length, percent: 0, currentCode: '', successCount: 0, failCount: 0, isDone: false };
+            for (let i = 0; i < targets.length; i++) {
+                const unit = targets[i];
                 this.batchProgress.current = i + 1;
-                this.batchProgress.currentCode = u.unit_code;
-                this.batchProgress.percent = Math.round(((i + 1) / total) * 100);
-
-                // 1. Cập nhật posterForm tạm thời cho căn này
-                this.posterForm.unit_code = u.unit_code || '';
-                this.posterForm.unit_type = u.unit_type || '';
-                this.posterForm.block = u.block || '';
-                this.posterForm.floor = u.floor || '';
-                this.posterForm.area = u.area !== null && u.area !== undefined ? String(u.area) : '';
-                this.posterForm.direction = u.direction || '';
-                this.posterForm.view = u.view || '';
-                this.posterForm.price_text = u.price_text || (u.price ? this.formatPriceVND(u.price) : '');
-                this.posterForm.price_note = u.price_note || '(Chưa VAT)';
-
-                // 2. Đồng bộ slotImages chuẩn của căn này (đúng mặt bằng tầng/chỉ căn)
-                this.slotImages = this.resolveUnitSlotImages(u);
-
-                // 3. Render canvas đồng bộ
-                await this.renderPosterCanvas();
-
-                // 4. Lấy base64
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-
-                // 5. Gửi lưu
-                const payload = {
-                    project_id: '{{ $project->id }}',
-                    unit_code: this.posterForm.unit_code,
-                    unit_type: this.posterForm.unit_type,
-                    direction: this.posterForm.direction,
-                    view: this.posterForm.view,
-                    area: this.posterForm.area,
-                    price_text: this.posterForm.price_text,
-                    price_note: this.posterForm.price_note,
-                    block: this.posterForm.block,
-                    floor: this.posterForm.floor,
-                    unit_axis: u.unit_axis || this.posterForm.unit_axis || '',
-                    layout_3d_image: u.layout_3d_image || '',
-                    image_data: dataUrl,
-                    composer_data: JSON.stringify({
-                        template_id: this.selectedTemplateId,
-                        slotImages: this.slotImages,
-                        posterForm: this.posterForm
-                    })
-                };
-
+                this.batchProgress.currentCode = unit.unit_code || '';
+                this.batchProgress.percent = Math.round(((i + 1) / targets.length) * 100);
                 try {
-                    const res = await fetch('{{ route('admin.unit-locators.store') }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        this.batchProgress.successCount++;
-                        u.has_image = true;
-                        u.composer_data = payload.composer_data;
-                        u._slotImages = { ...this.slotImages };
-                        if (data.image_url) u.image_url = data.image_url;
-                    } else {
-                        this.batchProgress.failCount++;
-                    }
-                } catch(err) {
+                    await this.saveUnitPosterConfig(unit);
+                    this.batchProgress.successCount++;
+                } catch (error) {
                     this.batchProgress.failCount++;
+                    console.error('Không lưu được cấu hình poster:', unit.unit_code, error);
                 }
             }
-
             this.batchProgress.isDone = true;
             this.isBatchGenerating = false;
-
-            // Nạp lại preview cho căn hiện tại
             this.loadUnitPreview(this.currentUnitIndex);
         },
 
+        async batchSaveSelectedUnits() {
+            const units = (this.selectedIndices || []).map(index => this.importedUnits[index]);
+            return this.saveUnitConfigsBatch(units, 'Lưu cấu hình cho');
+        },
         prevUnit() {
             if (this.currentUnitIndex > 0) {
                 this.selectUnitByIndex(this.currentUnitIndex - 1);
@@ -3155,121 +3087,8 @@ function unitCreatorStudio() {
         },
 
         async batchGenerateAll() {
-            if (!this.importedUnits || this.importedUnits.length === 0) {
-                Swal.fire('Chưa có căn', 'Vui lòng nhập file Excel danh sách căn trước!', 'warning');
-                return;
-            }
-
-            const total = this.importedUnits.length;
-            const confirm = await Swal.fire({
-                title: `Tự động tạo ${total} ảnh chỉ căn?`,
-                html: `Hệ thống sẽ dùng phôi hiện tại và các khung ảnh đã gán để xuất và lưu <b>${total} ảnh poster chỉ căn</b> tương ứng với từng căn trong danh sách Excel.<br><br><span class="text-xs text-slate-500">Quá trình này diễn ra hoàn toàn tự động trong vài giây.</span>`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: `🚀 Bắt đầu tạo ${total} căn`,
-                cancelButtonText: 'Hủy'
-            });
-
-            if (!confirm.isConfirmed) return;
-
-            this.isBatchGenerating = true;
-            this.batchModalOpen = true;
-            this.batchProgress = {
-                current: 0,
-                total: total,
-                percent: 0,
-                currentCode: '',
-                successCount: 0,
-                failCount: 0,
-                isDone: false
-            };
-
-            const canvas = document.getElementById('posterCanvas');
-
-            for (let i = 0; i < total; i++) {
-                const u = this.importedUnits[i];
-                this.batchProgress.current = i + 1;
-                this.batchProgress.currentCode = u.unit_code;
-                this.batchProgress.percent = Math.round(((i + 1) / total) * 100);
-
-                // 1. Cập nhật posterForm
-                this.posterForm.unit_code = u.unit_code || '';
-                this.posterForm.unit_type = u.unit_type || '';
-                this.posterForm.block = u.block || '';
-                this.posterForm.floor = u.floor || '';
-                this.posterForm.area = u.area !== null && u.area !== undefined ? String(u.area) : '';
-                this.posterForm.direction = u.direction || '';
-                this.posterForm.view = u.view || '';
-                this.posterForm.price_text = u.price_text || (u.price ? this.formatPriceVND(u.price) : '');
-                this.posterForm.price_note = u.price_note || '(Chưa VAT)';
-
-                // 2. Đồng bộ slotImages chuẩn của căn này (đúng mặt bằng tầng/chỉ căn)
-                this.slotImages = this.resolveUnitSlotImages(u);
-
-                // 3. Render canvas đồng bộ
-                await this.renderPosterCanvas();
-
-                // 4. Lấy base64
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
-
-                // 5. Gửi lưu
-                const payload = {
-                    project_id: '{{ $project->id }}',
-                    unit_code: this.posterForm.unit_code,
-                    unit_type: this.posterForm.unit_type,
-                    direction: this.posterForm.direction,
-                    view: this.posterForm.view,
-                    area: this.posterForm.area,
-                    price_text: this.posterForm.price_text,
-                    price_note: this.posterForm.price_note,
-                    block: this.posterForm.block,
-                    floor: this.posterForm.floor,
-                    unit_axis: u.unit_axis || this.posterForm.unit_axis || '',
-                    layout_3d_image: u.layout_3d_image || '',
-                    image_data: dataUrl,
-                    composer_data: JSON.stringify({
-                        template_id: this.selectedTemplateId,
-                        slotImages: this.slotImages,
-                        posterForm: this.posterForm
-                    })
-                };
-
-                try {
-                    const res = await fetch('{{ route('admin.unit-locators.store') }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                        this.batchProgress.successCount++;
-                        u.has_image = true;
-                        u.composer_data = payload.composer_data;
-                        u._slotImages = { ...this.slotImages };
-                        if (data.image_url) u.image_url = data.image_url;
-                    } else {
-                        this.batchProgress.failCount++;
-                    }
-                } catch (e) {
-                    this.batchProgress.failCount++;
-                }
-
-                await new Promise(r => setTimeout(r, 40));
-            }
-
-            this.batchProgress.isDone = true;
-            this.isBatchGenerating = false;
-
-            // Khôi phục xem trước chuẩn cho căn đang chọn
-            if (this.importedUnits && this.importedUnits[this.currentUnitIndex]) {
-                this.loadUnitPreview(this.currentUnitIndex);
-            }
+            return this.saveUnitConfigsBatch(this.importedUnits, 'Lưu cấu hình cho');
         },
-
         openDirectUploadModal() {
             if (this.libCategory === 'floorplan') {
                 this.directUploadType = 'floorplan';

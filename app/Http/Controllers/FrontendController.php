@@ -260,6 +260,7 @@ class FrontendController extends Controller
 
         $floorplans = ProjectFloorplan::where('project_id', $projectId)->get();
         $perspectives = ProjectPerspective::where('project_id', $projectId)->get();
+        $templates = ProjectTemplate::where('project_id', $projectId)->get();
 
         $stats = [
             'total' => $units->count(),
@@ -280,6 +281,7 @@ class FrontendController extends Controller
             'units' => $units,
             'floorplans' => $floorplans,
             'perspectives' => $perspectives,
+            'templates' => $templates,
             'stats' => $stats,
             'blocks' => $blocks,
             'floors' => $floors,
