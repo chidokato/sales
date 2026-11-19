@@ -217,6 +217,18 @@
                         >
                     </div>
 
+                    <!-- Bedroom / unit type filter -->
+                    @if(!empty($existingBedroomCounts) && count($existingBedroomCounts) > 0)
+                    <div>
+                        <select name="bedroom" @change="applyFilters()" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
+                            <option value="">-- Loại căn --</option>
+                            @foreach($existingBedroomCounts as $bedroomCount)
+                            <option value="{{ $bedroomCount }}" {{ (string) request('bedroom') === (string) $bedroomCount ? 'selected' : '' }}>{{ $bedroomCount == 0 ? 'Studio' : $bedroomCount . 'N' }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
+
                     <!-- Direction Filter -->
                     <div>
                         <select name="direction" @change="applyFilters()" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50">
@@ -1490,6 +1502,17 @@
         </div>
 
         <div class="flex items-center gap-2">
+            <input type="file" x-ref="bulkBocMaiFile" accept="image/*" class="hidden" @change="bulkReplaceLayout3d($event)">
+            <button
+                type="button"
+                @click="$refs.bulkBocMaiFile.click()"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-md transition"
+                title="Dùng một ảnh bóc mái mới cho tất cả căn đang chọn"
+            >
+                <i class="fa-solid fa-cubes-stacked text-xs"></i>
+                <span>Thay ảnh bóc mái</span>
+            </button>
+
             <!-- Nút Chuyển sang Studio Sửa Ảnh Hàng Loạt -->
             <button 
                 type="button" 
@@ -4073,6 +4096,46 @@ function unitProjectHub() {
                     });
                 }
             });
+        },
+
+        async bulkReplaceLayout3d(event) {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            if (!file || this.selectedUnitIds.length === 0) return;
+
+            const result = await Swal.fire({
+                title: 'Thay ảnh bóc mái hàng loạt?',
+                text: `Ảnh “${file.name}” sẽ được gán cho ${this.selectedUnitIds.length} căn đang chọn.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Thay ảnh',
+                cancelButtonText: 'Hủy',
+                confirmButtonColor: '#7c3aed'
+            });
+            if (!result.isConfirmed) return;
+
+            const formData = new FormData();
+            this.selectedUnitIds.forEach(id => formData.append('ids[]', id));
+            formData.append('layout_3d_file', file);
+
+            Swal.fire({ title: 'Đang cập nhật ảnh...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const response = await fetch('{{ route('admin.unit-locators.bulk-layout-3d', $project->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || 'Không thể cập nhật ảnh bóc mái.');
+
+                await Swal.fire({ icon: 'success', title: 'Đã cập nhật', text: data.message, timer: 1600, showConfirmButton: false });
+                window.location.reload();
+            } catch (error) {
+                Swal.fire('Lỗi', error.message, 'error');
+            }
         },
 
         confirmBulkDelete() {

@@ -73,6 +73,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/unit-locators/project/{projectId}/create', [ProjectUnitLocatorController::class, 'create'])->name('unit-locators.create');
     Route::post('/unit-locators/project/{projectId}/import-excel', [ProjectUnitLocatorController::class, 'importExcel'])->name('unit-locators.import-excel');
     Route::post('/unit-locators/project/{projectId}/bulk-update', [ProjectUnitLocatorController::class, 'bulkUpdate'])->name('unit-locators.bulk-update');
+    Route::post('/unit-locators/project/{projectId}/bulk-layout-3d', [ProjectUnitLocatorController::class, 'bulkUpdateLayout3d'])->name('unit-locators.bulk-layout-3d');
     Route::post('/unit-locators/project/{projectId}/bulk-delete', [ProjectUnitLocatorController::class, 'bulkDelete'])->name('unit-locators.bulk-delete');
     Route::post('/unit-locators', [ProjectUnitLocatorController::class, 'store'])->name('unit-locators.store');
     Route::post('/unit-locators/floorplans', [ProjectUnitLocatorController::class, 'storeFloorplan'])->name('unit-locators.floorplan.store');

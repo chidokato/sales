@@ -214,6 +214,7 @@ class ProjectUnitLocatorController extends Controller
         $existingBlocks = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('block')->distinct()->pluck('block');
         $existingFloors = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('floor')->distinct()->orderBy('floor', 'asc')->pluck('floor');
         $existingAxes = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('unit_axis')->where('unit_axis', '!=', '')->distinct()->orderBy('unit_axis')->pluck('unit_axis');
+        $existingBedroomCounts = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('bedroom')->distinct()->orderBy('bedroom')->pluck('bedroom');
         $floorplans = ProjectFloorplan::where('project_id', $projectId)->latest()->get();
         $templates = ProjectTemplate::where('project_id', $projectId)->latest()->get();
         $perspectives = ProjectPerspective::where('project_id', $projectId)->latest()->get();
@@ -233,6 +234,7 @@ class ProjectUnitLocatorController extends Controller
             'existingBlocks',
             'existingFloors',
             'existingAxes',
+            'existingBedroomCounts',
             'floorplans',
             'templates',
             'perspectives',
@@ -454,6 +456,35 @@ class ProjectUnitLocatorController extends Controller
             'success' => true,
             'message' => "Đã cập nhật thành công {$updatedCount} căn hộ!",
             'updated_count' => $updatedCount,
+        ]);
+    }
+
+    /**
+     * Thay ảnh bóc mái 3D cho các căn được chọn trong dự án.
+     */
+    public function bulkUpdateLayout3d(Request $request, $projectId)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer',
+            'layout_3d_file' => 'required|image|max:15360',
+        ]);
+
+        $filename = 'boc_mai_bulk_' . $projectId . '_' . time() . '_' . uniqid() . '.' . $request->file('layout_3d_file')->getClientOriginalExtension();
+        $imagePath = $request->file('layout_3d_file')->storeAs('layout_3d/' . $projectId, $filename, 'public');
+
+        $updatedCount = ProjectUnitLocator::where('project_id', $projectId)
+            ->whereIn('id', $validated['ids'])
+            ->update([
+                'layout_3d_image' => $imagePath,
+                'updated_at' => now(),
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đã thay ảnh bóc mái cho {$updatedCount} căn được chọn!",
+            'updated_count' => $updatedCount,
+            'layout_3d_image' => $imagePath,
         ]);
     }
 
