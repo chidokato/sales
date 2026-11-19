@@ -817,7 +817,7 @@
                                                     <img x-show="image.source" :src="image.source" :style="posterImageStyle(image)" class="absolute select-none pointer-events-none" :alt="image.id">
                                                 </template>
                                                 <template x-for="text in getSelectedPosterLayout().texts" :key="text.key">
-                                                    <div :style="posterTextStyle(text)" class="absolute leading-none whitespace-pre-wrap" :class="text.badge ? 'inline-flex items-center justify-center px-[0.45cqw] py-[0.25cqw]' : ''" x-text="text.value"></div>
+                                                    <div :style="posterTextStyle(text)" class="absolute leading-none whitespace-nowrap" :class="text.badge ? 'inline-flex items-center justify-center px-[0.45cqw] py-[0.25cqw]' : ''" x-text="text.value"></div>
                                                 </template>
                                             </div>
                                         </template>
@@ -1805,7 +1805,7 @@
                                                 <img x-show="image.source" :src="image.source" :style="posterImageStyle(image)" class="absolute select-none pointer-events-none" :alt="image.id">
                                             </template>
                                             <template x-for="text in getSelectedPosterLayout().texts" :key="text.key">
-                                                <div :style="posterTextStyle(text)" class="absolute leading-none whitespace-pre-wrap" :class="text.badge ? 'inline-flex items-center justify-center px-[0.45cqw] py-[0.25cqw]' : ''" x-text="text.value"></div>
+                                                <div :style="posterTextStyle(text)" class="absolute leading-none whitespace-nowrap" :class="text.badge ? 'inline-flex items-center justify-center px-[0.45cqw] py-[0.25cqw]' : ''" x-text="text.value"></div>
                                             </template>
                                         </div>
                                     </template>
@@ -2426,9 +2426,9 @@
                 posterTextStyle(text) {
                     const transform = text.align === 'center' ? 'translateX(-50%)' : (text.align === 'right' ? 'translateX(-100%)' : 'none');
                     const badge = text.badge ? `background:${text.bg};border:${text.borderWidth}cqw solid ${text.border};border-radius:${text.radius}cqw;` : '';
-                    const dimensions = text.badgeWidth ? `width:${text.badgeWidth}%;` : '';
+                    const dimensions = text.badgeWidth ? `width:${text.badgeWidth}%;` : 'width:max-content;';
                     const badgeHeight = text.badgeHeight ? `height:${text.badgeHeight}%;` : '';
-                    return `left:${text.x}%;top:${text.y}%;transform:${transform};font-size:${text.fontSize}cqw;color:${text.color};font-weight:${text.weight};font-family:${text.family};text-align:${text.align};${badge}${dimensions}${badgeHeight}`;
+                    return `left:${text.x}%;top:${text.y}%;transform:${transform};font-size:${text.fontSize}cqw;color:${text.color};font-weight:${text.weight};font-family:${text.family};text-align:${text.align};white-space:nowrap;${badge}${dimensions}${badgeHeight}`;
                 },
 
                 normalizePosterAssetUrl(url) {
