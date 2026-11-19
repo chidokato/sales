@@ -151,14 +151,8 @@
                         >
                             <div class="flex items-center gap-3">
                                 <i class="fa-solid fa-city text-sm w-5 text-center group-hover:text-blue-400 transition" :class="activeMenu === 'projects' ? 'text-white' : 'text-slate-400'"></i>
-                                <span>Khám phá Dự án</span>
+                                <span class="whitespace-nowrap">Khám phá Dự án</span>
                             </div>
-                            <span 
-                                :class="activeMenu === 'projects' ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'"
-                                class="text-[10px] px-2 py-0.5 rounded-full font-bold"
-                            >
-                                {{ $totalProjectsCount }}
-                            </span>
                         </button>
 
                         <!-- Menu 2: Sơ đồ & Chỉ căn BĐS -->
@@ -170,12 +164,8 @@
                         >
                             <div class="flex items-center gap-3">
                                 <i class="fa-solid fa-map-location-dot text-sm w-5 text-center group-hover:text-amber-400 transition" :class="activeMenu === 'locator' ? 'text-white' : 'text-amber-400'"></i>
-                                <span>Sơ đồ Chỉ căn BĐS</span>
+                                <span class="whitespace-nowrap">Sơ đồ Chỉ căn BĐS</span>
                             </div>
-                            <span class="inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                                {{ $unitStats['total'] }} Căn
-                            </span>
                         </button>
 
                         {{-- TẠM ẨN: Menu 3 - Bảng hàng & Tra cứu --}}
@@ -196,7 +186,7 @@
                             class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-left group"
                         >
                             <i class="fa-solid fa-calculator text-sm w-5 text-center group-hover:text-cyan-400 transition" :class="activeMenu === 'calculator' ? 'text-white' : 'text-cyan-400'"></i>
-                            <span>Bảng tính Vay Mua nhà</span>
+                            <span class="whitespace-nowrap">Bảng tính Vay Mua nhà</span>
                         </button>
 
                         {{-- TẠM ẨN: Menu 5 - Tin tức & Cẩm nang BĐS --}}
@@ -689,8 +679,9 @@
                                     >
                                         <div class="flex items-center justify-between w-full">
                                             <p class="text-[13px] font-extrabold truncate leading-tight" x-text="unit.unit_code"></p>
+                                            <!-- TẠM ẨN: badge tình trạng căn hộ (bỏ class 'hidden' để hiện lại) -->
                                             <span 
-                                                class="px-1.5 py-0.5 rounded text-[9px] font-bold border shrink-0"
+                                                class="hidden px-1.5 py-0.5 rounded text-[9px] font-bold border shrink-0"
                                                 :class="selectedUnit && selectedUnit.id === unit.id ? 'bg-white/20 text-white border-white/30' : {
                                                     'bg-emerald-50 text-emerald-700 border-emerald-200': unit.status === 'available',
                                                     'bg-amber-50 text-amber-700 border-amber-200': unit.status === 'reserved' || unit.status === 'deposited',
