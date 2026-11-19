@@ -367,7 +367,7 @@
                                 class="px-2.5 py-1 rounded-md transition flex items-center gap-1.5 text-xs"
                             >
                                 <i class="fa-solid fa-shapes text-[10px]"></i>
-                                <span>Bản đồ Chỉ căn (<span x-text="filteredUnits.length"></span>)</span>
+                                <span class="whitespace-nowrap">Chỉ căn</span>
                             </button>
                             <button 
                                 type="button"
@@ -376,7 +376,7 @@
                                 class="px-2.5 py-1 rounded-md transition flex items-center gap-1.5 text-xs"
                             >
                                 <i class="fa-regular fa-map text-[10px]"></i>
-                                <span>Sơ đồ Mặt bằng Tầng ({{ $floorplans->count() }})</span>
+                                <span class="whitespace-nowrap">Mặt bằng</span>
                             </button>
                         </div>
                     </div>
