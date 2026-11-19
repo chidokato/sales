@@ -2077,6 +2077,13 @@ function unitCreatorStudio() {
                 const isBocMai = this.isBocMaiSlot(slot);
                 const bocMaiUrl = u.layout_3d_image_url || u.layout_3d_image;
 
+                // Khi chỉnh sửa poster đã lưu, giữ nguyên ảnh người dùng đã gán vào từng ô.
+                // Các nhánh tự động bên dưới chỉ nên dùng làm fallback cho poster chưa có slotImages.
+                if (savedSlots[slotId]) {
+                    resolved[slotId] = savedSlots[slotId];
+                    continue;
+                }
+
                 if (isFp) {
                     // Ưu tiên 1: Người dùng đã chủ động gán tay ảnh cho ô này trong phiên làm việc
                     if (u._manuallyAssignedSlots && u._manuallyAssignedSlots[slotId] && savedSlots[slotId]) {
@@ -2141,10 +2148,16 @@ function unitCreatorStudio() {
                         resolved[slotId] = savedSlots[slotId];
                     } else if (savedSlots[slotId]) {
                         resolved[slotId] = savedSlots[slotId];
-                    } else if (this.sharedSlotImages && this.sharedSlotImages[slotId]) {
-                        resolved[slotId] = this.sharedSlotImages[slotId];
-                    } else if (this.slotImages[slotId]) {
-                        resolved[slotId] = this.slotImages[slotId];
+                    } else {
+                        // TỰ ĐỘNG NẠP ẢNH TỪ CĂN GỐC NẾU CÓ TRONG COMPOSER DATA
+                        const comp = (typeof u.composer_data === 'string') ? JSON.parse(u.composer_data || '{}') : (u.composer_data || {});
+                        if (comp.slotImages && comp.slotImages[slotId]) {
+                            resolved[slotId] = comp.slotImages[slotId];
+                        } else if (this.sharedSlotImages && this.sharedSlotImages[slotId]) {
+                            resolved[slotId] = this.sharedSlotImages[slotId];
+                        } else if (this.slotImages[slotId]) {
+                            resolved[slotId] = this.slotImages[slotId];
+                        }
                     }
                 }
             }
@@ -2733,7 +2746,9 @@ function unitCreatorStudio() {
             }
 
             // Đồng bộ slotImages chuẩn của căn này (khớp mặt bằng tầng / ảnh chỉ căn)
-            this.slotImages = this.resolveUnitSlotImages(u);
+            this.slotImages = {};
+            const resolved = this.resolveUnitSlotImages(u);
+            this.slotImages = { ...resolved };
 
             // Đồng bộ thông tin sang form Studio Chấm Ghim
             this.form.unit_code = u.unit_code || '';
@@ -2889,7 +2904,9 @@ function unitCreatorStudio() {
             this.posterForm.price_note = u.price_note || '(Chưa VAT)';
 
             // Đồng bộ slotImages chuẩn của căn này (khớp mặt bằng tầng / ảnh chỉ căn)
-            this.slotImages = this.resolveUnitSlotImages(u);
+            this.slotImages = {};
+            const resolved = this.resolveUnitSlotImages(u);
+            this.slotImages = { ...resolved };
 
             this.debouncedRender();
 
