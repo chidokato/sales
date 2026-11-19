@@ -1406,7 +1406,7 @@ function unitCreatorStudio() {
         pinStyle: 'bullseye', // bullseye, pin, badge
         pinColor: '#ef4444',
         pinSize: 'medium',
-        cardPosition: 'bottom-left',
+        cardPosition: 'none',
         cardScalePercent: 100,
         cardCustomX: null,
         cardCustomY: null,
@@ -1434,6 +1434,8 @@ function unitCreatorStudio() {
                 'price_note' => $u->price_note,
                 'has_image' => !empty($u->image),
                 'image_url' => $u->image_url,
+                'floorplan_image' => $u->floorplan_image,
+                'floorplan_image_url' => $u->floorplan_image_url,
                 'base_image' => $u->base_image,
                 'layout_3d_image' => $u->layout_3d_image,
                 'layout_3d_image_url' => $u->layout_3d_image_url,
@@ -1956,6 +1958,13 @@ function unitCreatorStudio() {
                 const isFp = (fpSlot && slot.id === fpSlot.id);
                 const isBocMai = this.isBocMaiSlot(slot);
                 const bocMaiUrl = u.layout_3d_image_url || u.layout_3d_image;
+
+                // Ưu tiên ảnh định vị đã lưu trực tiếp trên căn để dùng lại khi ghép poster.
+                const savedLocatorImage = u.floorplan_image_url || u.floorplan_image;
+                if (isFp && savedLocatorImage) {
+                    resolved[slotId] = savedLocatorImage;
+                    continue;
+                }
 
                 // Khi chỉnh sửa poster đã lưu, giữ nguyên ảnh người dùng đã gán vào từng ô.
                 // Các nhánh tự động bên dưới chỉ nên dùng làm fallback cho poster chưa có slotImages.
@@ -2685,7 +2694,8 @@ function unitCreatorStudio() {
                 if (hl.pinStyle) this.pinStyle = hl.pinStyle;
                 if (hl.pinColor) this.pinColor = hl.pinColor;
                 if (hl.pinSize) this.pinSize = hl.pinSize;
-                if (hl.cardPosition) this.cardPosition = hl.cardPosition;
+                // Thẻ thông tin nổi đã được bỏ khỏi ảnh định vị; không khôi phục vị trí cũ đã lưu.
+                this.cardPosition = 'none';
                 if (hl.cardScalePercent) this.cardScalePercent = hl.cardScalePercent;
                 if (hl.cardCustomX !== undefined) this.cardCustomX = hl.cardCustomX;
                 if (hl.cardCustomY !== undefined) this.cardCustomY = hl.cardCustomY;
@@ -4241,7 +4251,8 @@ function unitCreatorStudio() {
                     body: JSON.stringify({
                         ids,
                         base_image: this.currentFloorplanPath || '',
-                        highlight_data: JSON.stringify(highlightData)
+                        highlight_data: JSON.stringify(highlightData),
+                        image_data: document.getElementById('studioCanvas').toDataURL('image/png')
                     })
                 });
                 const data = await response.json();
@@ -4251,6 +4262,8 @@ function unitCreatorStudio() {
                     if (ids.includes(Number(unit.id))) {
                         unit.highlight_data = highlightData;
                         if (this.currentFloorplanPath) unit.base_image = this.currentFloorplanPath;
+                        unit.floorplan_image = data.floorplan_image;
+                        unit.floorplan_image_url = data.floorplan_image_url;
                     }
                 });
                 this.locatorSelectedIds = [];

@@ -1407,6 +1407,7 @@ class ProjectUnitLocatorController extends Controller
             'ids.*' => 'required|integer',
             'highlight_data' => 'required|string',
             'base_image' => 'nullable|string',
+            'image_data' => 'required|string',
         ]);
 
         $highlightData = json_decode($validated['highlight_data'], true);
@@ -1414,14 +1415,38 @@ class ProjectUnitLocatorController extends Controller
             return response()->json(['success' => false, 'message' => 'Dữ liệu định vị không hợp lệ.'], 422);
         }
 
-        $update = ['highlight_data' => $highlightData, 'updated_at' => now()];
+        if (!preg_match('/^data:image\/png;base64,([A-Za-z0-9+\/]+=*)$/', $validated['image_data'], $imageMatch)) {
+            return response()->json(['success' => false, 'message' => 'Ảnh định vị PNG không hợp lệ.'], 422);
+        }
+        $imageBytes = base64_decode($imageMatch[1], true);
+        if ($imageBytes === false || strlen($imageBytes) === 0) {
+            return response()->json(['success' => false, 'message' => 'Không thể đọc ảnh định vị.'], 422);
+        }
+
+        $storageDir = 'floorplans/' . $projectId;
+        $imageName = 'locator_' . $projectId . '_' . time() . '_' . uniqid() . '.png';
+        Storage::disk('public')->makeDirectory($storageDir);
+        Storage::disk('public')->put($storageDir . '/' . $imageName, $imageBytes);
+        $locatorImagePath = $storageDir . '/' . $imageName;
+
+        $update = [
+            'highlight_data' => $highlightData,
+            'floorplan_image' => $locatorImagePath,
+            'updated_at' => now(),
+        ];
         if (!empty($validated['base_image'])) $update['base_image'] = $validated['base_image'];
 
         $count = ProjectUnitLocator::where('project_id', $projectId)
             ->whereIn('id', $validated['ids'])
             ->update($update);
 
-        return response()->json(['success' => true, 'count' => $count, 'message' => "Đã lưu định vị cho {$count} căn được chọn."]);
+        return response()->json([
+            'success' => true,
+            'count' => $count,
+            'floorplan_image' => $locatorImagePath,
+            'floorplan_image_url' => route('admin.unit-locators.media', ['path' => $locatorImagePath]),
+            'message' => "Đã lưu ảnh định vị mặt bằng cho {$count} căn được chọn.",
+        ]);
     }
 
     /**

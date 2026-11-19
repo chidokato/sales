@@ -693,23 +693,30 @@
                                                 :class="selectedUnit && selectedUnit.id === unit.id ? 'bg-white/20' : 'bg-white border border-slate-200'"
                                                 class="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
                                             >
-                                                <template x-if="unit.image_url">
-                                                    <img :src="unit.image_url" :alt="unit.unit_code" class="w-full h-full object-contain p-0.5" loading="lazy">
-                                                </template>
-                                                <template x-if="!unit.image_url">
-                                                    <i 
-                                                        :class="selectedUnit && selectedUnit.id === unit.id ? 'text-white' : 'text-slate-400'"
-                                                        class="fa-regular fa-image text-xs"
-                                                    ></i>
+                                                <template x-if="false"> <!-- Ẩn ảnh -->
+                                                    <div 
+                                                        :class="selectedUnit && selectedUnit.id === unit.id ? 'bg-white/20' : 'bg-white border border-slate-200'"
+                                                        class="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden shrink-0"
+                                                    >
+                                                        <template x-if="unit.image_url">
+                                                            <img :src="unit.image_url" :alt="unit.unit_code" class="w-full h-full object-contain p-0.5" loading="lazy">
+                                                        </template>
+                                                        <template x-if="!unit.image_url">
+                                                            <i 
+                                                                :class="selectedUnit && selectedUnit.id === unit.id ? 'text-white' : 'text-slate-400'"
+                                                                class="fa-regular fa-image text-xs"
+                                                            ></i>
+                                                        </template>
+                                                    </div>
                                                 </template>
                                             </div>
 
                                             <!-- Chi tiết căn hộ -->
-                                            <div class="min-w-0 flex-1">
-                                                <div class="flex items-center gap-1.5">
-                                                    <p class="text-xs font-extrabold truncate leading-tight" x-text="unit.unit_code"></p>
+                                            <div class="min-w-0 flex-1 pl-2">
+                                                <div class="flex items-center justify-between gap-1.5">
+                                                    <p class="text-[13px] font-extrabold truncate leading-tight" x-text="unit.unit_code"></p>
                                                     <span 
-                                                        class="px-1.5 py-0.2 rounded text-[9px] font-bold border shrink-0"
+                                                        class="px-1.5 py-0.5 rounded text-[9px] font-bold border shrink-0"
                                                         :class="selectedUnit && selectedUnit.id === unit.id ? 'bg-white/20 text-white border-white/30' : {
                                                             'bg-emerald-50 text-emerald-700 border-emerald-200': unit.status === 'available',
                                                             'bg-amber-50 text-amber-700 border-amber-200': unit.status === 'reserved' || unit.status === 'deposited',
@@ -719,13 +726,13 @@
                                                     ></span>
                                                 </div>
                                                 <p 
-                                                    :class="selectedUnit && selectedUnit.id === unit.id ? 'text-blue-100' : 'text-slate-400'"
-                                                    class="text-[10px] truncate mt-0.5" 
+                                                    :class="selectedUnit && selectedUnit.id === unit.id ? 'text-blue-100' : 'text-slate-500'"
+                                                    class="text-[11px] truncate mt-0.5" 
                                                     x-text="(unit.block ? 'Tòa ' + unit.block + ' ' : '') + '• T' + (unit.floor || '-') + (unit.unit_axis ? ' • Trục ' + unit.unit_axis : '') + ' • ' + (unit.unit_type || '2PN') + (unit.area ? ' • ' + unit.area + 'm²' : '')"
                                                 ></p>
                                                 <p 
-                                                    :class="selectedUnit && selectedUnit.id === unit.id ? 'text-amber-200 font-extrabold' : 'text-blue-600 font-bold'"
-                                                    class="text-[11px] truncate mt-0.5"
+                                                    :class="selectedUnit && selectedUnit.id === unit.id ? 'text-amber-200 font-extrabold' : 'text-blue-600 font-extrabold'"
+                                                    class="text-[12px] truncate mt-0.5"
                                                     x-text="unit.price_text || unit.display_price || 'Liên hệ'"
                                                 ></p>
                                             </div>
