@@ -162,6 +162,11 @@ class ProjectUnitLocatorController extends Controller
             $query->where('block', $block);
         }
 
+        // Lọc theo tầng
+        if ($floor = $request->input('floor')) {
+            $query->where('floor', $floor);
+        }
+
         // Lọc theo trục căn
         if ($axis = $request->input('unit_axis')) {
             $query->where('unit_axis', $axis);
@@ -207,6 +212,7 @@ class ProjectUnitLocatorController extends Controller
         // Lấy danh sách các hướng, tòa, trục căn đã có trong dự án để làm bộ lọc
         $existingDirections = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('direction')->distinct()->pluck('direction');
         $existingBlocks = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('block')->distinct()->pluck('block');
+        $existingFloors = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('floor')->distinct()->orderBy('floor', 'asc')->pluck('floor');
         $existingAxes = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('unit_axis')->where('unit_axis', '!=', '')->distinct()->orderBy('unit_axis')->pluck('unit_axis');
         $floorplans = ProjectFloorplan::where('project_id', $projectId)->latest()->get();
         $templates = ProjectTemplate::where('project_id', $projectId)->latest()->get();
@@ -225,6 +231,7 @@ class ProjectUnitLocatorController extends Controller
             'units',
             'existingDirections',
             'existingBlocks',
+            'existingFloors',
             'existingAxes',
             'floorplans',
             'templates',

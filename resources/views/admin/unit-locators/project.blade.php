@@ -203,7 +203,7 @@
                 <input type="hidden" name="per_page" value="100">
                 <input type="hidden" name="tab" value="units">
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-2.5">
                     <!-- Search Keyword -->
                     <div class="lg:col-span-2 relative">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
@@ -238,6 +238,30 @@
                             <option value="locked" {{ request('status') === 'locked' ? 'selected' : '' }}>Tạm khóa</option>
                         </select>
                     </div>
+
+                    <!-- Block Filter -->
+                    @if(!empty($existingBlocks) && count($existingBlocks) > 0)
+                    <div>
+                        <select name="block" @change="applyFilters()" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
+                            <option value="">-- Tòa --</option>
+                            @foreach($existingBlocks as $bl)
+                            <option value="{{ $bl }}" {{ request('block') === $bl ? 'selected' : '' }}>{{ $bl }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
+
+                    <!-- Floor Filter -->
+                    @if(!empty($existingFloors) && count($existingFloors) > 0)
+                    <div>
+                        <select name="floor" @change="applyFilters()" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
+                            <option value="">-- Tầng --</option>
+                            @foreach($existingFloors as $fl)
+                            <option value="{{ $fl }}" {{ request('floor') === $fl ? 'selected' : '' }}>Tầng {{ $fl }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
 
                     <!-- Axis Filter -->
                     @if(!empty($existingAxes) && count($existingAxes) > 0)
