@@ -683,7 +683,7 @@
                                 <template x-for="unit in filteredUnits" :key="unit.id">
                                     <button 
                                         type="button" 
-                                        @click="selectedUnit = unit"
+                                        @click="selectedUnit = unit; if (window.innerWidth < 1024) mobileUnitPanelOpen = true"
                                         :class="selectedUnit && selectedUnit.id === unit.id ? 'bg-blue-600 text-white shadow-sm border-blue-600 ring-1 ring-blue-600' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'"
                                         class="w-full p-2.5 rounded-lg border text-left transition-all duration-150 flex flex-col gap-0.5 group"
                                     >
@@ -734,19 +734,36 @@
                         </div>
 
                         <!-- CỘT 2 (BÊN CÒN LẠI): HIỂN THỊ ẢNH POSTER & SƠ ĐỒ CHỈ CĂN CHI TIẾT (CO DÃN 100% VỪA MÀN HÌNH - KHÔNG CUỘN) -->
-                        <div class="col-span-12 lg:col-span-8 xl:col-span-9 bg-white rounded-xl border border-slate-200/90 shadow-sm p-2 flex flex-col h-full overflow-hidden">
+                        <!-- Mobile: lớp nền mờ khi panel mở -->
+                        <div x-show="mobileUnitPanelOpen" x-transition.opacity @click="mobileUnitPanelOpen = false" class="lg:hidden fixed inset-0 z-[60] bg-black/40" style="display:none"></div>
+                        <div
+                            @keydown.escape.window="mobileUnitPanelOpen = false"
+                            :class="mobileUnitPanelOpen ? 'translate-x-0' : 'translate-x-full'"
+                            class="fixed bottom-0 right-0 left-10 max-h-[100dvh] overflow-y-auto rounded-tl-2xl z-[61] translate-x-full transition-transform duration-300 ease-out lg:static lg:z-auto lg:translate-x-0 lg:transition-none col-span-12 lg:col-span-8 xl:col-span-9 bg-white lg:rounded-xl border-0 lg:border border-slate-200/90 shadow-2xl lg:shadow-sm p-2 flex flex-col lg:h-full lg:max-h-none lg:overflow-hidden"
+                        >
+                            <!-- Mobile: thanh tiêu đề + nút đóng để chọn căn khác -->
+                            <div class="lg:hidden flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-100 shrink-0">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-extrabold text-slate-900 truncate" x-text="selectedUnit ? selectedUnit.unit_code : 'Sơ đồ chỉ căn'"></p>
+                                    <p class="text-[11px] text-slate-500 truncate" x-show="selectedUnit" x-text="selectedUnit ? ((selectedUnit.block ? 'Tòa ' + selectedUnit.block + ' • ' : '') + 'T' + (selectedUnit.floor || '-') + (selectedUnit.area ? ' • ' + selectedUnit.area + 'm²' : '')) : ''"></p>
+                                </div>
+                                <button type="button" @click="mobileUnitPanelOpen = false" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition" title="Đóng để chọn căn khác">
+                                    <i class="fa-solid fa-xmark text-sm"></i>
+                                    <span>Đóng</span>
+                                </button>
+                            </div>
                             <template x-if="selectedUnit">
-                                <div class="h-full flex flex-col min-h-0 overflow-hidden">
+                                <div class="lg:flex-1 lg:h-full flex flex-col lg:min-h-0 lg:overflow-hidden">
                                     
-                                    <!-- Khung hiển thị ảnh Poster/Sơ đồ chỉ căn: Dùng relative + absolute inset-0 để bảo đảm 100% VỪA MÀN HÌNH - KHÔNG CUỘN -->
-                                    <div class="flex-1 min-h-0 relative w-full bg-[#fdfaf6] rounded-lg overflow-hidden flex items-center justify-center group border border-slate-200 py-6 sm:py-8 px-4">
+                                    <!-- Khung hiển thị ảnh Poster/Sơ đồ chỉ căn. Mobile: ôm sát ảnh (cao theo tỉ lệ ảnh). Desktop: vừa khung, không cuộn -->
+                                    <div class="relative w-full overflow-hidden group lg:flex-1 lg:min-h-0 lg:flex lg:items-center lg:justify-center lg:bg-[#fdfaf6] lg:rounded-lg lg:border lg:border-slate-200 lg:py-8 lg:px-4 lg:[container-type:size]">
                                         <!-- Nút tải về góc trên bên phải -->
                                         <button type="button" @click="downloadSelectedPoster()" class="absolute top-2 right-2 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition" title="Tải ảnh Poster chỉ căn">
                                             <i class="fa-solid fa-download text-[11px]"></i>
                                             <span>Tải về</span>
                                         </button>
                                         <template x-if="getSelectedPosterLayout()">
-                                            <div class="relative h-full max-w-full overflow-hidden rounded-md shadow-xl ring-1 ring-black/5" :style="'aspect-ratio:' + getSelectedPosterLayout().width + '/' + getSelectedPosterLayout().height + ';container-type:inline-size;background:linear-gradient(145deg,#3f1703,#7c2d05,#270e02)'">
+                                            <div class="relative shrink-0 overflow-hidden rounded-md lg:shadow-xl ring-1 ring-black/5 w-full lg:w-[min(100cqw,calc(100cqh*var(--ar)))]" :style="'--ar:' + getSelectedPosterLayout().width + '/' + getSelectedPosterLayout().height + ';aspect-ratio:' + getSelectedPosterLayout().width + '/' + getSelectedPosterLayout().height + ';container-type:inline-size;background:linear-gradient(145deg,#3f1703,#7c2d05,#270e02)'">
                                                 <img x-show="getSelectedPosterLayout().background" :src="getSelectedPosterLayout().background" class="absolute inset-0 w-full h-full object-fill pointer-events-none" :alt="selectedUnit.unit_code + ' poster background'">
                                                 <template x-for="image in getSelectedPosterLayout().images" :key="image.id">
                                                     <img x-show="image.source" :src="image.source" :style="posterImageStyle(image)" class="absolute select-none pointer-events-none" :alt="image.id">
@@ -757,10 +774,10 @@
                                             </div>
                                         </template>
                                         <template x-if="!getSelectedPosterLayout() && getSelectedPosterSource()">
-                                            <img :src="getSelectedPosterSource()" :alt="selectedUnit.unit_code" class="absolute inset-0 w-full h-full object-contain p-2 select-none cursor-zoom-in" @click="openLightbox(getSelectedPosterSource(), 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)" loading="lazy">
+                                            <img :src="getSelectedPosterSource()" :alt="selectedUnit.unit_code" class="block w-full h-auto lg:absolute lg:inset-0 lg:h-full object-contain lg:p-2 select-none cursor-zoom-in" @click="openLightbox(getSelectedPosterSource(), 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)" loading="lazy">
                                         </template>
                                         <template x-if="!getSelectedPosterLayout() && !getSelectedPosterSource()">
-                                            <div class="flex flex-col items-center justify-center text-slate-500">
+                                            <div class="flex flex-col items-center justify-center text-slate-500 py-12 lg:py-0">
                                                 <i class="fa-regular fa-image text-3xl mb-1"></i>
                                                 <span class="text-xs">Chưa có ảnh sơ đồ chỉ căn</span>
                                             </div>
@@ -884,11 +901,11 @@
                                     </div>
 
                                     <!-- Khung hiển thị ảnh: Dùng relative + absolute inset-0 để bảo đảm 100% VỪA MÀN HÌNH - KHÔNG CUỘN -->
-                                    <div class="flex-1 min-h-0 relative w-full bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center group">
+                                    <div class="flex-1 min-h-0 relative w-full bg-[#fdfaf6] rounded-lg overflow-hidden flex items-center justify-center group border border-slate-200">
                                         <img 
                                             :src="selectedFloorplan.image_url" 
                                             :alt="selectedFloorplan.name" 
-                                            class="absolute inset-0 w-full h-full object-contain p-2 select-none cursor-zoom-in"
+                                            class="absolute inset-0 w-full h-full object-contain px-4 py-6 sm:py-8 select-none drop-shadow-xl cursor-zoom-in"
                                             @click="openLightbox(selectedFloorplan.image_url, selectedFloorplan.name)"
                                             loading="lazy"
                                         >
@@ -2063,6 +2080,8 @@
 
                 // Căn hộ & Bài viết đang mở modal / chi tiết
                 selectedUnit: {!! json_encode($units->first() ?? null) !!},
+                // Mobile: panel ảnh chỉ căn trượt từ trái sang
+                mobileUnitPanelOpen: false,
                 selectedArticle: null,
 
                 // Bảng tính vay
