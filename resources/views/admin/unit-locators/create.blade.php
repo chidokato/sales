@@ -2368,10 +2368,10 @@ function unitCreatorStudio() {
                         let dw, dh, dx, dy;
 
                         // Nhận diện theo key/tên ô vì id thường chỉ là slot_1, slot_2...
-                        const isBocMai = this.isBocMaiSlot(slot);
+                        const fitFullImage = this.isBocMaiSlot(slot) || this.isFloorplanSlot(slot);
 
-                        if (isBocMai) {
-                            // Chế độ Contain: giữ nguyên tỷ lệ, không cắt ảnh, phần trống để trong suốt
+                        if (fitFullImage) {
+                            // Ảnh bóc mái và mặt bằng: giữ tỷ lệ, hiển thị trọn ảnh, không tô phần dư
                             if (imgRatio > slotRatio) {
                                 dw = w;
                                 dh = w / imgRatio;
