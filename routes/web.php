@@ -91,5 +91,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/unit-locators/{id}/floorplan-image', [ProjectUnitLocatorController::class, 'updateFloorplanImage'])->name('unit-locators.floorplan-image');
     Route::post('/unit-locators/project/{projectId}/sync-axis-layout-3d', [ProjectUnitLocatorController::class, 'syncAxisLayout3d'])->name('unit-locators.sync-axis-layout-3d');
     Route::post('/unit-locators/project/{projectId}/sync-axis-locator', [ProjectUnitLocatorController::class, 'syncAxisLocator'])->name('unit-locators.sync-axis-locator');
+    Route::post('/unit-locators/project/{projectId}/bulk-sync-locator', [ProjectUnitLocatorController::class, 'bulkSyncLocator'])->name('unit-locators.bulk-sync-locator');
     Route::get('/unit-locators/project/{projectId}/axis-locators', [ProjectUnitLocatorController::class, 'getAxisLocators'])->name('unit-locators.axis-locators');
 });

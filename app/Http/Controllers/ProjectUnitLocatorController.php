@@ -157,6 +157,22 @@ class ProjectUnitLocatorController extends Controller
             $query->where('direction', $direction);
         }
 
+        // Lọc theo nhóm loại căn, hỗ trợ cả cột bedroom và nhãn unit_type (ví dụ 2PN, 1PN+1).
+        if ($unitTypeGroup = $request->input('unit_type_group')) {
+            if ($unitTypeGroup === 'studio') {
+                $query->where(function ($q) {
+                    $q->where('bedroom', 0)->orWhere('unit_type', 'LIKE', '%studio%');
+                });
+            } elseif (ctype_digit((string) $unitTypeGroup)) {
+                $bedroomCount = (int) $unitTypeGroup;
+                $query->where(function ($q) use ($bedroomCount) {
+                    $q->where('bedroom', $bedroomCount)
+                      ->orWhere('unit_type', 'LIKE', '%' . $bedroomCount . 'PN%')
+                      ->orWhere('unit_type', 'LIKE', '%' . $bedroomCount . 'N%');
+                });
+            }
+        }
+
         // Lọc theo tòa / tháp
         if ($block = $request->input('block')) {
             $query->where('block', $block);
@@ -214,7 +230,6 @@ class ProjectUnitLocatorController extends Controller
         $existingBlocks = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('block')->distinct()->pluck('block');
         $existingFloors = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('floor')->distinct()->orderBy('floor', 'asc')->pluck('floor');
         $existingAxes = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('unit_axis')->where('unit_axis', '!=', '')->distinct()->orderBy('unit_axis')->pluck('unit_axis');
-        $existingBedroomCounts = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('bedroom')->distinct()->orderBy('bedroom')->pluck('bedroom');
         $floorplans = ProjectFloorplan::where('project_id', $projectId)->latest()->get();
         $templates = ProjectTemplate::where('project_id', $projectId)->latest()->get();
         $perspectives = ProjectPerspective::where('project_id', $projectId)->latest()->get();
@@ -234,7 +249,6 @@ class ProjectUnitLocatorController extends Controller
             'existingBlocks',
             'existingFloors',
             'existingAxes',
-            'existingBedroomCounts',
             'floorplans',
             'templates',
             'perspectives',
@@ -1383,6 +1397,31 @@ class ProjectUnitLocatorController extends Controller
             'image_url' => $imageUrl,
             'count' => $count,
         ]);
+    }
+
+    /** Apply one floorplan locator to a specifically selected set of units. */
+    public function bulkSyncLocator(Request $request, $projectId)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'required|integer',
+            'highlight_data' => 'required|string',
+            'base_image' => 'nullable|string',
+        ]);
+
+        $highlightData = json_decode($validated['highlight_data'], true);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($highlightData)) {
+            return response()->json(['success' => false, 'message' => 'Dữ liệu định vị không hợp lệ.'], 422);
+        }
+
+        $update = ['highlight_data' => $highlightData, 'updated_at' => now()];
+        if (!empty($validated['base_image'])) $update['base_image'] = $validated['base_image'];
+
+        $count = ProjectUnitLocator::where('project_id', $projectId)
+            ->whereIn('id', $validated['ids'])
+            ->update($update);
+
+        return response()->json(['success' => true, 'count' => $count, 'message' => "Đã lưu định vị cho {$count} căn được chọn."]);
     }
 
     /**

@@ -203,102 +203,113 @@
                 <input type="hidden" name="per_page" value="100">
                 <input type="hidden" name="tab" value="units">
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-8 gap-2.5">
+                <div x-data="{ showAdvanced: false }" class="flex flex-wrap items-center gap-2">
                     <!-- Search Keyword -->
-                    <div class="lg:col-span-2 relative">
+                    <div class="relative w-full sm:w-64">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                         <input 
                             type="text" 
                             name="search" 
                             value="{{ request('search') }}" 
                             @input.debounce.350ms="applyFilters()"
-                            placeholder="Tìm theo mã căn (CH-01, A12.05...)" 
+                            placeholder="Mã căn..." 
                             class="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
                         >
                     </div>
 
-                    <!-- Bedroom / unit type filter -->
-                    @if(!empty($existingBedroomCounts) && count($existingBedroomCounts) > 0)
-                    <div>
-                        <select name="bedroom" @change="applyFilters()" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
-                            <option value="">-- Loại căn --</option>
-                            @foreach($existingBedroomCounts as $bedroomCount)
-                            <option value="{{ $bedroomCount }}" {{ (string) request('bedroom') === (string) $bedroomCount ? 'selected' : '' }}>{{ $bedroomCount == 0 ? 'Studio' : $bedroomCount . 'N' }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    @endif
+                    <!-- Toggle Advanced Filters -->
+                    <button 
+                        type="button" 
+                        @click="showAdvanced = !showAdvanced" 
+                        class="py-1.5 px-3 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold text-xs hover:bg-slate-50 transition"
+                    >
+                        Bộ lọc <i class="fa-solid" :class="showAdvanced ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    </button>
 
-                    <!-- Direction Filter -->
-                    <div>
-                        <select name="direction" @change="applyFilters()" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50">
-                            <option value="">-- Tất cả Hướng --</option>
-                            @foreach(['Đông Nam', 'Đông Bắc', 'Tây Nam', 'Tây Bắc', 'Đông', 'Tây', 'Nam', 'Bắc'] as $dir)
-                            <option value="{{ $dir }}" {{ request('direction') === $dir ? 'selected' : '' }}>{{ $dir }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <!-- Advanced Filters (Collapsible) -->
+                    <div x-show="showAdvanced" class="flex flex-wrap gap-2 items-center" x-cloak>
+                        <!-- Unit type filter -->
+                        <div>
+                            <select name="unit_type_group" @change="applyFilters()" class="py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
+                                <option value="">-- Loại căn --</option>
+                                <option value="studio" {{ request('unit_type_group') === 'studio' ? 'selected' : '' }}>Studio</option>
+                                @foreach([1, 2, 3, 4, 5] as $bedroomCount)
+                                <option value="{{ $bedroomCount }}" {{ request('unit_type_group') === (string) $bedroomCount ? 'selected' : '' }}>{{ $bedroomCount }}N</option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                    <!-- Status Filter -->
-                    <div>
-                        <select name="status" @change="applyFilters()" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50">
-                            <option value="">-- Trạng thái --</option>
-                            <option value="available" {{ request('status') === 'available' ? 'selected' : '' }}>Còn trống</option>
-                            <option value="reserved" {{ request('status') === 'reserved' ? 'selected' : '' }}>Đang giữ chỗ</option>
-                            <option value="deposited" {{ request('status') === 'deposited' ? 'selected' : '' }}>Đã cọc</option>
-                            <option value="sold" {{ request('status') === 'sold' ? 'selected' : '' }}>Đã bán</option>
-                            <option value="locked" {{ request('status') === 'locked' ? 'selected' : '' }}>Tạm khóa</option>
-                        </select>
-                    </div>
+                        <!-- Direction Filter -->
+                        <div>
+                            <select name="direction" @change="applyFilters()" class="py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50">
+                                <option value="">-- Tất cả Hướng --</option>
+                                @foreach(['Đông Nam', 'Đông Bắc', 'Tây Nam', 'Tây Bắc', 'Đông', 'Tây', 'Nam', 'Bắc'] as $dir)
+                                <option value="{{ $dir }}" {{ request('direction') === $dir ? 'selected' : '' }}>{{ $dir }}</option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                    <!-- Block Filter -->
-                    @if(!empty($existingBlocks) && count($existingBlocks) > 0)
-                    <div>
-                        <select name="block" @change="applyFilters()" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
-                            <option value="">-- Tòa --</option>
-                            @foreach($existingBlocks as $bl)
-                            <option value="{{ $bl }}" {{ request('block') === $bl ? 'selected' : '' }}>{{ $bl }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    @endif
+                        <!-- Status Filter -->
+                        <div>
+                            <select name="status" @change="applyFilters()" class="py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50">
+                                <option value="">-- Trạng thái --</option>
+                                <option value="available" {{ request('status') === 'available' ? 'selected' : '' }}>Còn trống</option>
+                                <option value="reserved" {{ request('status') === 'reserved' ? 'selected' : '' }}>Đang giữ chỗ</option>
+                                <option value="deposited" {{ request('status') === 'deposited' ? 'selected' : '' }}>Đã cọc</option>
+                                <option value="sold" {{ request('status') === 'sold' ? 'selected' : '' }}>Đã bán</option>
+                                <option value="locked" {{ request('status') === 'locked' ? 'selected' : '' }}>Tạm khóa</option>
+                            </select>
+                        </div>
 
-                    <!-- Floor Filter -->
-                    @if(!empty($existingFloors) && count($existingFloors) > 0)
-                    <div>
-                        <select name="floor" @change="applyFilters()" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
-                            <option value="">-- Tầng --</option>
-                            @foreach($existingFloors as $fl)
-                            <option value="{{ $fl }}" {{ request('floor') === $fl ? 'selected' : '' }}>Tầng {{ $fl }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    @endif
+                        <!-- Block Filter -->
+                        @if(!empty($existingBlocks) && count($existingBlocks) > 0)
+                        <div>
+                            <select name="block" @change="applyFilters()" class="py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
+                                <option value="">-- Tòa --</option>
+                                @foreach($existingBlocks as $bl)
+                                <option value="{{ $bl }}" {{ request('block') === $bl ? 'selected' : '' }}>{{ $bl }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @endif
 
-                    <!-- Axis Filter -->
-                    @if(!empty($existingAxes) && count($existingAxes) > 0)
-                    <div>
-                        <select name="unit_axis" @change="applyFilters()" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
-                            <option value="">-- Trục căn --</option>
-                            @foreach($existingAxes as $ax)
-                            <option value="{{ $ax }}" {{ request('unit_axis') === $ax ? 'selected' : '' }}>Trục {{ $ax }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    @endif
+                        <!-- Floor Filter -->
+                        @if(!empty($existingFloors) && count($existingFloors) > 0)
+                        <div>
+                            <select name="floor" @change="applyFilters()" class="py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
+                                <option value="">-- Tầng --</option>
+                                @foreach($existingFloors as $fl)
+                                <option value="{{ $fl }}" {{ request('floor') === $fl ? 'selected' : '' }}>Tầng {{ $fl }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @endif
 
-                    <!-- Sort Order -->
-                    <div>
-                        <select name="sort" @change="applyFilters()" class="w-full py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50">
-                            <option value="latest" {{ request('sort') === 'latest' ? 'selected' : '' }}>Mới nhất</option>
-                            <option value="code_asc" {{ request('sort') === 'code_asc' ? 'selected' : '' }}>Mã căn A-Z</option>
-                            <option value="axis_asc" {{ request('sort') === 'axis_asc' ? 'selected' : '' }}>Trục căn (Tăng dần)</option>
-                            <option value="axis_desc" {{ request('sort') === 'axis_desc' ? 'selected' : '' }}>Trục căn (Giảm dần)</option>
-                            <option value="area_asc" {{ request('sort') === 'area_asc' ? 'selected' : '' }}>Diện tích tăng dần</option>
-                            <option value="area_desc" {{ request('sort') === 'area_desc' ? 'selected' : '' }}>Diện tích giảm dần</option>
-                            <option value="price_asc" {{ request('sort') === 'price_asc' ? 'selected' : '' }}>Giá tăng dần</option>
-                            <option value="price_desc" {{ request('sort') === 'price_desc' ? 'selected' : '' }}>Giá giảm dần</option>
-                        </select>
+                        <!-- Axis Filter -->
+                        @if(!empty($existingAxes) && count($existingAxes) > 0)
+                        <div>
+                            <select name="unit_axis" @change="applyFilters()" class="py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
+                                <option value="">-- Trục căn --</option>
+                                @foreach($existingAxes as $ax)
+                                <option value="{{ $ax }}" {{ request('unit_axis') === $ax ? 'selected' : '' }}>Trục {{ $ax }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @endif
+
+                        <!-- Sort Order -->
+                        <div>
+                            <select name="sort" @change="applyFilters()" class="py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50">
+                                <option value="latest" {{ request('sort') === 'latest' ? 'selected' : '' }}>Mới nhất</option>
+                                <option value="code_asc" {{ request('sort') === 'code_asc' ? 'selected' : '' }}>Mã căn A-Z</option>
+                                <option value="axis_asc" {{ request('sort') === 'axis_asc' ? 'selected' : '' }}>Trục căn (Tăng dần)</option>
+                                <option value="axis_desc" {{ request('sort') === 'axis_desc' ? 'selected' : '' }}>Trục căn (Giảm dần)</option>
+                                <option value="area_asc" {{ request('sort') === 'area_asc' ? 'selected' : '' }}>Diện tích tăng dần</option>
+                                <option value="area_desc" {{ request('sort') === 'area_desc' ? 'selected' : '' }}>Diện tích giảm dần</option>
+                                <option value="price_asc" {{ request('sort') === 'price_asc' ? 'selected' : '' }}>Giá tăng dần</option>
+                                <option value="price_desc" {{ request('sort') === 'price_desc' ? 'selected' : '' }}>Giá giảm dần</option>
+                            </select>
+                        </div>
                     </div>
 
                     <!-- Action Submit & View Toggle -->
@@ -317,40 +328,6 @@
                         >
                             <i class="fa-solid fa-rotate-left text-xs" :class="isLoadingUnits ? 'fa-spin' : ''"></i>
                         </button>
-
-                        <!-- Nút Vào Studio Sửa ảnh hàng loạt -->
-                        <button 
-                            type="button" 
-                            @click="goToBulkStudio()"
-                            class="py-1.5 px-3 rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center gap-1.5 transition shrink-0 shadow-xs"
-                            title="Vào Studio ghép & sửa ảnh chỉ căn hàng loạt"
-                        >
-                            <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
-                            <span class="hidden xl:inline">Sửa ảnh hàng loạt</span>
-                            <span x-show="selectedUnitIds.length > 0" x-text="'(' + selectedUnitIds.length + ')'" class="bg-indigo-600 text-white text-[10px] px-1.5 py-0.2 rounded-full font-black"></span>
-                        </button>
-
-                        <!-- View Toggle: Table (default) vs Grid -->
-                        <div class="flex items-center gap-0.5 p-0.5 bg-slate-100 rounded-lg shrink-0">
-                            <button 
-                                type="button" 
-                                @click="viewMode = 'table'" 
-                                :class="viewMode === 'table' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
-                                class="p-1.5 rounded transition"
-                                title="Hiển thị dạng Bảng (Table - mỗi căn 1 dòng)"
-                            >
-                                <i class="fa-solid fa-table-list text-xs"></i>
-                            </button>
-                            <button 
-                                type="button" 
-                                @click="viewMode = 'grid'" 
-                                :class="viewMode === 'grid' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-800'"
-                                class="p-1.5 rounded transition"
-                                title="Hiển thị dạng Thẻ (Grid)"
-                            >
-                                <i class="fa-solid fa-border-all text-xs"></i>
-                            </button>
-                        </div>
                     </div>
                 </div>
             </form>

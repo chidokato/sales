@@ -714,131 +714,42 @@
     <!-- ==================== MODE 1: VISUAL CANVAS STUDIO ==================== -->
     <div x-show="mode === 'studio'" class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 min-h-0 overflow-hidden">
 
-        <!-- Left: Form Input Unit Info & Pin Customization (Có thể lăn chuột cuộn nội dung độc lập) -->
-        <div class="lg:col-span-4 h-full min-h-0 overflow-y-auto space-y-3 pr-1.5 custom-unit-scroll">
-
-            <!-- Card 0: Chế độ Định vị (Theo Trục Căn vs Theo Từng Căn) -->
-            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 space-y-3">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-black text-slate-800 uppercase tracking-tight flex items-center gap-1.5">
-                        <i class="fa-solid fa-layer-group text-blue-600"></i>
-                        <span>Chế độ Định Vị</span>
-                    </span>
-                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
-                        <span x-text="allAxes.length"></span> Trục căn
-                    </span>
+        <!-- Danh sách căn để chọn nhanh trong Studio định vị -->
+        <div class="lg:col-span-2 h-full min-h-0 flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
+            <div class="p-3 border-b border-slate-100 shrink-0">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-xs font-black text-slate-800 uppercase flex items-center gap-1.5"><i class="fa-solid fa-list text-blue-600"></i> Danh sách căn</h3>
+                    <span class="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full" x-text="filteredLocatorUnits.length + ' căn'"></span>
                 </div>
-
-                <!-- 2 Tabs chuyển đổi -->
-                <div class="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
-                    <button 
-                        type="button" 
-                        @click="switchStudioTargetMode('axis')"
-                        :class="studioTargetMode === 'axis' ? 'bg-blue-600 text-white font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-bold'"
-                        class="py-1.5 px-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-center"
-                    >
-                        <i class="fa-solid fa-arrows-split-up-and-left text-[11px]"></i>
-                        <span>1. Theo Trục Căn</span>
-                    </button>
-                    <button 
-                        type="button" 
-                        @click="switchStudioTargetMode('unit')"
-                        :class="studioTargetMode === 'unit' ? 'bg-blue-600 text-white font-extrabold shadow-xs' : 'text-slate-600 hover:text-slate-900 font-bold'"
-                        class="py-1.5 px-2 rounded-lg text-xs transition flex items-center justify-center gap-1.5 text-center"
-                    >
-                        <i class="fa-solid fa-door-open text-[11px]"></i>
-                        <span>2. Theo Từng Căn</span>
-                    </button>
+                <input type="text" x-model="locatorUnitSearch" placeholder="Tìm mã căn..." class="w-full mb-2 px-2 py-1.5 rounded-lg border border-slate-200 text-[11px] focus:ring-1 focus:ring-blue-500">
+                <div class="grid grid-cols-2 gap-1.5">
+                    <select x-model="locatorBlockFilter" class="min-w-0 px-1.5 py-1.5 rounded-lg border border-slate-200 text-[10px] bg-slate-50"><option value="">Tất cả tòa</option><template x-for="value in locatorBlocks" :key="value"><option :value="value" x-text="value"></option></template></select>
+                    <select x-model="locatorFloorFilter" class="min-w-0 px-1.5 py-1.5 rounded-lg border border-slate-200 text-[10px] bg-slate-50"><option value="">Tất cả tầng</option><template x-for="value in locatorFloors" :key="value"><option :value="value" x-text="'Tầng ' + value"></option></template></select>
+                    <select x-model="locatorAxisFilter" class="min-w-0 px-1.5 py-1.5 rounded-lg border border-slate-200 text-[10px] bg-slate-50"><option value="">Tất cả trục</option><template x-for="value in locatorAxes" :key="value"><option :value="value" x-text="'Trục ' + value"></option></template></select>
+                    <select x-model="locatorTypeFilter" class="min-w-0 px-1.5 py-1.5 rounded-lg border border-slate-200 text-[10px] bg-slate-50"><option value="">Tất cả loại</option><option value="studio">Studio</option><option value="1">1N</option><option value="2">2N</option><option value="3">3N</option><option value="4">4N</option></select>
                 </div>
-
-                <!-- Trợ giúp giải thích tính năng -->
-                <!-- <div class="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200/60 text-[11px] text-blue-900 leading-snug flex items-start gap-2">
-                    <i class="fa-solid fa-circle-check text-blue-600 mt-0.5 shrink-0"></i>
-                    <div>
-                        <strong class="font-bold">Đồng bộ cùng trục căn:</strong> Khi định vị theo trục căn, <u>tất cả các căn cùng trục qua mọi tầng</u> sẽ có cùng vị trí chính xác trên mặt bằng.
-                    </div>
-                </div> -->
-
-                <!-- KHI CHỌN CHẾ ĐỘ 1: THEO TRỤC CĂN -->
-                <div x-show="studioTargetMode === 'axis'" class="space-y-2.5 pt-1 border-t border-slate-100">
-                    <label class="block text-xs font-bold text-slate-700">
-                        Chọn trục căn cần định vị:
-                    </label>
-
-                    <!-- Danh sách các nút Trục căn cuộn ngang / bọc lưới -->
-                    <div class="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto custom-unit-scroll p-1 bg-slate-50/80 rounded-xl border border-slate-200">
-                        <template x-for="ax in allAxes" :key="ax.axis">
-                            <button 
-                                type="button" 
-                                @click="selectAxis(ax.axis)"
-                                :class="selectedAxis === ax.axis 
-                                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs font-black' 
-                                    : (ax.has_locator ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 font-medium')"
-                                class="px-2 py-1 rounded-lg border text-xs transition flex items-center gap-1"
-                            >
-                                <span x-text="'Trục ' + ax.axis"></span>
-                                <span class="text-[10px] opacity-80" x-text="'(' + ax.count + ')'"></span>
-                                <template x-if="ax.has_locator">
-                                    <i class="fa-solid fa-circle-check text-[10px]" :class="selectedAxis === ax.axis ? 'text-white' : 'text-emerald-600'"></i>
-                                </template>
-                            </button>
-                        </template>
-                    </div>
-
-                    <!-- Thẻ tóm tắt trục căn đang chọn -->
-                    <template x-if="false && selectedAxis">
-                        <div class="p-2.5 rounded-xl bg-slate-900 text-white text-xs space-y-1">
-                            <div class="flex items-center justify-between">
-                                <span class="font-black text-amber-300 text-sm" x-text="'Đang định vị: Trục ' + selectedAxis"></span>
-                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/30 text-blue-300 border border-blue-400/40" x-text="getAxisUnitCount(selectedAxis) + ' căn hộ'"></span>
-                            </div>
-                            <p class="text-[11px] text-slate-300">
-                                Hãy kéo hoặc vẽ khung viền đỏ lên mặt bằng bên phải để định vị vị trí cho trục này.
-                            </p>
-                        </div>
-                    </template>
-
-                    <!-- Nút Lưu & Đồng bộ nhanh cho Trục căn -->
-                    <template x-if="false">
-                        <button 
-                            type="button" 
-                            @click="saveAxisLocator()"
-                            :disabled="isSaving || !hasImage || !selectedAxis"
-                            class="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-xs transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2"
-                        >
-                            <i class="fa-solid fa-arrows-rotate"></i>
-                            <span x-text="isSaving ? 'Đang lưu & đồng bộ...' : ('Lưu & Đồng bộ cho toàn bộ Trục ' + (selectedAxis || ''))"></span>
-                        </button>
-                    </template>
-                </div>
-
-                <!-- KHI CHỌN CHẾ ĐỘ 2: THEO TỪNG CĂN -->
-                <div x-show="studioTargetMode === 'unit'" class="space-y-2 pt-1 border-t border-slate-100">
-                    <div class="flex items-center justify-between text-xs">
-                        <span class="text-slate-600 font-bold">Căn đang chỉnh sửa:</span>
-                        <span class="font-black text-blue-700 font-mono" x-text="form.unit_code || 'Chưa chọn'"></span>
-                    </div>
-
-                    <template x-if="inheritedFromAxis">
-                        <div class="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center gap-1.5">
-                            <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i>
-                            <span>Đã tự động nạp vị trí từ <b>Trục <span x-text="inheritedFromAxis"></span></b></span>
-                        </div>
-                    </template>
-
-                    <label class="flex items-start gap-2 p-2 rounded-lg bg-slate-50 border border-slate-200 cursor-pointer">
-                        <input 
-                            type="checkbox" 
-                            x-model="syncAxisLocatorOption"
-                            class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer mt-0.5"
-                        >
-                        <div class="text-[11px] text-slate-700">
-                            <strong class="font-bold text-slate-900">Đồng bộ cho các căn cùng trục</strong>
-                            <p class="text-slate-500">Tự động áp dụng định vị này cho mọi căn hộ cùng trục căn.</p>
-                        </div>
-                    </label>
+                <div class="flex items-center justify-between mt-2 text-[10px]">
+                    <span class="text-blue-700 font-bold" x-text="locatorSelectedIds.length + ' căn đã chọn'"></span>
+                    <button type="button" @click="toggleAllLocatorUnits()" class="text-blue-600 hover:underline font-bold" x-text="allFilteredLocatorUnitsSelected ? 'Bỏ chọn kết quả' : 'Chọn tất cả kết quả'"></button>
                 </div>
             </div>
+            <div class="flex-1 min-h-0 overflow-y-auto p-2 space-y-1 custom-unit-scroll">
+                <template x-for="unit in filteredLocatorUnits" :key="unit.id || unit.originalIndex">
+                    <div class="w-full flex items-center gap-1.5 px-1.5 py-1 rounded-lg border transition" :class="currentUnitIndex === unit.originalIndex ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300'">
+                        <input type="checkbox" class="shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500" :checked="locatorSelectedIds.includes(Number(unit.id))" @click.stop @change="toggleLocatorUnit(unit.id)">
+                        <button type="button" @click="selectLocatorUnit(unit.originalIndex)" class="min-w-0 flex-1 flex items-center gap-1.5 text-left whitespace-nowrap overflow-hidden">
+                            <span class="text-[10px] font-black shrink-0" x-text="unit.unit_code"></span>
+                            <span class="text-[9px] truncate opacity-80" x-text="[unit.block, unit.floor ? 'T.' + unit.floor : '', unit.unit_axis ? 'Trục ' + unit.unit_axis : '', unit.unit_type].filter(Boolean).join(' · ')"></span>
+                            <span x-show="unit.has_image" class="text-[8px] text-emerald-500 shrink-0">●</span>
+                        </button>
+                    </div>
+                </template>
+                <template x-if="filteredLocatorUnits.length === 0"><p class="p-3 text-center text-[10px] text-slate-400">Không tìm thấy căn phù hợp.</p></template>
+            </div>
+        </div>
+
+        <!-- Left: Form Input Unit Info & Pin Customization (Có thể lăn chuột cuộn nội dung độc lập) -->
+        <div class="lg:col-span-4 h-full min-h-0 overflow-y-auto space-y-3 pr-1.5 custom-unit-scroll">
 
             <!-- Card 1: Bounding Box & Pin Styling Controls (Hình Thức Định Vị) -->
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-4 space-y-3.5">
@@ -983,72 +894,6 @@
                 </div>
             </div>
 
-            <!-- Card 2: Thông tin căn hộ (chỉ hiển thị khi ở mode 'unit') -->
-            <div x-show="studioTargetMode === 'unit'" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
-                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-100 pb-2">
-                    <i class="fa-solid fa-sliders text-blue-600"></i>
-                    <span>Thông tin căn hộ</span>
-                </h3>
-
-                <!-- Mã căn & Trục căn -->
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Mã căn <span class="text-rose-500">*</span></label>
-                        <input type="text" x-model="form.unit_code" @input="renderCanvas()" placeholder="CH-01..." class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50/50">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Trục căn</label>
-                        <input type="text" x-model="form.unit_axis" placeholder="05, 12A..." class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-indigo-700 bg-slate-50/50">
-                    </div>
-                </div>
-
-                <!-- Diện tích & Hướng -->
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Diện tích (m²)</label>
-                        <input type="number" step="0.1" x-model="form.area" @input="renderCanvas()" placeholder="75.5" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Hướng ban công</label>
-                        <select x-model="form.direction" @change="renderCanvas()" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50">
-                            <option value="">-- Hướng --</option>
-                            <option value="Đông Nam">Đông Nam</option>
-                            <option value="Đông Bắc">Đông Bắc</option>
-                            <option value="Tây Nam">Tây Nam</option>
-                            <option value="Tây Bắc">Tây Bắc</option>
-                            <option value="Đông">Đông</option>
-                            <option value="Tây">Tây</option>
-                            <option value="Nam">Nam</option>
-                            <option value="Bắc">Bắc</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Tòa & Tầng -->
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Tòa / Block</label>
-                        <input type="text" x-model="form.block" @input="renderCanvas()" placeholder="Tòa A" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Tầng</label>
-                        <input type="text" x-model="form.floor" @input="renderCanvas()" placeholder="Tầng 12" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50">
-                    </div>
-                </div>
-
-                <!-- Phòng ngủ & Giá bán -->
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Phòng ngủ</label>
-                        <input type="number" min="0" max="10" x-model="form.bedroom" @input="renderCanvas()" placeholder="2" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50">
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-0.5">Giá hiển thị</label>
-                        <input type="text" x-model="form.price_text" @input="renderCanvas()" placeholder="3.5 Tỷ" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs bg-slate-50/50">
-                    </div>
-                </div>
-            </div>
-
             <!-- Card 3: Thẻ thông tin tóm tắt căn hộ (Info Card Banner) -->
             <!-- <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
                 <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
@@ -1077,29 +922,15 @@
 
             <!-- Card 4: Nút Lưu & Xuất Ảnh -->
             <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-2.5">
-                <template x-if="studioTargetMode === 'axis'">
-                    <button 
-                        type="button" 
-                        @click="saveAxisLocator()"
-                        :disabled="isSaving || !hasImage || !selectedAxis"
-                        class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-sm transition shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2"
-                    >
-                        <i class="fa-solid fa-arrows-rotate"></i>
-                        <span x-text="isSaving ? 'Đang lưu & đồng bộ...' : ('Lưu & Đồng bộ cho toàn bộ Trục ' + (selectedAxis || ''))"></span>
-                    </button>
-                </template>
-
-                <template x-if="studioTargetMode === 'unit'">
-                    <button 
-                        type="button" 
-                        @click="saveUnit(false)"
-                        :disabled="isSaving || !hasImage"
-                        class="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold text-sm transition shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2"
-                    >
-                        <i class="fa-solid fa-floppy-disk"></i>
-                        <span x-text="isSaving ? 'Đang lưu...' : 'Lưu chỉ căn này'"></span>
-                    </button>
-                </template>
+                <button
+                    type="button"
+                    @click="saveSelectedLocator()"
+                    :disabled="isSaving || !hasImage || (!locatorSelectedIds.length && !(importedUnits[currentUnitIndex] && importedUnits[currentUnitIndex].id))"
+                    class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-sm transition shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2"
+                >
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span x-text="isSaving ? 'Đang lưu...' : (locatorSelectedIds.length ? 'Lưu định vị cho ' + locatorSelectedIds.length + ' căn đã chọn' : 'Lưu định vị cho căn ' + (form.unit_code || 'đang chọn'))"></span>
+                </button>
 
                 <button 
                     type="button" 
@@ -1114,7 +945,7 @@
         </div>
 
         <!-- Right: Interactive Canvas Floorplan Viewer -->
-        <div class="lg:col-span-8 flex flex-col h-full min-h-0 overflow-hidden space-y-2">
+        <div class="lg:col-span-6 flex flex-col h-full min-h-0 overflow-hidden space-y-2">
             <!-- Floorplan Source Selector -->
             <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs px-3.5 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
                 <div class="flex items-center gap-2.5 w-full sm:w-auto">
@@ -1657,7 +1488,6 @@ function unitCreatorStudio() {
         boxBorderRadius: 8,
         boxHasFill: true,
         boxHasLabel: true,
-        studioTargetMode: 'axis', // 'axis' or 'unit'
         selectedAxis: '',
         syncAxisLocatorOption: true,
         inheritedFromAxis: false,
@@ -1672,6 +1502,12 @@ function unitCreatorStudio() {
         resizeBoxStart: { x: 0, y: 0, box: { x: 0, y: 0, w: 0, h: 0 } },
         drawStart: { x: 0, y: 0 },
         currentUnitIndex: 0,
+        locatorUnitSearch: '',
+        locatorBlockFilter: '',
+        locatorFloorFilter: '',
+        locatorAxisFilter: '',
+        locatorTypeFilter: '',
+        locatorSelectedIds: [],
         showUnitsCol: true,
         unitSearchText: '',
         unitFilterStatus: 'all',
@@ -1776,6 +1612,68 @@ function unitCreatorStudio() {
             if (!axis) return 0;
             const ax = this.allAxes.find(a => a.axis === axis);
             return ax ? ax.count : 0;
+        },
+
+        get locatorBlocks() {
+            return [...new Set((this.importedUnits || []).map(u => String(u.block || '').trim()).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+        },
+
+        get locatorFloors() {
+            return [...new Set((this.importedUnits || []).map(u => String(u.floor || '').trim()).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+        },
+
+        get locatorAxes() {
+            return [...new Set((this.importedUnits || []).map(u => String(u.unit_axis || '').trim()).filter(Boolean))]
+                .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+        },
+
+        get filteredLocatorUnits() {
+            const search = (this.locatorUnitSearch || '').trim().toLowerCase();
+            return (this.importedUnits || []).map((unit, originalIndex) => ({ ...unit, originalIndex })).filter(unit => {
+                if (search && ![unit.unit_code, unit.unit_type, unit.block, unit.floor, unit.unit_axis].some(value => String(value || '').toLowerCase().includes(search))) return false;
+                if (this.locatorBlockFilter && String(unit.block || '') !== this.locatorBlockFilter) return false;
+                if (this.locatorFloorFilter && String(unit.floor || '') !== this.locatorFloorFilter) return false;
+                if (this.locatorAxisFilter && String(unit.unit_axis || '') !== this.locatorAxisFilter) return false;
+                if (this.locatorTypeFilter) {
+                    const bedrooms = unit.bedroom === null || unit.bedroom === undefined || unit.bedroom === '' ? NaN : Number(unit.bedroom);
+                    const type = String(unit.unit_type || '').toLowerCase();
+                    if (this.locatorTypeFilter === 'studio') {
+                        if (!(bedrooms === 0 || type.includes('studio'))) return false;
+                    } else {
+                        const count = Number(this.locatorTypeFilter);
+                        const typeMatch = new RegExp('(?:^|\\D)' + count + '\\s*(?:pn|n)', 'i').test(type);
+                        if (!(Number.isFinite(bedrooms) && bedrooms === count) && !typeMatch) return false;
+                    }
+                }
+                return true;
+            });
+        },
+
+        get allFilteredLocatorUnitsSelected() {
+            return this.filteredLocatorUnits.length > 0 && this.filteredLocatorUnits.every(unit => this.locatorSelectedIds.includes(Number(unit.id)));
+        },
+
+        toggleLocatorUnit(id) {
+            id = Number(id);
+            this.locatorSelectedIds = this.locatorSelectedIds.includes(id)
+                ? this.locatorSelectedIds.filter(selectedId => selectedId !== id)
+                : [...this.locatorSelectedIds, id];
+        },
+
+        toggleAllLocatorUnits() {
+            const visibleIds = this.filteredLocatorUnits.map(unit => Number(unit.id));
+            this.locatorSelectedIds = this.allFilteredLocatorUnitsSelected
+                ? this.locatorSelectedIds.filter(id => !visibleIds.includes(id))
+                : [...new Set([...this.locatorSelectedIds, ...visibleIds])];
+        },
+
+        selectLocatorUnit(index) {
+            this.selectUnitByIndex(index);
+            const unit = this.importedUnits[index];
+            if (unit && unit.unit_axis) this.selectedAxis = unit.unit_axis;
+            this.renderCanvas();
         },
 
         get currentTemplate() {
@@ -1903,7 +1801,6 @@ function unitCreatorStudio() {
 
                 @if(request('axis'))
                 this.mode = 'studio';
-                this.studioTargetMode = 'axis';
                 this.selectedAxis = '{{ request('axis') }}';
                 @endif
 
@@ -3615,29 +3512,6 @@ function unitCreatorStudio() {
             return Math.hypot(x - this.arrowStart.x, y - this.arrowStart.y) <= 24;
         },
 
-        switchStudioTargetMode(mode) {
-            this.studioTargetMode = mode;
-            if (mode === 'axis') {
-                if (!this.selectedAxis) {
-                    const u = this.importedUnits[this.currentUnitIndex];
-                    if (u && u.unit_axis) {
-                        this.selectedAxis = u.unit_axis;
-                    } else if (this.allAxes && this.allAxes.length > 0) {
-                        this.selectedAxis = this.allAxes[0].axis;
-                    }
-                }
-                if (this.selectedAxis) {
-                    this.loadAxisLocator(this.selectedAxis);
-                }
-            } else if (mode === 'unit') {
-                const u = this.importedUnits[this.currentUnitIndex];
-                if (u) {
-                    this.selectUnitByIndex(this.currentUnitIndex);
-                }
-            }
-            this.renderCanvas();
-        },
-
         selectAxis(axis) {
             this.selectedAxis = axis;
             this.loadAxisLocator(axis);
@@ -3754,13 +3628,7 @@ function unitCreatorStudio() {
         goToStudioWithCurrentUnit() {
             this.mode = 'studio';
             const u = this.importedUnits[this.currentUnitIndex];
-            if (u && u.unit_axis) {
-                this.studioTargetMode = 'axis';
-                this.selectedAxis = u.unit_axis;
-                this.loadAxisLocator(u.unit_axis);
-            } else {
-                this.studioTargetMode = 'unit';
-            }
+            if (u && u.unit_axis) this.selectedAxis = u.unit_axis;
             const matchedFp = this.findMatchingFloorplan(u);
             if (matchedFp && matchedFp.image_url) {
                 this.loadSavedFloorplan(matchedFp.image_url);
@@ -4080,9 +3948,7 @@ function unitCreatorStudio() {
 
             // 2. Vẽ Định Vị Chỉ Căn (Khung Bounding Box viền đỏ + Mũi tên hoặc Marker)
             if (this.locatorStyle === 'box' || this.locatorStyle === 'box_arrow') {
-                const labelText = (this.studioTargetMode === 'axis' && this.selectedAxis)
-                    ? ('Trục ' + this.selectedAxis)
-                    : (this.form.unit_code || (this.selectedAxis ? ('Trục ' + this.selectedAxis) : ''));
+                const labelText = this.form.unit_code || (this.selectedAxis ? ('Trục ' + this.selectedAxis) : '');
                 this.drawBoundingBox(ctx, this.locatorBox, {
                     borderColor: this.pinColor || '#ef4444',
                     borderWidth: this.boxBorderWidth || 6,
@@ -4100,7 +3966,7 @@ function unitCreatorStudio() {
             }
 
             // 3. Vẽ Thẻ Thông Tin Căn Hộ (chỉ khi ở mode Từng Căn)
-            if (this.cardPosition !== 'none' && this.studioTargetMode === 'unit') {
+            if (this.cardPosition !== 'none') {
                 this.drawInfoCard(ctx, w, h);
             }
         },
@@ -4349,20 +4215,23 @@ function unitCreatorStudio() {
             }
         },
 
-        saveAxisLocator() {
+        async saveSelectedLocator() {
             if (!this.hasImage) {
                 Swal.fire('Lỗi', 'Vui lòng chọn ảnh mặt bằng trước!', 'error');
                 return;
             }
 
-            if (!this.selectedAxis) {
-                Swal.fire('Chưa chọn trục căn', 'Vui lòng chọn một trục căn cần định vị!', 'warning');
+            const currentUnit = this.importedUnits[this.currentUnitIndex];
+            const ids = this.locatorSelectedIds.length
+                ? [...this.locatorSelectedIds]
+                : (currentUnit && currentUnit.id ? [Number(currentUnit.id)] : []);
+            if (ids.length === 0) {
+                Swal.fire('Chưa chọn căn', 'Hãy chọn một căn ở danh sách bên trái.', 'warning');
                 return;
             }
 
-            this.isSaving = true;
-
-            const hlData = {
+            const highlightData = {
+                marker: this.marker,
                 locatorStyle: this.locatorStyle,
                 locatorBox: this.locatorBox,
                 hasArrow: this.hasArrow,
@@ -4375,65 +4244,45 @@ function unitCreatorStudio() {
                 boxHasLabel: this.boxHasLabel,
                 pinColor: this.pinColor,
                 pinStyle: this.pinStyle,
-                pinSize: this.pinSize
+                pinSize: this.pinSize,
+                cardPosition: this.cardPosition,
+                cardScalePercent: this.cardScalePercent,
+                cardCustomX: this.cardCustomX,
+                cardCustomY: this.cardCustomY
             };
 
-            const payload = {
-                unit_axis: this.selectedAxis,
-                base_image: this.currentFloorplanPath || '',
-                highlight_data: JSON.stringify(hlData)
-            };
+            this.isSaving = true;
+            try {
+                const response = await fetch('{{ route('admin.unit-locators.bulk-sync-locator', $project->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ids,
+                        base_image: this.currentFloorplanPath || '',
+                        highlight_data: JSON.stringify(highlightData)
+                    })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || 'Không thể lưu định vị.');
 
-            fetch('{{ route('admin.unit-locators.sync-axis-locator', $project->id) }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(data => {
-                this.isSaving = false;
-                if (data.success) {
-                    if (!this.axisLocatorsMap) this.axisLocatorsMap = {};
-                    this.axisLocatorsMap[this.selectedAxis] = {
-                        unit_axis: this.selectedAxis,
-                        has_locator: true,
-                        highlight_data: hlData,
-                        base_image: this.currentFloorplanPath,
-                        unit_count: (data.count !== undefined ? data.count : (data.updated_count || this.getAxisUnitCount(this.selectedAxis)))
-                    };
-
-                    if (this.importedUnits) {
-                        this.importedUnits.forEach(u => {
-                            if (u.unit_axis === this.selectedAxis) {
-                                u.highlight_data = hlData;
-                                if (this.currentFloorplanPath) u.base_image = this.currentFloorplanPath;
-                            }
-                        });
+                this.importedUnits.forEach(unit => {
+                    if (ids.includes(Number(unit.id))) {
+                        unit.highlight_data = highlightData;
+                        if (this.currentFloorplanPath) unit.base_image = this.currentFloorplanPath;
                     }
-
-                    const updatedCount = (data.count !== undefined ? data.count : (data.updated_count || 0));
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Đã đồng bộ Trục căn!',
-                        html: `Đã lưu định vị và đồng bộ thành công cho <b>${updatedCount}</b> căn hộ thuộc <b>Trục ${this.selectedAxis}</b>!`,
-                        timer: 3000,
-                        showConfirmButton: true,
-                        confirmButtonText: 'Đóng'
-                    });
-                } else {
-                    Swal.fire('Lỗi', data.message || 'Không thể đồng bộ trục căn', 'error');
-                }
-            })
-            .catch(err => {
+                });
+                this.locatorSelectedIds = [];
+                await Swal.fire({ icon: 'success', title: 'Đã lưu định vị', text: `Đã áp dụng cho ${data.count || ids.length} căn.`, timer: 2200, showConfirmButton: true });
+            } catch (error) {
+                Swal.fire('Lỗi', error.message, 'error');
+            } finally {
                 this.isSaving = false;
-                Swal.fire('Lỗi kết nối', err.message, 'error');
-            });
+            }
         },
-
         drawMarker(ctx, x, y) {
             const color = this.pinColor;
             let radius = 24;
