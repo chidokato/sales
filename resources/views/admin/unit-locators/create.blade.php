@@ -2367,8 +2367,8 @@ function unitCreatorStudio() {
                         const slotRatio = w / h;
                         let dw, dh, dx, dy;
 
-                        // Nếu là ảnh bóc mái (ví dụ slot.id có chứa 'boc_mai' hoặc tương tự)
-                        const isBocMai = slot.id && String(slot.id).toLowerCase().includes('boc_mai');
+                        // Nhận diện theo key/tên ô vì id thường chỉ là slot_1, slot_2...
+                        const isBocMai = this.isBocMaiSlot(slot);
 
                         if (isBocMai) {
                             // Chế độ Contain: giữ nguyên tỷ lệ, không cắt ảnh, phần trống để trong suốt
