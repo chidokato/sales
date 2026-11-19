@@ -2424,7 +2424,47 @@
                         const full = /boc.?mai|floor.?plan|mat.?bang|layout.?3d/i.test([slot.id,slot.name,slot.key,slot.type].join(' '));
                         const scale = full ? Math.min(w/image.naturalWidth,h/image.naturalHeight) : Math.max(w/image.naturalWidth,h/image.naturalHeight);
                         const dw=image.naturalWidth*scale, dh=image.naturalHeight*scale;
-                        ctx.drawImage(image, x+(w-dw)/2, y+(h-dh)/2, dw, dh); ctx.restore();
+                        const imageX=x+(w-dw)/2, imageY=y+(h-dh)/2;
+                        ctx.drawImage(image, imageX, imageY, dw, dh);
+                        const floorplanSlot = /floor.?plan|mat.?bang.?tang/i.test([slot.id,slot.name,slot.key,slot.type].join(' '));
+                        const sourceUrl = String(path || '');
+                        if (floorplanSlot && !/unit_canvas_|locator_/i.test(sourceUrl) && unit.highlight_data) {
+                            let highlight = unit.highlight_data;
+                            if (typeof highlight === 'string') { try { highlight = JSON.parse(highlight); } catch (_) { highlight = null; } }
+                            if (highlight) {
+                                const color = highlight.pinColor || '#ef4444';
+                                const box = highlight.locatorBox || highlight.locator_box;
+                                if ((highlight.locatorStyle === 'box' || highlight.locatorStyle === 'box_arrow' || !highlight.locatorStyle) && box) {
+                                    const bx=imageX+Number(box.x||0)*scale, by=imageY+Number(box.y||0)*scale;
+                                    const bw=Number(box.w||0)*scale, bh=Number(box.h||0)*scale;
+                                    ctx.save();
+                                    if (highlight.boxHasFill !== false) { ctx.fillStyle='rgba(239,68,68,0.20)'; ctx.fillRect(bx,by,bw,bh); }
+                                    ctx.strokeStyle=color; ctx.lineWidth=Math.max(2,Number(highlight.boxBorderWidth||6)*scale);
+                                    ctx.strokeRect(bx,by,bw,bh);
+                                    if (highlight.boxHasLabel !== false) {
+                                        const label=unit.unit_code || '';
+                                        ctx.font=`bold ${Math.max(10,Math.round(14*scale))}px sans-serif`;
+                                        const labelWidth=ctx.measureText(label).width+12, labelHeight=Math.max(18,Math.round(20*scale));
+                                        ctx.fillStyle=color; ctx.fillRect(bx,Math.max(imageY,by-labelHeight),labelWidth,labelHeight);
+                                        ctx.fillStyle='#fff'; ctx.textAlign='left'; ctx.textBaseline='middle';
+                                        ctx.fillText(label,bx+6,Math.max(imageY,by-labelHeight)+labelHeight/2);
+                                    }
+                                    if (highlight.hasArrow !== false && highlight.arrowStart && highlight.arrowHead) {
+                                        ctx.beginPath(); ctx.moveTo(imageX+Number(highlight.arrowStart.x||0)*scale,imageY+Number(highlight.arrowStart.y||0)*scale);
+                                        ctx.lineTo(imageX+Number(highlight.arrowHead.x||0)*scale,imageY+Number(highlight.arrowHead.y||0)*scale);
+                                        ctx.strokeStyle=color; ctx.lineWidth=Math.max(2,5*scale); ctx.stroke();
+                                        const ax=imageX+Number(highlight.arrowHead.x||0)*scale, ay=imageY+Number(highlight.arrowHead.y||0)*scale;
+                                        ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(ax-10*scale,ay-5*scale); ctx.lineTo(ax-8*scale,ay+7*scale); ctx.closePath(); ctx.fillStyle=color; ctx.fill();
+                                    }
+                                    ctx.restore();
+                                } else if (highlight.marker) {
+                                    const mx=imageX+Number(highlight.marker.x||0)*scale, my=imageY+Number(highlight.marker.y||0)*scale;
+                                    ctx.save(); ctx.beginPath(); ctx.arc(mx,my,Math.max(6,20*scale),0,Math.PI*2);
+                                    ctx.fillStyle=color; ctx.fill(); ctx.lineWidth=Math.max(2,3*scale); ctx.strokeStyle='#fff'; ctx.stroke(); ctx.restore();
+                                }
+                            }
+                        }
+                        ctx.restore();
                         if (slot.border && slot.border !== 'none' && Number(slot.borderWidth)>0) { ctx.strokeStyle=slot.border; ctx.lineWidth=Number(slot.borderWidth); ctx.strokeRect(x,y,w,h); }
                     }
                     const form = { ...(recipe.posterForm || {}), unit_code: unit.unit_code || recipe.posterForm?.unit_code, unit_type: unit.unit_type || recipe.posterForm?.unit_type, direction: unit.direction || recipe.posterForm?.direction, view: unit.view || recipe.posterForm?.view, area: unit.area || recipe.posterForm?.area, price_text: unit.price_text || recipe.posterForm?.price_text, price_note: unit.price_note || recipe.posterForm?.price_note, block: unit.block || recipe.posterForm?.block, floor: unit.floor || recipe.posterForm?.floor };
