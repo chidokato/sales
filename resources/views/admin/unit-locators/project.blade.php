@@ -23,16 +23,6 @@
     </a>
 
     <a 
-        href="{{ route('admin.unit-locators.create', $project->id) }}"
-        onclick="if (window.__selectedUnitIds && window.__selectedUnitIds.length > 0) { window.location.href = '{{ route('admin.unit-locators.create', $project->id) }}?units=' + window.__selectedUnitIds.join(','); return false; }"
-        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold shadow-xs transition"
-        title="Vào Studio ghép & sửa ảnh chỉ căn hàng loạt"
-    >
-        <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
-        <span>Sửa ảnh hàng loạt</span>
-    </a>
-
-    <a 
         href="{{ route('admin.unit-locators.create', ['projectId' => $project->id, 'import' => 'excel']) }}" 
         class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition"
         title="Nhập danh sách căn từ file Excel và tạo ảnh chỉ căn"
@@ -203,7 +193,7 @@
                 <input type="hidden" name="per_page" value="100">
                 <input type="hidden" name="tab" value="units">
 
-                <div x-data="{ showAdvanced: false }" class="flex flex-wrap items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <!-- Search Keyword -->
                     <div class="relative w-full sm:w-64">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
@@ -217,17 +207,8 @@
                         >
                     </div>
 
-                    <!-- Toggle Advanced Filters -->
-                    <button 
-                        type="button" 
-                        @click="showAdvanced = !showAdvanced" 
-                        class="py-1.5 px-3 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold text-xs hover:bg-slate-50 transition"
-                    >
-                        Bộ lọc <i class="fa-solid" :class="showAdvanced ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-                    </button>
-
-                    <!-- Advanced Filters (Collapsible) -->
-                    <div x-show="showAdvanced" class="flex flex-wrap gap-2 items-center" x-cloak>
+                    <!-- Filters -->
+                    <div class="flex flex-wrap gap-2 items-center">
                         <!-- Unit type filter -->
                         <div>
                             <select name="unit_type_group" @change="applyFilters()" class="py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">

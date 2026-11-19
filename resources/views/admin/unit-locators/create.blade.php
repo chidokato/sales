@@ -155,47 +155,13 @@
                 </button>
             </div>
 
-            <!-- Bộ lọc trạng thái nhỏ gọn -->
-            <div class="flex items-center gap-1 shrink-0 text-[10px]">
-                <button 
-                    type="button" 
-                    @click="unitFilterStatus = 'all'" 
-                    :class="unitFilterStatus === 'all' ? 'bg-slate-800 text-white font-bold shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'"
-                    class="px-1.5 py-0.5 rounded transition flex-1 text-center truncate"
-                >
-                    Tất cả
-                </button>
-                <template x-if="selectedUnitIds && selectedUnitIds.length > 0">
-                    <button 
-                        type="button" 
-                        @click="unitFilterStatus = (unitFilterStatus === 'selected' ? 'all' : 'selected')" 
-                        :class="unitFilterStatus === 'selected' ? 'bg-indigo-600 text-white font-bold shadow-2xs' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium'"
-                        class="px-1.5 py-0.5 rounded transition flex-1 text-center truncate"
-                        title="Lọc các căn được chọn từ bảng danh sách"
-                    >
-                        Đã chọn (<span x-text="selectedUnitIds.length"></span>)
-                    </button>
-                </template>
-                <button 
-                    type="button" 
-                    @click="unitFilterStatus = (unitFilterStatus === 'has_image' ? 'all' : 'has_image')" 
-                    :class="unitFilterStatus === 'has_image' ? 'bg-emerald-600 text-white font-bold shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'"
-                    class="px-1.5 py-0.5 rounded transition flex-1 text-center truncate"
-                    title="Các căn đã có ảnh poster"
-                >
-                    Đã có ảnh
-                </button>
-                <button 
-                    type="button" 
-                    @click="unitFilterStatus = (unitFilterStatus === 'no_image' ? 'all' : 'no_image')" 
-                    :class="unitFilterStatus === 'no_image' ? 'bg-amber-600 text-white font-bold shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-medium'"
-                    class="px-1.5 py-0.5 rounded transition flex-1 text-center truncate"
-                    title="Các căn chưa có ảnh poster"
-                >
-                    Chưa tạo
-                </button>
+            <!-- Bộ lọc tòa, tầng, trục căn và loại căn -->
+            <div class="grid grid-cols-2 gap-1 shrink-0">
+                <select x-model="posterBlockFilter" class="w-full px-1.5 py-1 rounded border border-slate-200 text-[10px] bg-white"><option value="">Tất cả tòa</option><template x-for="value in locatorBlocks" :key="value"><option :value="value" x-text="value"></option></template></select>
+                <select x-model="posterFloorFilter" class="w-full px-1.5 py-1 rounded border border-slate-200 text-[10px] bg-white"><option value="">Tất cả tầng</option><template x-for="value in locatorFloors" :key="value"><option :value="value" x-text="'Tầng ' + value"></option></template></select>
+                <select x-model="posterAxisFilter" class="w-full px-1.5 py-1 rounded border border-slate-200 text-[10px] bg-white"><option value="">Tất cả trục</option><template x-for="value in locatorAxes" :key="value"><option :value="value" x-text="'Trục ' + value"></option></template></select>
+                <select x-model="posterTypeFilter" class="w-full px-1.5 py-1 rounded border border-slate-200 text-[10px] bg-white"><option value="">Tất cả loại</option><option value="studio">Studio</option><option value="1">1N</option><option value="2">2N</option><option value="3">3N</option><option value="4">4N</option></select>
             </div>
-
             <!-- Thanh công cụ Chọn nhiều / Chọn tất cả -->
             <div class="flex items-center justify-between px-2 py-1 bg-slate-50 rounded-lg border border-slate-200/80 text-[10px] shrink-0 select-none">
                 <label class="flex items-center gap-1.5 cursor-pointer font-bold text-slate-700">
@@ -312,7 +278,7 @@
                     <div class="p-4 text-center text-slate-400 text-xs">
                         <i class="fa-solid fa-magnifying-glass text-slate-300 text-lg mb-1 block"></i>
                         <span>Không tìm thấy căn phù hợp</span>
-                        <button type="button" @click="unitSearchText = ''; unitFilterStatus = 'all'" class="text-amber-600 font-bold block mt-1 hover:underline mx-auto">
+                        <button type="button" @click="unitSearchText = ''; posterBlockFilter = ''; posterFloorFilter = ''; posterAxisFilter = ''; posterTypeFilter = ''" class="text-amber-600 font-bold block mt-1 hover:underline mx-auto">
                             Xóa bộ lọc
                         </button>
                     </div>
@@ -1510,7 +1476,10 @@ function unitCreatorStudio() {
         locatorSelectedIds: [],
         showUnitsCol: true,
         unitSearchText: '',
-        unitFilterStatus: 'all',
+        posterBlockFilter: '',
+        posterFloorFilter: '',
+        posterAxisFilter: '',
+        posterTypeFilter: '',
         selectedUnitIds: @json($selectedUnitIds ?? []),
         selectedIndices: [],
         excelModalOpen: false,
@@ -1741,20 +1710,29 @@ function unitCreatorStudio() {
         get filteredUnitList() {
             if (!this.importedUnits || !Array.isArray(this.importedUnits)) return [];
             const search = (this.unitSearchText || '').trim().toLowerCase();
-            const filter = this.unitFilterStatus || 'all';
 
             return this.importedUnits.map((u, idx) => ({ ...u, originalIndex: idx })).filter(u => {
-                if (filter === 'has_image' && !u.has_image) return false;
-                if (filter === 'no_image' && u.has_image) return false;
-                if (filter === 'selected' && this.selectedUnitIds && this.selectedUnitIds.length > 0) {
-                    if (!this.selectedUnitIds.includes(Number(u.id))) return false;
+                if (this.posterBlockFilter && String(u.block || '') !== this.posterBlockFilter) return false;
+                if (this.posterFloorFilter && String(u.floor || '') !== this.posterFloorFilter) return false;
+                if (this.posterAxisFilter && String(u.unit_axis || '') !== this.posterAxisFilter) return false;
+                if (this.posterTypeFilter) {
+                    const bedrooms = u.bedroom === null || u.bedroom === undefined || u.bedroom === '' ? NaN : Number(u.bedroom);
+                    const type = String(u.unit_type || '').toLowerCase();
+                    if (this.posterTypeFilter === 'studio') {
+                        if (!(bedrooms === 0 || type.includes('studio'))) return false;
+                    } else {
+                        const count = Number(this.posterTypeFilter);
+                        const typeMatch = new RegExp('(?:^|\\D)' + count + '\\s*(?:pn|n)', 'i').test(type);
+                        if (!(Number.isFinite(bedrooms) && bedrooms === count) && !typeMatch) return false;
+                    }
                 }
                 if (search) {
                     const code = (u.unit_code || '').toLowerCase();
                     const type = (u.unit_type || '').toLowerCase();
                     const block = (u.block || '').toLowerCase();
                     const floor = (u.floor || '').toLowerCase();
-                    return code.includes(search) || type.includes(search) || block.includes(search) || floor.includes(search);
+                    const axis = (u.unit_axis || '').toLowerCase();
+                    if (!(code.includes(search) || type.includes(search) || block.includes(search) || floor.includes(search) || axis.includes(search))) return false;
                 }
                 return true;
             });
