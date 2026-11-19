@@ -1953,6 +1953,11 @@ function unitCreatorStudio() {
             const key = (slot.key || '').toLowerCase();
             const id = (slot.id || '').toLowerCase();
 
+            // Ảnh phân khu/tiện ích chỉ là ảnh minh họa, không phải mặt bằng tầng để định vị căn.
+            if (name.includes('phân khu') || name.includes('phan khu') || name.includes('tiện ích') || name.includes('tien ich') || key.includes('phan_khu') || key.includes('tien_ich') || id.includes('phan_khu') || id.includes('tien_ich')) {
+                return false;
+            }
+
             // Bỏ qua các ô bóc mái 3D hoặc layout căn hộ nội thất
             if (name.includes('bóc mái') || name.includes('boc mai') || name.includes('3d') || name.includes('căn hộ') || name.includes('can ho') || key === 'boc_mai' || key === 'can_ho' || key === 'layout_3d') {
                 return false;
