@@ -831,15 +831,6 @@
                                             </div>
                                         </template>
 
-                                        <!-- Nút xem nhanh toàn màn hình trên ảnh khi hover -->
-                                        <button 
-                                            type="button" 
-                                            @click="openLightbox(getSelectedPosterSource(), 'Sơ đồ chi tiết Căn hộ ' + selectedUnit.unit_code)" 
-                                            class="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-black/75 hover:bg-black text-white text-[10px] font-bold backdrop-blur-sm transition flex items-center gap-1 shadow opacity-0 group-hover:opacity-100"
-                                        >
-                                            <i class="fa-solid fa-magnifying-glass-plus text-[9px]"></i>
-                                            <span>Click để phóng to</span>
-                                        </button>
                                     </div>
 
                                 </div>
