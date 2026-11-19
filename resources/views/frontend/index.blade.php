@@ -2414,19 +2414,24 @@
                     const slots = cfg.image_slots || [];
                     for (const slot of slots) {
                         const x=Number(slot.x||0), y=Number(slot.y||0), w=Number(slot.width||0), h=Number(slot.height||0);
-                        const path = recipe.slotImages?.[slot.id];
+                        const slotIdentity = [slot.id,slot.name,slot.key,slot.type].join(' ');
+                        const roofPlanSlot = /boc.?mai|roof.?plan|layout.?3d/i.test(slotIdentity);
+                        const floorplanSlot = /floor.?plan|mat.?bang.?tang/i.test(slotIdentity);
+                        // Luôn lấy ảnh bóc mái mới nhất của căn; fallback về ảnh gán trong recipe cũ.
+                        const path = (roofPlanSlot && (unit.layout_3d_image_url || unit.layout_3d_image))
+                            || (floorplanSlot && (unit.floorplan_image_url || unit.floorplan_image))
+                            || recipe.slotImages?.[slot.id];
                         const image = await this.loadPosterAsset(path);
                         if (sequence !== this.posterRenderSequence) return;
                         if (!image) continue;
                         ctx.save();
                         const radius = Number(slot.radius||0);
                         ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x,y,w,h,radius); else ctx.rect(x,y,w,h); ctx.clip();
-                        const full = /boc.?mai|floor.?plan|mat.?bang|layout.?3d/i.test([slot.id,slot.name,slot.key,slot.type].join(' '));
+                        const full = /boc.?mai|floor.?plan|mat.?bang|layout.?3d/i.test(slotIdentity);
                         const scale = full ? Math.min(w/image.naturalWidth,h/image.naturalHeight) : Math.max(w/image.naturalWidth,h/image.naturalHeight);
                         const dw=image.naturalWidth*scale, dh=image.naturalHeight*scale;
                         const imageX=x+(w-dw)/2, imageY=y+(h-dh)/2;
                         ctx.drawImage(image, imageX, imageY, dw, dh);
-                        const floorplanSlot = /floor.?plan|mat.?bang.?tang/i.test([slot.id,slot.name,slot.key,slot.type].join(' '));
                         const sourceUrl = String(path || '');
                         if (floorplanSlot && !/unit_canvas_|locator_/i.test(sourceUrl) && unit.highlight_data) {
                             let highlight = unit.highlight_data;
