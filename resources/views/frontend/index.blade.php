@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>IDC Real Estate - Cổng Thông tin & Sơ đồ Chỉ căn Bất động sản</title>
+    <title>INDOCHINE Real Estate - Cổng Thông tin & Sơ đồ Chỉ căn Bất động sản</title>
 
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -121,7 +121,7 @@
                     </div>
                     <div>
                         <div class="flex items-center gap-1.5">
-                            <span class="text-white font-extrabold text-base tracking-wider leading-tight">IDC</span>
+                            <span class="text-white font-extrabold text-base tracking-wider leading-tight">INDOCHINE</span>
                             <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">PORTAL</span>
                         </div>
                         <span class="text-slate-400 text-xs font-medium block leading-tight mt-0.5">BĐS & Sơ Đồ Chỉ Căn</span>
@@ -1220,7 +1220,7 @@
                     
                     <div class="bg-white px-3.5 py-2 rounded-xl border border-slate-200/80 shadow-sm shrink-0">
                         <h2 class="text-xs sm:text-sm font-extrabold text-slate-900">Liên Hệ & Đăng Ký Tư Vấn Chuyên Sâu</h2>
-                        <p class="text-[10px] text-slate-500">Đội ngũ chuyên viên IDC sẵn sàng hỗ trợ chọn căn, phân tích dòng tiền và thủ tục hợp đồng.</p>
+                        <p class="text-[10px] text-slate-500">Đội ngũ chuyên viên INDOCHINE sẵn sàng hỗ trợ chọn căn, phân tích dòng tiền và thủ tục hợp đồng.</p>
                     </div>
 
                     <div class="flex-1 min-h-0 overflow-y-auto custom-scroll pr-1">
@@ -1309,13 +1309,13 @@
                         <!-- Thông tin văn phòng & Hỗ trợ -->
                         <div class="lg:col-span-5 space-y-4">
                             <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-6 sm:p-7 rounded-3xl shadow-lg space-y-4">
-                                <h3 class="text-base font-bold text-blue-300">Văn Phòng Giao Dịch IDC Real Estate</h3>
+                                <h3 class="text-base font-bold text-blue-300">Văn Phòng Giao Dịch INDOCHINE Real Estate</h3>
                                 <div class="space-y-3 text-xs text-slate-300">
                                     <div class="flex items-start gap-3">
                                         <i class="fa-solid fa-location-dot text-rose-400 mt-0.5 text-sm"></i>
                                         <div>
                                             <p class="font-bold text-white">Trụ sở chính:</p>
-                                            <p>Tòa nhà IDC Building, Khu đô thị Nam An Khánh, Hoài Đức, Hà Nội</p>
+                                            <p>Tòa nhà INDOCHINE Building, Khu đô thị Nam An Khánh, Hoài Đức, Hà Nội</p>
                                         </div>
                                     </div>
                                     <div class="flex items-start gap-3">
@@ -1560,7 +1560,7 @@
 
                     <!-- Footer Modal -->
                     <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
-                        <span class="text-slate-400">IDC Real Estate Customer Portal</span>
+                        <span class="text-slate-400">INDOCHINE Real Estate Customer Portal</span>
                         <button 
                             type="button" 
                             @click="userInfoModalOpen = false" 
@@ -1603,7 +1603,7 @@
                         </div>
                         <div>
                             <h3 class="text-base font-extrabold text-slate-900">Đăng Nhập Hệ Thống</h3>
-                            <p class="text-xs text-slate-400">Cổng thông tin IDC Portal</p>
+                            <p class="text-xs text-slate-400">Cổng thông tin INDOCHINE Portal</p>
                         </div>
                     </div>
                     <button @click="loginModalOpen = false" class="text-slate-400 hover:text-slate-600">
@@ -1916,7 +1916,7 @@
                                 Thị trường bất động sản thời điểm hiện tại đang mở ra nhiều cơ hội hấp dẫn cho cả người mua ở thực và nhà đầu tư dài hạn. Để tối ưu hóa nguồn vốn, khách hàng nên tìm hiểu kỹ mặt bằng chỉ căn, so sánh đơn giá thông thủy và tận dụng các gói vay ưu đãi từ ngân hàng đối tác.
                             </p>
                             <p>
-                                Đội ngũ chuyên gia IDC Real Estate luôn sẵn sàng đồng hành, thẩm định pháp lý và cung cấp giải pháp an cư hoàn hảo nhất cho quý khách hàng.
+                                Đội ngũ chuyên gia INDOCHINE Real Estate luôn sẵn sàng đồng hành, thẩm định pháp lý và cung cấp giải pháp an cư hoàn hảo nhất cho quý khách hàng.
                             </p>
                         </div>
 
@@ -2177,10 +2177,18 @@
                     console.log('DEBUG: Selecting Project ID:', projectId, 'Name:', projectName);
                     this.currentProject.id = projectId;
                     this.currentProject.name = projectName;
+
+                    // Giữ ID dự án trong URL để có thể chia sẻ link mở trực tiếp sơ đồ dự án này.
+                    const projectUrl = new URL(window.location.href);
+                    projectUrl.searchParams.set('menu', 'locator');
+                    projectUrl.searchParams.set('project_id', projectId);
+                    window.history.replaceState({}, '', projectUrl);
                     
                     // Gọi API lấy dữ liệu dự án mới
                     try {
-                        const response = await fetch('/idc/public/index.php/api/projects/' + projectId + '/units');
+                        const unitsApiTemplate = @json(route('frontend.project.units', ['projectId' => '__PROJECT_ID__']));
+                        const unitsApiUrl = unitsApiTemplate.replace('__PROJECT_ID__', encodeURIComponent(projectId));
+                        const response = await fetch(unitsApiUrl, { headers: { 'Accept': 'application/json' } });
                         
                         if (!response.ok) throw new Error('Network response was not ok');
                         

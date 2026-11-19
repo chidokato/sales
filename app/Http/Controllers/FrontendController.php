@@ -313,7 +313,7 @@ class FrontendController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Cảm ơn quý khách! Chuyên viên tư vấn IDC đã tiếp nhận thông tin và sẽ liên hệ hỗ trợ bạn trong ít phút.',
+            'message' => 'Cảm ơn quý khách! Chuyên viên tư vấn INDOCHINE đã tiếp nhận thông tin và sẽ liên hệ hỗ trợ bạn trong ít phút.',
             'data' => $data,
         ]);
     }

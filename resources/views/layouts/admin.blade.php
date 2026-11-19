@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Admin Dashboard') - IDC Portal</title>
+    <title>@yield('title', 'Admin Dashboard') - INDOCHINE Portal</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -104,7 +104,7 @@
                         <i class="fa-solid fa-cube text-lg"></i>
                     </div>
                     <div>
-                        <span class="text-white font-extrabold text-lg tracking-wider">IDC</span>
+                        <span class="text-white font-extrabold text-lg tracking-wider">INDOCHINE</span>
                         <span class="text-blue-400 text-xs font-bold uppercase tracking-widest block -mt-1">ADMIN PORTAL</span>
                     </div>
                 </a>
@@ -244,7 +244,7 @@
                     </button>
                     <div>
                         <h2 class="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">@yield('page-title', 'Bảng điều khiển')</h2>
-                        <p class="text-xs text-slate-500 hidden sm:block">Hệ thống Quản lý & Giám sát IDC Tool</p>
+                        <p class="text-xs text-slate-500 hidden sm:block">Hệ thống Quản lý & Giám sát INDOCHINE Tool</p>
                     </div>
                 </div>
 

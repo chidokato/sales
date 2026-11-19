@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập - IDC Portal</title>
+    <title>Đăng nhập - INDOCHINE Portal</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -62,7 +62,7 @@
                         <i class="fa-solid fa-cube text-lg"></i>
                     </div>
                     <div>
-                        <span class="text-white font-extrabold text-lg tracking-wider">IDC</span>
+                        <span class="text-white font-extrabold text-lg tracking-wider">INDOCHINE</span>
                         <span class="text-blue-400 text-xs font-semibold uppercase tracking-widest block -mt-1">PORTAL</span>
                     </div>
                 </div>
@@ -75,7 +75,7 @@
                     Hệ thống quản trị tập trung
                 </div>
                 <h1 class="text-3xl font-bold text-white tracking-tight leading-tight">
-                    Nền tảng Quản trị & Điều hành <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">IDC Tool</span>
+                    Nền tảng Quản trị & Điều hành <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300">INDOCHINE Tool</span>
                 </h1>
                 <p class="text-slate-400 text-sm mt-3 leading-relaxed">
                     Đăng nhập để quản lý người dùng, theo dõi số liệu thống kê thời gian thực và cấu hình các công cụ tự động hóa.
@@ -100,7 +100,7 @@
 
             <!-- Bottom Footer info -->
             <div class="relative z-10 text-xs text-slate-400 flex items-center justify-between pt-6 border-t border-slate-800">
-                <span>© 2026 IDC Portal v1.0</span>
+                <span>© 2026 INDOCHINE Portal v1.0</span>
                 <span class="flex items-center gap-1.5 text-emerald-400">
                     <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Server Online
                 </span>
@@ -118,7 +118,7 @@
                         <i class="fa-solid fa-cube text-lg"></i>
                     </div>
                     <div>
-                        <span class="font-extrabold text-xl text-slate-800 dark:text-white">IDC PORTAL</span>
+                        <span class="font-extrabold text-xl text-slate-800 dark:text-white">INDOCHINE PORTAL</span>
                     </div>
                 </div>
 

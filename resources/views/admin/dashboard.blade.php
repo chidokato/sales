@@ -17,7 +17,7 @@
                     Xin chào, {{ auth()->user()->name }}! 👋
                 </h1>
                 <p class="text-slate-300 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
-                    Chào mừng bạn đến với trung tâm điều hành IDC Portal. Tại đây bạn có thể kiểm soát người dùng, hiệu suất hệ thống và dữ liệu thời gian thực.
+                    Chào mừng bạn đến với trung tâm điều hành INDOCHINE Portal. Tại đây bạn có thể kiểm soát người dùng, hiệu suất hệ thống và dữ liệu thời gian thực.
                 </p>
             </div>
             <div class="flex items-center gap-3 shrink-0">
@@ -90,7 +90,7 @@
         <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Hệ thống IDC</p>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Hệ thống INDOCHINE</p>
                     <h3 class="text-lg font-extrabold text-slate-900 mt-2">idc_tool</h3>
                     <p class="text-xs text-slate-500 font-medium mt-1">
                         MySQL: <span class="font-semibold text-slate-700">Online</span>

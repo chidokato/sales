@@ -1007,7 +1007,7 @@
                                     <i class="fa-solid fa-star text-amber-500 text-base mt-0.5 shrink-0"></i>
                                     <div>
                                         <p class="font-bold">Quản trị viên tối cao (Full Access)</p>
-                                        <p class="text-[11px] text-indigo-700 mt-0.5">Tài khoản này có toàn quyền truy cập, chỉnh sửa, xóa và cấu hình tất cả các tính năng trong hệ thống IDC.</p>
+                                        <p class="text-[11px] text-indigo-700 mt-0.5">Tài khoản này có toàn quyền truy cập, chỉnh sửa, xóa và cấu hình tất cả các tính năng trong hệ thống INDOCHINE.</p>
                                     </div>
                                 </div>
                             </template>
