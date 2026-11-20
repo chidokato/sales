@@ -616,6 +616,7 @@
                             <!-- Nút 3: Bảng hàng (ứng với từng dự án) -->
                             <button 
                                 type="button"
+                                x-show="hasInventoryActive"
                                 @click="switchLocatorSubTab('inventory')" 
                                 :class="locatorSubTab === 'inventory' ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/25' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
                                 class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
@@ -633,7 +634,7 @@
 
                         <!-- Thông tin phụ bên phải: Dự án đang xem + nút làm mới nếu ở tab Bảng hàng -->
                         <div class="flex items-center gap-2 text-xs">
-                            <template x-if="locatorSubTab === 'inventory'">
+                            <template x-if="locatorSubTab === 'inventory' && hasInventoryActive">
                                 <div class="flex items-center gap-2">
                                     <span class="text-[11px] text-slate-500 hidden sm:inline">
                                         Đồng bộ: <strong class="text-slate-700" x-text="sheetLastUpdated || 'Vừa xong'"></strong>
@@ -999,7 +1000,7 @@
 
                     <!-- TAB CON 3: BẢNG HÀNG TRỰC TUYẾN DỰ ÁN (GOOGLE SHEET LIVE SYNC) -->
                     <div 
-                        x-show="locatorSubTab === 'inventory'" 
+                        x-show="locatorSubTab === 'inventory' && hasInventoryActive" 
                         class="flex-1 min-h-0 flex flex-col overflow-hidden space-y-2"
                     >
                         <!-- TRƯỜNG HỢP 1: DỰ ÁN CHƯA CẤU HÌNH BẢNG HÀNG GOOGLE SHEET -->
@@ -2535,6 +2536,7 @@
                 sheetSourceUrl: '{{ $sheetInventory['source_url'] ?? "https://docs.google.com/spreadsheets/d/14553EpRwsgN3iz5YQmc9o__Bc5ovfuRa/edit?gid=149974058" }}',
                 sheetLoading: false,
                 hasInventoryConfig: {{ ($sheetInventory['has_config'] ?? false) ? 'true' : 'false' }},
+                hasInventoryActive: {{ ($sheetInventory['is_active'] ?? false) ? 'true' : 'false' }},
                 sheetError: null,
                 sheetFilter: {
                     search: '',
@@ -2558,12 +2560,20 @@
                     // Nếu truy cập menu bảng hàng hoặc tab bảng hàng, dẫn vào locator subtab inventory
                     if (requestedMenu === 'inventory' || requestedTab === 'inventory') {
                         this.activeMenu = 'locator';
-                        this.locatorSubTab = 'inventory';
-                        this.loadProjectSheetInventory(this.currentProject.id);
-                    } else if (requestedTab && ['units', 'floorplans', 'inventory'].includes(requestedTab)) {
-                        this.locatorSubTab = requestedTab;
-                        if (requestedTab === 'inventory') {
+                        if (this.hasInventoryActive) {
+                            this.locatorSubTab = 'inventory';
                             this.loadProjectSheetInventory(this.currentProject.id);
+                        } else {
+                            this.locatorSubTab = 'units';
+                        }
+                    } else if (requestedTab && ['units', 'floorplans', 'inventory'].includes(requestedTab)) {
+                        if (requestedTab === 'inventory' && !this.hasInventoryActive) {
+                            this.locatorSubTab = 'units';
+                        } else {
+                            this.locatorSubTab = requestedTab;
+                            if (requestedTab === 'inventory') {
+                                this.loadProjectSheetInventory(this.currentProject.id);
+                            }
                         }
                     }
 
@@ -2654,6 +2664,9 @@
                             if(data.project) {
                                 this.currentProject.name = data.project.name;
                             }
+                            if (data.has_inventory !== undefined) {
+                                this.hasInventoryActive = !!data.has_inventory;
+                            }
                         }
                     } catch (error) {
                         console.error('Error fetching project units:', error);
@@ -2661,7 +2674,11 @@
 
                     this.switchMenu('locator');
                     if (this.locatorSubTab === 'inventory') {
-                        this.loadProjectSheetInventory(projectId);
+                        if (this.hasInventoryActive) {
+                            this.loadProjectSheetInventory(projectId);
+                        } else {
+                            this.locatorSubTab = 'units';
+                        }
                     } else if (!this.locatorSubTab) {
                         this.locatorSubTab = 'units';
                     }
@@ -2672,6 +2689,9 @@
 
                 // Chuyển tab con trong Sơ đồ dự án: Chỉ căn, Mặt bằng, Bảng hàng
                 switchLocatorSubTab(tabKey) {
+                    if (tabKey === 'inventory' && !this.hasInventoryActive) {
+                        return;
+                    }
                     this.locatorSubTab = tabKey;
                     const url = new URL(window.location.href);
                     url.searchParams.set('tab', tabKey);
@@ -3339,6 +3359,7 @@
                             this.selectedSheetTab = data.current_sheet.name || targetSheet;
                             this.sheetSourceUrl = data.sheet_url || this.sheetSourceUrl;
                             this.hasInventoryConfig = true;
+                            this.hasInventoryActive = true;
                             if (data.sheets && data.sheets.length > 0) {
                                 this.sheetTabs = data.sheets;
                             }
@@ -3354,6 +3375,10 @@
                             }
                         } else {
                             this.hasInventoryConfig = data.has_config !== false;
+                            this.hasInventoryActive = !!data.is_active;
+                            if (!this.hasInventoryActive && this.locatorSubTab === 'inventory') {
+                                this.locatorSubTab = 'units';
+                            }
                             this.sheetError = data.message || 'Dự án này chưa được cấu hình bảng hàng Google Sheet.';
                         }
                     } catch (err) {

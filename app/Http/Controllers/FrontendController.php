@@ -226,9 +226,7 @@ class FrontendController extends Controller
             $invConfig = \App\Models\ProjectInventoryConfig::where('project_id', $activeProjectId)->first();
         }
         $hasProjectConfig = ($invConfig !== null);
-        if (!$invConfig) {
-            $invConfig = \App\Models\ProjectInventoryConfig::first();
-        }
+        $isInventoryActive = ($invConfig !== null && (bool)$invConfig->is_active);
         
         $visibleTabs = $invConfig ? $invConfig->visible_tabs : null;
         $sheetUrl = $invConfig ? $invConfig->sheet_url : null;
@@ -237,9 +235,18 @@ class FrontendController extends Controller
             $sheetName = $visibleTabs[0] ?? $sheetName;
         }
 
-        $sheetInventory = $inventoryService->getInventory(false, $sheetName, $sheetUrl);
+        if ($isInventoryActive && $sheetUrl) {
+            $sheetInventory = $inventoryService->getInventory(false, $sheetName, $sheetUrl);
+        } else {
+            $sheetInventory = [
+                'sheets' => [],
+                'current_sheet' => null,
+                'source_url' => $sheetUrl ?? ''
+            ];
+        }
         $sheetInventory['has_config'] = $hasProjectConfig;
-        $sheetInventory['project_id'] = $invConfig ? $invConfig->project_id : $activeProjectId;
+        $sheetInventory['is_active'] = $isInventoryActive;
+        $sheetInventory['project_id'] = $activeProjectId;
         $sheetInventory['source_url'] = $sheetUrl ?: ($sheetInventory['source_url'] ?? '');
 
         // Lọc danh sách tab chỉ hiển thị các tab được tick chọn (visible_tabs)
@@ -289,6 +296,7 @@ class FrontendController extends Controller
                 return response()->json([
                     'success' => false,
                     'has_config' => false,
+                    'is_active' => false,
                     'message' => "Dự án \"{$projName}\" chưa được cấu hình liên kết Bảng Hàng Online trong trang Quản trị.",
                     'sheets' => [],
                     'current_sheet' => null
@@ -298,11 +306,12 @@ class FrontendController extends Controller
             $invConfig = \App\Models\ProjectInventoryConfig::first();
         }
 
-        if (!$invConfig) {
+        if (!$invConfig || !$invConfig->is_active) {
             return response()->json([
                 'success' => false,
-                'has_config' => false,
-                'message' => 'Hệ thống chưa có dự án nào được cấu hình bảng hàng online.',
+                'has_config' => ($invConfig !== null),
+                'is_active' => false,
+                'message' => 'Dự án đang tắt hiển thị Bảng Hàng Online ngoài website.',
                 'sheets' => [],
                 'current_sheet' => null
             ]);
@@ -321,6 +330,7 @@ class FrontendController extends Controller
         
         $data = $inventoryService->getInventory($force, $sheetName, $sheetUrl);
         $data['has_config'] = true;
+        $data['is_active'] = true;
         $data['project_id'] = $invConfig->project_id;
         $data['sheet_url'] = $invConfig->sheet_url;
 
@@ -373,6 +383,9 @@ class FrontendController extends Controller
         $unitTypes = $units->pluck('unit_type')->filter()->unique()->values();
         $axes = $units->pluck('unit_axis')->filter()->unique()->sort()->values();
 
+        $invConfig = \App\Models\ProjectInventoryConfig::where('project_id', $projectId)->first();
+        $hasInventory = ($invConfig !== null && (bool)$invConfig->is_active);
+
         return response()->json([
             'success' => true,
             'project' => $project,
@@ -385,6 +398,7 @@ class FrontendController extends Controller
             'floors' => $floors,
             'unitTypes' => $unitTypes,
             'axes' => $axes,
+            'has_inventory' => $hasInventory,
         ]);
     }
 

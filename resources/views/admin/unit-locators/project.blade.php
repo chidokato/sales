@@ -1535,7 +1535,7 @@
         @keydown.escape.window="closeQuickBocMaiModal()"
         @click.self="closeQuickBocMaiModal()"
     >
-        <div class="relative max-w-lg w-full bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-2xl transition-all">
+        <div class="relative max-w-4xl w-full bg-white rounded-3xl overflow-hidden border border-slate-200/90 shadow-2xl transition-all">
             <!-- Modal Header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50/60 to-white">
                 <div class="flex items-center gap-3">
@@ -1573,7 +1573,7 @@
             </div>
 
             <!-- Modal Body -->
-            <div class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+            <div class="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
                 <!-- Preview current image if existing -->
                 <template x-if="activeBocMaiUnit && activeBocMaiUnit.layout_3d_image_url">
                     <div class="p-3 bg-indigo-50/40 rounded-2xl border border-indigo-100 flex items-center gap-3.5">
@@ -1606,7 +1606,7 @@
                         class="px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition"
                     >
                         <i class="fa-solid fa-layer-group text-xs"></i>
-                        <span>Ảnh bóc mái có sẵn (<span x-text="existingBocMaiList ? existingBocMaiList.length : 0"></span>)</span>
+                        <span>Ảnh bóc mái 3D (<span x-text="existingBocMaiList ? existingBocMaiList.length : 0"></span>)</span>
                     </button>
                     <button 
                         type="button" 
@@ -1624,17 +1624,17 @@
                     <template x-if="!existingBocMaiList || existingBocMaiList.length === 0">
                         <div class="p-6 text-center bg-slate-50 rounded-2xl border border-slate-200">
                             <i class="fa-solid fa-cube text-slate-300 text-3xl mb-2"></i>
-                            <p class="text-xs text-slate-500 font-bold">Chưa có ảnh bóc mái nào khác trong dự án này.</p>
-                            <p class="text-[11px] text-slate-400 mt-1">Hãy chuyển sang tab "Tải ảnh từ máy tính" ở trên để tải ảnh bóc mái mới lên.</p>
+                            <p class="text-xs text-slate-500 font-bold">Chưa có ảnh nào trong mục Bóc mái 3D của Kho Phối Cảnh.</p>
+                            <p class="text-[11px] text-slate-400 mt-1">Hãy tải ảnh tại tab Kho Phối Cảnh hoặc chuyển sang tab "Tải ảnh từ máy tính" ở trên.</p>
                         </div>
                     </template>
                     <template x-if="existingBocMaiList && existingBocMaiList.length > 0">
                         <div>
                             <div class="flex items-center justify-between text-xs text-slate-500 font-medium mb-1.5">
                                 <span>Bấm vào 1 ảnh dưới đây để chọn làm ảnh bóc mái:</span>
-                                <span class="text-[11px] text-indigo-600 font-bold" x-text="existingBocMaiList.length + ' ảnh có sẵn'"></span>
+                                <span class="text-[11px] text-indigo-600 font-bold" x-text="existingBocMaiList.length + ' ảnh Bóc mái 3D'"></span>
                             </div>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto p-1">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-[58vh] overflow-y-auto p-1">
                                 <template x-for="(item, idx) in existingBocMaiList" :key="idx">
                                     <div 
                                         @click="selectPerspectiveForBocMai(item.image_path, item.image_url)"
@@ -1646,14 +1646,8 @@
                                         <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex flex-col justify-end p-2">
                                             <span class="text-[11px] font-bold text-white truncate drop-shadow-sm" x-text="item.label"></span>
                                             <div class="flex flex-wrap items-center gap-1 text-[9px] text-slate-300 mt-0.5">
-                                                <template x-if="item.units_count > 0">
-                                                    <span class="px-1.5 py-0.2 rounded bg-indigo-500/80 text-white font-semibold" x-text="item.units_count + ' căn'"></span>
-                                                </template>
-                                                <template x-if="item.source === 'perspective'">
-                                                    <span class="px-1.5 py-0.2 rounded bg-amber-500/80 text-white font-semibold">Phối cảnh</span>
-                                                </template>
                                                 <template x-if="activeBocMaiUnit && (activeBocMaiUnit.layout_3d_image === item.image_path || (activeBocMaiUnit.layout_3d_image_url && activeBocMaiUnit.layout_3d_image_url === item.image_url))">
-                                                    <span class="px-1.5 py-0.2 rounded bg-emerald-500 text-white font-black">Đang dùng</span>
+                                                    <span class="px-1.5 py-0.5 rounded bg-emerald-500 text-white font-bold text-[10px]">Đang dùng</span>
                                                 </template>
                                             </div>
                                         </div>
@@ -3123,7 +3117,7 @@ function unitProjectHub() {
             sheet_tab_name: '{{ addslashes($inventoryConfig->sheet_tab_name ?? "GH độc quyền tòa C2.1") }}',
             visible_tabs: {!! json_encode($inventoryConfig->visible_tabs ?? []) !!},
             csbh_url: '{{ addslashes($inventoryConfig->csbh_url ?? "https://drive.google.com/file/d/1HjY1sRvEVD5_vDG2ojh7cKf9nQMUMRSW/view?usp=drivesdk") }}',
-            is_active: {{ ($inventoryConfig->is_active ?? true) ? 'true' : 'false' }},
+            is_active: {{ (isset($inventoryConfig) && !$inventoryConfig->is_active) ? 'false' : 'true' }},
             notes: '{{ addslashes($inventoryConfig->notes ?? "Áp dụng CSBH Victory Hermes ngày 08/08/2026") }}',
             last_synced_at: '{{ $inventoryConfig->last_synced_at ? $inventoryConfig->last_synced_at->format("H:i d/m/Y") : "" }}'
         },
@@ -3840,22 +3834,6 @@ function unitProjectHub() {
         openQuickBocMaiModal(unit) {
             this.isBulkBocMai = false;
             this.activeBocMaiUnit = unit;
-
-            // Nếu căn này đã có ảnh bóc mái nhưng chưa có trong danh sách có sẵn, bổ sung vào
-            if (unit && unit.layout_3d_image && unit.layout_3d_image_url && Array.isArray(this.existingBocMaiList)) {
-                const exists = this.existingBocMaiList.some(item => item.image_path === unit.layout_3d_image || item.image_url === unit.layout_3d_image_url);
-                if (!exists) {
-                    this.existingBocMaiList.push({
-                        image_path: unit.layout_3d_image,
-                        image_url: unit.layout_3d_image_url,
-                        label: unit.unit_axis ? ('Trục ' + unit.unit_axis) : ('Căn ' + (unit.unit_code || '')),
-                        axes: unit.unit_axis ? [unit.unit_axis] : [],
-                        units_count: 1,
-                        source: 'unit'
-                    });
-                }
-            }
-
             this.bocMaiSourceTab = (this.existingBocMaiList && this.existingBocMaiList.length > 0) ? 'existing' : 'upload';
             this.selectedBocMaiFile = null;
             this.selectedBocMaiFileName = '';
@@ -3970,21 +3948,6 @@ function unitProjectHub() {
                             this.updateUnitBocMaiDOM(id, newUrl, null);
                         });
 
-                        // Bổ sung vào danh sách ảnh có sẵn nếu chưa có
-                        if (newPath && newUrl && Array.isArray(this.existingBocMaiList)) {
-                            const exists = this.existingBocMaiList.some(item => item.image_path === newPath || item.image_url === newUrl);
-                            if (!exists) {
-                                this.existingBocMaiList.unshift({
-                                    image_path: newPath,
-                                    image_url: newUrl,
-                                    label: this.selectedUnitIds.length + ' căn vừa chọn',
-                                    axes: [],
-                                    units_count: this.selectedUnitIds.length,
-                                    source: 'unit'
-                                });
-                            }
-                        }
-
                         this.closeQuickBocMaiModal();
                     } else {
                         Swal.fire({
@@ -4045,21 +4008,6 @@ function unitProjectHub() {
                     if (this.activeBocMaiUnit) {
                         this.activeBocMaiUnit.layout_3d_image_url = newUrl;
                         this.activeBocMaiUnit.layout_3d_image = newPath;
-                    }
-
-                    // Tự động bổ sung ảnh mới vào danh sách có sẵn để các lần sửa căn sau chọn được ngay
-                    if (newPath && newUrl && Array.isArray(this.existingBocMaiList)) {
-                        const exists = this.existingBocMaiList.some(item => item.image_path === newPath || item.image_url === newUrl);
-                        if (!exists) {
-                            this.existingBocMaiList.unshift({
-                                image_path: newPath,
-                                image_url: newUrl,
-                                label: unitAxis ? ('Trục ' + unitAxis) : ('Căn ' + (unitCode || '')),
-                                axes: unitAxis ? [unitAxis] : [],
-                                units_count: 1,
-                                source: 'unit'
-                            });
-                        }
                     }
 
                     this.updateUnitBocMaiDOM(unitId, newUrl, unitAxis);

@@ -266,68 +266,18 @@ class ProjectUnitLocatorController extends Controller
         $templates = ProjectTemplate::where('project_id', $projectId)->latest()->get();
         $perspectives = ProjectPerspective::where('project_id', $projectId)->latest()->get();
 
-        // Danh sách các ảnh bóc mái 3D đã có sẵn trong dự án (từ các căn khác hoặc từ kho phối cảnh)
-        $existingBocMaiFromUnits = ProjectUnitLocator::where('project_id', $projectId)
-            ->whereNotNull('layout_3d_image')
-            ->where('layout_3d_image', '!=', '')
-            ->select('id', 'unit_code', 'unit_axis', 'layout_3d_image')
-            ->get()
-            ->groupBy('layout_3d_image')
-            ->map(function ($group, $imagePath) {
-                $axes = $group->pluck('unit_axis')->filter()->unique()->values()->all();
-                $codes = $group->pluck('unit_code')->filter()->unique()->values()->all();
-                $imageUrl = (str_starts_with($imagePath, 'http://') || str_starts_with($imagePath, 'https://'))
-                    ? $imagePath
-                    : route('admin.unit-locators.media', ['path' => $imagePath]);
-
-                $label = !empty($axes)
-                    ? 'Trục ' . implode(', ', array_slice($axes, 0, 3)) . (count($axes) > 3 ? '...' : '')
-                    : (!empty($codes) ? 'Căn ' . implode(', ', array_slice($codes, 0, 2)) : 'Bóc mái');
-
+        // Danh sách các ảnh bóc mái 3D: CHỈ lấy các ảnh trong mục Bóc mái 3D (category = 'layout_3d') của Kho Phối Cảnh
+        $existingBocMaiImages = $perspectives->where('category', 'layout_3d')
+            ->map(function ($persp) {
                 return [
-                    'image_path' => $imagePath,
-                    'image_url' => $imageUrl,
-                    'label' => $label,
-                    'axes' => $axes,
-                    'units_count' => $group->count(),
-                    'source' => 'unit',
+                    'image_path' => $persp->image,
+                    'image_url' => $persp->image_url,
+                    'label' => $persp->name ?: 'Bóc mái 3D',
+                    'category' => 'layout_3d',
                 ];
             })
-            ->values();
-
-        $existingBocMaiFromPerspectives = $perspectives->filter(function ($persp) {
-            $cat = $persp->category ?? '';
-            $name = mb_strtolower($persp->name ?? '');
-            return $cat === 'layout_3d' || str_contains($name, 'bóc mái') || str_contains($name, 'boc mai') || str_contains($name, '3d');
-        })->map(function ($persp) {
-            return [
-                'image_path' => $persp->image,
-                'image_url' => $persp->image_url,
-                'label' => $persp->name ?: 'Bóc mái 3D',
-                'axes' => [],
-                'units_count' => 0,
-                'source' => 'perspective',
-            ];
-        })->values();
-
-        $allExistingBocMai = collect();
-        $seenPaths = [];
-
-        foreach ($existingBocMaiFromUnits as $item) {
-            if (!empty($item['image_path']) && !isset($seenPaths[$item['image_path']])) {
-                $seenPaths[$item['image_path']] = true;
-                $allExistingBocMai->push($item);
-            }
-        }
-
-        foreach ($existingBocMaiFromPerspectives as $item) {
-            if (!empty($item['image_path']) && !isset($seenPaths[$item['image_path']])) {
-                $seenPaths[$item['image_path']] = true;
-                $allExistingBocMai->push($item);
-            }
-        }
-
-        $existingBocMaiImages = $allExistingBocMai->values()->all();
+            ->values()
+            ->all();
 
         // Thống kê nhanh của dự án
         $stats = [
@@ -565,6 +515,8 @@ class ProjectUnitLocatorController extends Controller
 
         $info = GoogleSheetInventoryService::extractSpreadsheetInfo($validated['sheet_url']);
 
+        $isActive = $request->boolean('is_active');
+
         $config = ProjectInventoryConfig::updateOrCreate(
             ['project_id' => $projectId],
             [
@@ -573,7 +525,7 @@ class ProjectUnitLocatorController extends Controller
                 'sheet_tab_name' => $validated['sheet_tab_name'] ?? 'GH độc quyền tòa C2.1',
                 'visible_tabs' => $visibleTabs,
                 'csbh_url' => $validated['csbh_url'] ?? '',
-                'is_active' => $request->has('is_active') ? $request->boolean('is_active') : true,
+                'is_active' => $isActive,
                 'notes' => $validated['notes'] ?? ''
             ]
         );
