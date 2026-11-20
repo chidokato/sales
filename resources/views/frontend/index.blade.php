@@ -821,9 +821,9 @@
                                     <!-- Khung hiển thị ảnh Poster/Sơ đồ chỉ căn. Mobile: ôm sát ảnh (cao theo tỉ lệ ảnh). Desktop: vừa khung, không cuộn -->
                                     <div class="relative w-full overflow-hidden group lg:flex-1 lg:min-h-0 lg:flex lg:items-center lg:justify-center lg:bg-[#fdfaf6] lg:rounded-lg lg:border lg:border-slate-200 lg:py-8 lg:px-4 lg:[container-type:size]">
                                         <!-- Nút tải về góc trên bên phải -->
-                                        <button type="button" @click="downloadSelectedPoster()" class="absolute top-2 right-2 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition" title="Tải ảnh Poster chỉ căn">
-                                            <i class="fa-solid fa-download text-[11px]"></i>
-                                            <span>Tải về</span>
+                                        <button type="button" @click="downloadSelectedPoster()" :disabled="isDownloadingPoster" class="absolute top-2 right-2 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition disabled:opacity-75 disabled:cursor-wait" title="Tải ảnh Poster chỉ căn">
+                                            <i class="fa-solid" :class="isDownloadingPoster ? 'fa-spinner fa-spin text-xs' : 'fa-download text-[11px]'"></i>
+                                            <span x-text="isDownloadingPoster ? 'Đang tạo...' : 'Tải về'">Tải về</span>
                                         </button>
                                         <template x-if="getSelectedPosterLayout()">
                                             <div class="relative shrink-0 overflow-hidden rounded-md lg:shadow-xl ring-1 ring-black/5 w-full lg:w-[min(100cqw,calc(100cqh*var(--ar)))]" :style="'--ar:' + getSelectedPosterLayout().width + '/' + getSelectedPosterLayout().height + ';aspect-ratio:' + getSelectedPosterLayout().width + '/' + getSelectedPosterLayout().height + ';container-type:inline-size;background:linear-gradient(145deg,#3f1703,#7c2d05,#270e02)'">
@@ -951,15 +951,15 @@
                                                 <i class="fa-solid fa-up-right-from-square text-[10px]"></i>
                                                 <span class="hidden sm:inline">Tab mới</span>
                                             </a>
-                                            <a 
-                                                :href="selectedFloorplan.image_url" 
-                                                download 
+                                            <button 
+                                                type="button" 
+                                                @click="downloadFloorplanImage(selectedFloorplan)" 
                                                 class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 text-[11px] font-semibold transition"
-                                                title="Tải ảnh"
+                                                title="Tải ảnh mặt bằng"
                                             >
                                                 <i class="fa-solid fa-download text-[10px]"></i>
                                                 <span class="hidden sm:inline">Tải về</span>
-                                            </a>
+                                            </button>
                                         </div>
                                     </div>
 
@@ -2164,12 +2164,12 @@
                                                 <span>Phóng to</span>
                                             </button>
                                             <button 
-                                                type="button" @click="downloadSelectedPoster()"
-                                                class="px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white text-slate-900 text-xs font-bold shadow transition backdrop-blur-sm flex items-center gap-1.5"
+                                                type="button" @click="downloadSelectedPoster()" :disabled="isDownloadingPoster"
+                                                class="px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white text-slate-900 text-xs font-bold shadow transition backdrop-blur-sm flex items-center gap-1.5 disabled:opacity-75 disabled:cursor-wait"
                                                 title="Tải ảnh Poster chất lượng cao"
                                             >
-                                                <i class="fa-solid fa-download text-[11px] text-blue-600"></i>
-                                                <span>Tải ảnh</span>
+                                                <i class="fa-solid" :class="isDownloadingPoster ? 'fa-spinner fa-spin text-blue-600 text-xs' : 'fa-download text-[11px] text-blue-600'"></i>
+                                                <span x-text="isDownloadingPoster ? 'Đang tạo...' : 'Tải ảnh'">Tải ảnh</span>
                                             </button>
                                         </div>
                                     </template>
@@ -2361,12 +2361,24 @@
 
         <div class="max-w-6xl max-h-full flex flex-col items-center">
             <div class="text-white text-xs sm:text-sm font-bold mb-2 truncate max-w-xl text-center" x-text="lightboxTitle"></div>
-            <div class="relative bg-[#fdfaf6] rounded-xl overflow-hidden shadow-2xl p-2 border border-slate-200 flex items-center justify-center">
+            <div class="relative bg-[#fdfaf6] rounded-xl overflow-hidden shadow-2xl p-2 border border-slate-200 flex flex-col items-center justify-center">
                 <img 
                     :src="lightboxImage" 
                     :alt="lightboxTitle" 
-                    class="max-w-full max-h-[85vh] object-contain rounded"
+                    class="max-w-full max-h-[75vh] object-contain rounded"
+                    style="-webkit-touch-callout: default !important; -webkit-user-select: auto !important; user-select: auto !important;"
                 >
+                <div class="mt-2.5 flex items-center justify-center gap-2">
+                    <button 
+                        type="button" 
+                        @click="saveImageToDevice(lightboxImage, 'Anh-' + Date.now() + '.png', lightboxTitle)"
+                        class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow flex items-center gap-1.5 transition"
+                    >
+                        <i class="fa-solid fa-arrow-up-from-bracket text-xs"></i>
+                        <span>Lưu vào Ảnh / Chia sẻ</span>
+                    </button>
+                    <span class="text-[11px] text-slate-500 hidden sm:inline">(Hoặc chạm giữ vào ảnh để Lưu)</span>
+                </div>
             </div>
         </div>
     </div>
@@ -2395,6 +2407,7 @@
                 lightboxTitle: '',
                 userProfileTab: 'info',
                 locatorSubTab: 'units',
+                isDownloadingPoster: false,
 
                 // Tiêu đề & mô tả cho từng menu
                 menuTitles: {
@@ -2985,12 +2998,89 @@
                     try { this.selectedPosterUrl = canvas.toDataURL('image/png'); } catch (error) { console.warn('Không thể dựng poster từ cấu hình:', error); }
                 },
 
-                async downloadSelectedPoster() {
-                    this.selectedPosterUrl = '';
-                    await this.renderSelectedPoster();
-                    const source = this.selectedPosterUrl || this.selectedUnit?.image_url || '';
+                // Tải / Lưu ảnh về thiết bị (Tối ưu đặc biệt cho iPhone lưu vào Thư viện Ảnh Photos)
+                async saveImageToDevice(source, filename, title = '') {
                     if (!source) return;
-                    const link = document.createElement('a'); link.href = source; link.download = `Poster-${(this.selectedUnit?.unit_code || 'can-ho').replace(/[^a-z0-9_-]/gi, '-')}.png`; document.body.appendChild(link); link.click(); link.remove();
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                    const isMobile = isIOS || /Android/i.test(navigator.userAgent);
+
+                    // 1. Trên Mobile (đặc biệt iPhone Safari), dùng Web Share API với File
+                    // Khi mở Bảng chia sẻ iOS, người dùng chọn "Lưu hình ảnh" là ảnh sẽ được lưu thẳng vào Album Ảnh (Photos)
+                    if (isMobile && navigator.share && navigator.canShare) {
+                        try {
+                            let blob;
+                            if (source.startsWith('data:')) {
+                                const arr = source.split(',');
+                                const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+                                const bstr = atob(arr[1]);
+                                let n = bstr.length;
+                                const u8arr = new Uint8Array(n);
+                                while (n--) {
+                                    u8arr[n] = bstr.charCodeAt(n);
+                                }
+                                blob = new Blob([u8arr], { type: mime });
+                            } else {
+                                const resp = await fetch(source);
+                                blob = await resp.blob();
+                            }
+
+                            const file = new File([blob], filename, { type: blob.type || 'image/png' });
+
+                            if (navigator.canShare({ files: [file] })) {
+                                await navigator.share({
+                                    files: [file],
+                                    title: title || filename,
+                                    text: title || filename
+                                });
+                                return;
+                            }
+                        } catch (shareErr) {
+                            if (shareErr.name === 'AbortError') {
+                                return; // Người dùng chủ động huỷ chia sẻ
+                            }
+                            console.warn('Share API không thành công, dùng phương án dự phòng:', shareErr);
+                        }
+                    }
+
+                    // 2. Dự phòng trên iOS (nếu app nhúng như Zalo/FB chặn Share API): Mở Lightbox để chạm giữ lưu ảnh
+                    if (isIOS) {
+                        this.openLightbox(source, `${title || filename} (Chạm và giữ vào ảnh để chọn 'Lưu vào Ảnh')`);
+                        return;
+                    }
+
+                    // 3. Cho máy tính Desktop hoặc Android: Tải file trực tiếp về máy
+                    const link = document.createElement('a');
+                    link.href = source;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                },
+
+                async downloadSelectedPoster() {
+                    if (this.isDownloadingPoster) return;
+                    this.isDownloadingPoster = true;
+                    try {
+                        this.selectedPosterUrl = '';
+                        await this.renderSelectedPoster();
+                        const source = this.selectedPosterUrl || this.selectedUnit?.image_url || '';
+                        if (!source) {
+                            alert('Không tìm thấy hình ảnh chỉ căn để tải về.');
+                            return;
+                        }
+                        const unitCode = (this.selectedUnit?.unit_code || 'can-ho').replace(/[^a-z0-9_-]/gi, '-');
+                        const filename = `Poster-${unitCode}.png`;
+                        await this.saveImageToDevice(source, filename, `Poster căn hộ ${this.selectedUnit?.unit_code || ''}`);
+                    } finally {
+                        this.isDownloadingPoster = false;
+                    }
+                },
+
+                downloadFloorplanImage(floorplan) {
+                    if (!floorplan || !floorplan.image_url) return;
+                    const name = (floorplan.name || 'mat-bang').replace(/[^a-z0-9_-]/gi, '-');
+                    const filename = `Mat-bang-${name}.png`;
+                    this.saveImageToDevice(floorplan.image_url, filename, `Mặt bằng ${floorplan.name || ''}`);
                 },
 
                 // Mở Modal Bài viết
