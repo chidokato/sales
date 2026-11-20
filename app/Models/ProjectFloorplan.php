@@ -22,7 +22,13 @@ class ProjectFloorplan extends Model
 
     protected $appends = [
         'image_url',
+        'image_path',
     ];
+
+    public function getImagePathAttribute(): string
+    {
+        return $this->image ?? '';
+    }
 
     /**
      * URL ảnh mặt bằng

@@ -18,6 +18,7 @@ use App\Http\Controllers\FrontendController;
 // ==========================================
 Route::get('/', [FrontendController::class, 'index'])->name('home');
 Route::get('/api/projects/{projectId}/units', [FrontendController::class, 'getProjectUnits'])->name('frontend.project.units');
+Route::get('/api/inventory/sheet', [FrontendController::class, 'getGoogleSheetInventory'])->name('frontend.inventory.sheet');
 Route::post('/api/consultation', [FrontendController::class, 'submitConsultation'])->name('frontend.consultation');
 
 // Cập nhật thông tin cá nhân & Đổi mật khẩu (Người dùng đăng nhập)
@@ -73,6 +74,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/unit-locators/project/{projectId}/create', [ProjectUnitLocatorController::class, 'create'])->name('unit-locators.create');
     Route::post('/unit-locators/project/{projectId}/import-excel', [ProjectUnitLocatorController::class, 'importExcel'])->name('unit-locators.import-excel');
     Route::post('/unit-locators/project/{projectId}/save-poster-config', [ProjectUnitLocatorController::class, 'savePosterConfig'])->name('unit-locators.save-poster-config');
+    Route::post('/unit-locators/project/{projectId}/save-inventory-config', [ProjectUnitLocatorController::class, 'saveInventoryConfig'])->name('unit-locators.save-inventory-config');
+    Route::get('/unit-locators/project/{projectId}/preview-inventory-sheet', [ProjectUnitLocatorController::class, 'previewInventorySheet'])->name('unit-locators.preview-inventory-sheet');
+    Route::post('/unit-locators/project/{projectId}/sync-inventory-units', [ProjectUnitLocatorController::class, 'syncInventoryUnits'])->name('unit-locators.sync-inventory-units');
     Route::post('/unit-locators/project/{projectId}/bulk-update', [ProjectUnitLocatorController::class, 'bulkUpdate'])->name('unit-locators.bulk-update');
     Route::post('/unit-locators/project/{projectId}/bulk-layout-3d', [ProjectUnitLocatorController::class, 'bulkUpdateLayout3d'])->name('unit-locators.bulk-layout-3d');
     Route::post('/unit-locators/project/{projectId}/bulk-delete', [ProjectUnitLocatorController::class, 'bulkDelete'])->name('unit-locators.bulk-delete');

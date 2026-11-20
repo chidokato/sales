@@ -22,8 +22,14 @@ class ProjectPerspective extends Model
 
     protected $appends = [
         'image_url',
+        'image_path',
         'category_label',
     ];
+
+    public function getImagePathAttribute(): string
+    {
+        return $this->image ?? '';
+    }
 
     public function getImageUrlAttribute()
     {

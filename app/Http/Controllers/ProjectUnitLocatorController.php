@@ -8,6 +8,8 @@ use App\Models\ProjectUnitLocator;
 use App\Models\ProjectFloorplan;
 use App\Models\ProjectTemplate;
 use App\Models\ProjectPerspective;
+use App\Models\ProjectInventoryConfig;
+use App\Services\GoogleSheetInventoryService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -183,9 +185,22 @@ class ProjectUnitLocatorController extends Controller
             $query->where('floor', $floor);
         }
 
-        // Lọc theo trục căn
-        if ($axis = $request->input('unit_axis')) {
-            $query->where('unit_axis', $axis);
+        // Lọc theo trục căn (hỗ trợ chọn 1 hoặc nhiều trục căn)
+        $axesFilter = $request->input('unit_axis');
+        if (!empty($axesFilter)) {
+            if (is_array($axesFilter)) {
+                $axesFilter = array_values(array_filter($axesFilter, fn($a) => $a !== '' && $a !== null));
+                if (!empty($axesFilter)) {
+                    $query->whereIn('unit_axis', $axesFilter);
+                }
+            } else {
+                $axisList = array_values(array_filter(array_map('trim', explode(',', $axesFilter)), fn($a) => $a !== ''));
+                if (count($axisList) > 1) {
+                    $query->whereIn('unit_axis', $axisList);
+                } elseif (count($axisList) === 1) {
+                    $query->where('unit_axis', $axisList[0]);
+                }
+            }
         }
 
         // Lọc theo số phòng ngủ
@@ -229,10 +244,90 @@ class ProjectUnitLocatorController extends Controller
         $existingDirections = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('direction')->distinct()->pluck('direction');
         $existingBlocks = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('block')->distinct()->pluck('block');
         $existingFloors = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('floor')->distinct()->orderBy('floor', 'asc')->pluck('floor');
-        $existingAxes = ProjectUnitLocator::where('project_id', $projectId)->whereNotNull('unit_axis')->where('unit_axis', '!=', '')->distinct()->orderBy('unit_axis')->pluck('unit_axis');
+        $existingAxes = ProjectUnitLocator::where('project_id', $projectId)
+            ->whereNotNull('unit_axis')
+            ->where('unit_axis', '!=', '')
+            ->distinct()
+            ->pluck('unit_axis')
+            ->sort(SORT_NATURAL)
+            ->values()
+            ->all();
+
+        $rawAxes = $request->input('unit_axis');
+        $selectedAxes = [];
+        if (!empty($rawAxes)) {
+            if (is_array($rawAxes)) {
+                $selectedAxes = array_values(array_filter($rawAxes, fn($a) => $a !== '' && $a !== null));
+            } else {
+                $selectedAxes = array_values(array_filter(array_map('trim', explode(',', $rawAxes)), fn($a) => $a !== ''));
+            }
+        }
         $floorplans = ProjectFloorplan::where('project_id', $projectId)->latest()->get();
         $templates = ProjectTemplate::where('project_id', $projectId)->latest()->get();
         $perspectives = ProjectPerspective::where('project_id', $projectId)->latest()->get();
+
+        // Danh sách các ảnh bóc mái 3D đã có sẵn trong dự án (từ các căn khác hoặc từ kho phối cảnh)
+        $existingBocMaiFromUnits = ProjectUnitLocator::where('project_id', $projectId)
+            ->whereNotNull('layout_3d_image')
+            ->where('layout_3d_image', '!=', '')
+            ->select('id', 'unit_code', 'unit_axis', 'layout_3d_image')
+            ->get()
+            ->groupBy('layout_3d_image')
+            ->map(function ($group, $imagePath) {
+                $axes = $group->pluck('unit_axis')->filter()->unique()->values()->all();
+                $codes = $group->pluck('unit_code')->filter()->unique()->values()->all();
+                $imageUrl = (str_starts_with($imagePath, 'http://') || str_starts_with($imagePath, 'https://'))
+                    ? $imagePath
+                    : route('admin.unit-locators.media', ['path' => $imagePath]);
+
+                $label = !empty($axes)
+                    ? 'Trục ' . implode(', ', array_slice($axes, 0, 3)) . (count($axes) > 3 ? '...' : '')
+                    : (!empty($codes) ? 'Căn ' . implode(', ', array_slice($codes, 0, 2)) : 'Bóc mái');
+
+                return [
+                    'image_path' => $imagePath,
+                    'image_url' => $imageUrl,
+                    'label' => $label,
+                    'axes' => $axes,
+                    'units_count' => $group->count(),
+                    'source' => 'unit',
+                ];
+            })
+            ->values();
+
+        $existingBocMaiFromPerspectives = $perspectives->filter(function ($persp) {
+            $cat = $persp->category ?? '';
+            $name = mb_strtolower($persp->name ?? '');
+            return $cat === 'layout_3d' || str_contains($name, 'bóc mái') || str_contains($name, 'boc mai') || str_contains($name, '3d');
+        })->map(function ($persp) {
+            return [
+                'image_path' => $persp->image,
+                'image_url' => $persp->image_url,
+                'label' => $persp->name ?: 'Bóc mái 3D',
+                'axes' => [],
+                'units_count' => 0,
+                'source' => 'perspective',
+            ];
+        })->values();
+
+        $allExistingBocMai = collect();
+        $seenPaths = [];
+
+        foreach ($existingBocMaiFromUnits as $item) {
+            if (!empty($item['image_path']) && !isset($seenPaths[$item['image_path']])) {
+                $seenPaths[$item['image_path']] = true;
+                $allExistingBocMai->push($item);
+            }
+        }
+
+        foreach ($existingBocMaiFromPerspectives as $item) {
+            if (!empty($item['image_path']) && !isset($seenPaths[$item['image_path']])) {
+                $seenPaths[$item['image_path']] = true;
+                $allExistingBocMai->push($item);
+            }
+        }
+
+        $existingBocMaiImages = $allExistingBocMai->values()->all();
 
         // Thống kê nhanh của dự án
         $stats = [
@@ -242,6 +337,19 @@ class ProjectUnitLocatorController extends Controller
             'sold' => ProjectUnitLocator::where('project_id', $projectId)->where('status', 'sold')->count(),
         ];
 
+        // Cấu hình Bảng Hàng Online (Google Sheet Drive) của dự án
+        $inventoryConfig = ProjectInventoryConfig::firstOrCreate(
+            ['project_id' => $projectId],
+            [
+                'sheet_url' => 'https://docs.google.com/spreadsheets/d/14553EpRwsgN3iz5YQmc9o__Bc5ovfuRa/edit?gid=149974058#gid=149974058',
+                'sheet_gid' => '149974058',
+                'sheet_tab_name' => 'GH độc quyền tòa C2.1',
+                'csbh_url' => 'https://drive.google.com/file/d/1HjY1sRvEVD5_vDG2ojh7cKf9nQMUMRSW/view?usp=drivesdk',
+                'is_active' => true,
+                'notes' => 'Áp dụng CSBH Victory Hermes ngày 08/08/2026'
+            ]
+        );
+
         return view('admin.unit-locators.project', compact(
             'project',
             'units',
@@ -249,10 +357,13 @@ class ProjectUnitLocatorController extends Controller
             'existingBlocks',
             'existingFloors',
             'existingAxes',
+            'selectedAxes',
             'floorplans',
             'templates',
             'perspectives',
-            'stats'
+            'existingBocMaiImages',
+            'stats',
+            'inventoryConfig'
         ));
     }
 
@@ -434,6 +545,119 @@ class ProjectUnitLocatorController extends Controller
     }
 
     /**
+     * Lưu cấu hình Bảng Hàng Online (Google Sheet Drive)
+     */
+    public function saveInventoryConfig(Request $request, $projectId)
+    {
+        $validated = $request->validate([
+            'sheet_url' => 'required|string',
+            'sheet_tab_name' => 'nullable|string|max:150',
+            'visible_tabs' => 'nullable',
+            'csbh_url' => 'nullable|string',
+            'is_active' => 'nullable',
+            'notes' => 'nullable|string|max:500'
+        ]);
+
+        $visibleTabs = $request->input('visible_tabs');
+        if (is_string($visibleTabs)) {
+            $visibleTabs = json_decode($visibleTabs, true) ?: array_filter(array_map('trim', explode(',', $visibleTabs)));
+        }
+
+        $info = GoogleSheetInventoryService::extractSpreadsheetInfo($validated['sheet_url']);
+
+        $config = ProjectInventoryConfig::updateOrCreate(
+            ['project_id' => $projectId],
+            [
+                'sheet_url' => $validated['sheet_url'],
+                'sheet_gid' => $info['gid'],
+                'sheet_tab_name' => $validated['sheet_tab_name'] ?? 'GH độc quyền tòa C2.1',
+                'visible_tabs' => $visibleTabs,
+                'csbh_url' => $validated['csbh_url'] ?? '',
+                'is_active' => $request->has('is_active') ? $request->boolean('is_active') : true,
+                'notes' => $validated['notes'] ?? ''
+            ]
+        );
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã lưu cấu hình Bảng Hàng Online thành công!',
+                'config' => $config
+            ]);
+        }
+
+        return back()->with('success', 'Đã lưu cấu hình Bảng Hàng Online thành công!');
+    }
+
+    /**
+     * Preview kiểm tra dữ liệu từ Google Sheet
+     */
+    public function previewInventorySheet(Request $request, $projectId, GoogleSheetInventoryService $service)
+    {
+        $sheetUrl = $request->query('sheet_url');
+        $sheetName = $request->query('sheet_name');
+        $force = $request->boolean('refresh', true);
+
+        if (!$sheetUrl) {
+            $config = ProjectInventoryConfig::where('project_id', $projectId)->first();
+            $sheetUrl = $config ? $config->sheet_url : null;
+            if (!$sheetName && $config) {
+                $sheetName = $config->sheet_tab_name;
+            }
+        }
+
+        $data = $service->getInventory($force, $sheetName, $sheetUrl);
+        return response()->json($data);
+    }
+
+    /**
+     * Nạp đồng bộ toàn bộ căn từ Google Sheet vào danh sách chỉ căn hộ (project_unit_locators)
+     */
+    public function syncInventoryUnits(Request $request, $projectId, GoogleSheetInventoryService $service)
+    {
+        try {
+            $project = SharedDatabase::table('posts')->where('id', $projectId)->first();
+            $projectName = $project ? $project->name : 'Dự án #' . $projectId;
+        } catch (\Throwable $e) {
+            $projectName = 'Dự án #' . $projectId;
+        }
+
+        $sheetUrl = $request->input('sheet_url');
+        $sheetName = $request->input('sheet_name');
+
+        if (!$sheetUrl) {
+            $config = ProjectInventoryConfig::where('project_id', $projectId)->first();
+            $sheetUrl = $config ? $config->sheet_url : null;
+            if (!$sheetName && $config) {
+                $sheetName = $config->sheet_tab_name;
+            }
+        }
+
+        // Lấy dữ liệu mới nhất từ sheet
+        $sheetData = $service->getInventory(true, $sheetName, $sheetUrl);
+        if (!$sheetData['success'] || empty($sheetData['current_sheet']['units'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể đọc danh sách căn từ Google Sheet: ' . ($sheetData['message'] ?? 'Không có dữ liệu')
+            ], 422);
+        }
+
+        $units = $sheetData['current_sheet']['units'];
+        $result = $service->syncSheetUnitsToDatabase((int)$projectId, $projectName, $units);
+
+        // Cập nhật last_synced_at
+        ProjectInventoryConfig::where('project_id', $projectId)->update([
+            'last_synced_at' => now()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Đồng bộ thành công! Đã nạp {$result['total']} căn (Tạo mới: {$result['created']}, Cập nhật: {$result['updated']}).",
+            'result' => $result
+        ]);
+    }
+
+    /**
      * Sửa thông tin chỉ căn hàng loạt
      */
     public function bulkUpdate(Request $request, $projectId)
@@ -526,11 +750,27 @@ class ProjectUnitLocatorController extends Controller
         $validated = $request->validate([
             'ids' => 'required|array|min:1',
             'ids.*' => 'required|integer',
-            'layout_3d_file' => 'required|image|max:15360',
+            'layout_3d_file' => 'nullable|image|max:15360',
+            'layout_3d_image' => 'nullable|string',
         ]);
 
-        $filename = 'boc_mai_bulk_' . $projectId . '_' . time() . '_' . uniqid() . '.' . $request->file('layout_3d_file')->getClientOriginalExtension();
-        $imagePath = $request->file('layout_3d_file')->storeAs('layout_3d/' . $projectId, $filename, 'public');
+        if (!$request->hasFile('layout_3d_file') && !$request->filled('layout_3d_image')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vui lòng chọn 1 ảnh bóc mái có sẵn hoặc tải file ảnh từ máy tính!'
+            ], 422);
+        }
+
+        if ($request->hasFile('layout_3d_file')) {
+            $filename = 'boc_mai_bulk_' . $projectId . '_' . time() . '_' . uniqid() . '.' . $request->file('layout_3d_file')->getClientOriginalExtension();
+            $imagePath = $request->file('layout_3d_file')->storeAs('layout_3d/' . $projectId, $filename, 'public');
+        } else {
+            $imagePath = trim($request->input('layout_3d_image'));
+        }
+
+        $imageUrl = (str_starts_with($imagePath, 'http://') || str_starts_with($imagePath, 'https://'))
+            ? $imagePath
+            : route('admin.unit-locators.media', ['path' => $imagePath]);
 
         $updatedCount = ProjectUnitLocator::where('project_id', $projectId)
             ->whereIn('id', $validated['ids'])
@@ -544,6 +784,8 @@ class ProjectUnitLocatorController extends Controller
             'message' => "Đã thay ảnh bóc mái cho {$updatedCount} căn được chọn!",
             'updated_count' => $updatedCount,
             'layout_3d_image' => $imagePath,
+            'layout_3d_image_url' => $imageUrl,
+            'updated_ids' => $validated['ids'],
         ]);
     }
 
@@ -1233,8 +1475,13 @@ class ProjectUnitLocatorController extends Controller
         $imagePath = $unit->layout_3d_image;
 
         if ($request->hasFile('layout_3d_file')) {
-            if (!empty($unit->layout_3d_image) && Storage::disk('public')->exists($unit->layout_3d_image)) {
-                Storage::disk('public')->delete($unit->layout_3d_image);
+            if (!empty($unit->layout_3d_image)) {
+                $isUsedElsewhere = ProjectUnitLocator::where('id', '!=', $unit->id)
+                    ->where('layout_3d_image', $unit->layout_3d_image)
+                    ->exists();
+                if (!$isUsedElsewhere && Storage::disk('public')->exists($unit->layout_3d_image)) {
+                    Storage::disk('public')->delete($unit->layout_3d_image);
+                }
             }
             $file = $request->file('layout_3d_file');
             $filename = 'boc_mai_' . $unit->project_id . '_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
@@ -1242,8 +1489,13 @@ class ProjectUnitLocatorController extends Controller
         } elseif ($request->filled('layout_3d_image')) {
             $imagePath = trim($request->layout_3d_image);
         } elseif ($request->boolean('remove_image')) {
-            if (!empty($unit->layout_3d_image) && Storage::disk('public')->exists($unit->layout_3d_image)) {
-                Storage::disk('public')->delete($unit->layout_3d_image);
+            if (!empty($unit->layout_3d_image)) {
+                $isUsedElsewhere = ProjectUnitLocator::where('id', '!=', $unit->id)
+                    ->where('layout_3d_image', $unit->layout_3d_image)
+                    ->exists();
+                if (!$isUsedElsewhere && Storage::disk('public')->exists($unit->layout_3d_image)) {
+                    Storage::disk('public')->delete($unit->layout_3d_image);
+                }
             }
             $imagePath = null;
         }
@@ -1265,6 +1517,7 @@ class ProjectUnitLocatorController extends Controller
                 ? "Đã cập nhật ảnh bóc mái cho {$syncedCount} căn thuộc trục căn {$unit->unit_axis}!"
                 : "Đã cập nhật ảnh bóc mái căn {$unit->unit_code} thành công!",
             'unit' => $unit,
+            'layout_3d_image' => $imagePath,
             'layout_3d_image_url' => $unit->layout_3d_image_url,
             'synced_count' => $syncedCount,
         ]);

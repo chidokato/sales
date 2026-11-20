@@ -168,7 +168,23 @@
                             </div>
                         </button>
 
-                        {{-- TẠM ẨN: Menu 3 - Bảng hàng & Tra cứu --}}
+                        {{-- TẠM ẨN: Menu 3 - Bảng Hàng Trực Tuyến Live
+                        <button 
+                            type="button" 
+                            @click="switchMenu('inventory')" 
+                            :class="activeMenu === 'inventory' ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'text-slate-400 hover:text-white hover:bg-slate-800/70'"
+                            class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all text-left group"
+                        >
+                            <div class="flex items-center gap-3">
+                                <i class="fa-solid fa-table-cells-large text-sm w-5 text-center group-hover:text-emerald-400 transition" :class="activeMenu === 'inventory' ? 'text-white' : 'text-emerald-400'"></i>
+                                <span class="whitespace-nowrap">Bảng Hàng Trực Tuyến</span>
+                            </div>
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                Live
+                            </span>
+                        </button>
+                        --}}
                     </div>
                 </div>
 
@@ -342,7 +358,7 @@
                         <i class="fa-solid fa-bars text-sm"></i>
                     </button>
 
-                    <!-- KHI Ở MENU LOCATOR: HIỂN THỊ DỰ ÁN & SUBTABS CHUYỂN ĐỔI NGAY TRÊN THANH NÀY -->
+                    <!-- KHI Ở MENU LOCATOR: HIỂN THỊ DỰ ÁN ĐANG CHỌN -->
                     <div x-show="activeMenu === 'locator'" class="flex items-center gap-2 sm:gap-3 min-w-0">
                         <!-- Tên dự án & số căn -->
                         <div class="flex items-center gap-1.5 min-w-0">
@@ -353,31 +369,6 @@
                             <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-700 shrink-0">
                                 <span x-text="unitsList.length"></span> Căn
                             </span>
-                        </div>
-
-                        <!-- Phân cách dọc -->
-                        <div class="hidden sm:block w-px h-5 bg-slate-200 shrink-0"></div>
-
-                        <!-- Subtab buttons chuyển đổi gọn gàng -->
-                        <div class="flex items-center p-0.5 bg-slate-100 rounded-lg text-xs font-bold shrink-0">
-                            <button 
-                                type="button"
-                                @click="locatorSubTab = 'units'" 
-                                :class="locatorSubTab === 'units' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
-                                class="px-2.5 py-1 rounded-md transition flex items-center gap-1.5 text-xs"
-                            >
-                                <i class="fa-solid fa-shapes text-[10px]"></i>
-                                <span class="whitespace-nowrap">Chỉ căn</span>
-                            </button>
-                            <button 
-                                type="button"
-                                @click="locatorSubTab = 'floorplans'" 
-                                :class="locatorSubTab === 'floorplans' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
-                                class="px-2.5 py-1 rounded-md transition flex items-center gap-1.5 text-xs"
-                            >
-                                <i class="fa-regular fa-map text-[10px]"></i>
-                                <span class="whitespace-nowrap">Mặt bằng</span>
-                            </button>
                         </div>
                     </div>
 
@@ -583,8 +574,89 @@
                 <!-- ============================================================== -->
                 <!-- MENU 2: SƠ ĐỒ CHỈ CĂN BẤT ĐỘNG SẢN TƯƠNG TÁC (UNIT LOCATOR)     -->
                 <!-- ============================================================== -->
-                <div x-show="activeMenu === 'locator'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="h-full flex flex-col min-h-0 overflow-hidden">
+                <div x-show="activeMenu === 'locator'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="h-full flex flex-col min-h-0 overflow-hidden space-y-2">
                     
+                    <!-- THANH ĐIỀU HƯỚNG PHÂN HỆ DỰ ÁN (SUBTABS: CHỈ CĂN - MẶT BẰNG - BẢNG HÀNG) -->
+                    <!-- Nằm ngay dưới top header, gồm 3 nút: Chỉ căn, Mặt bằng, Bảng hàng (ứng với từng dự án) -->
+                    <div class="shrink-0 bg-white px-3 py-1.5 rounded-xl border border-slate-200/90 shadow-sm flex items-center justify-between gap-2">
+                        <!-- Nhóm 3 nút chuyển subtab -->
+                        <div class="flex items-center gap-1.5">
+                            <!-- Nút 1: Chỉ căn -->
+                            <button 
+                                type="button"
+                                @click="switchLocatorSubTab('units')" 
+                                :class="locatorSubTab === 'units' ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+                                class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                            >
+                                <i class="fa-solid fa-shapes text-[11px]"></i>
+                                <span>Chỉ căn</span>
+                                <span 
+                                    :class="locatorSubTab === 'units' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'" 
+                                    class="px-1.5 py-0.2 rounded-full text-[10px]"
+                                    x-text="unitsList.length"
+                                ></span>
+                            </button>
+
+                            <!-- Nút 2: Mặt bằng -->
+                            <button 
+                                type="button"
+                                @click="switchLocatorSubTab('floorplans')" 
+                                :class="locatorSubTab === 'floorplans' ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+                                class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                            >
+                                <i class="fa-regular fa-map text-[11px]"></i>
+                                <span>Mặt bằng</span>
+                                <span 
+                                    :class="locatorSubTab === 'floorplans' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'" 
+                                    class="px-1.5 py-0.2 rounded-full text-[10px]"
+                                    x-text="floorplansList.length"
+                                ></span>
+                            </button>
+
+                            <!-- Nút 3: Bảng hàng (ứng với từng dự án) -->
+                            <button 
+                                type="button"
+                                @click="switchLocatorSubTab('inventory')" 
+                                :class="locatorSubTab === 'inventory' ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-500/25' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'"
+                                class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                            >
+                                <i class="fa-solid fa-table-cells-large text-[11px]" :class="locatorSubTab === 'inventory' ? 'text-white' : 'text-emerald-600'"></i>
+                                <span>Bảng hàng</span>
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[9px] font-extrabold uppercase"
+                                    :class="locatorSubTab === 'inventory' ? 'bg-white/25 text-white' : 'bg-emerald-100 text-emerald-700'"
+                                >
+                                    <span class="w-1.5 h-1.5 rounded-full" :class="locatorSubTab === 'inventory' ? 'bg-white' : 'bg-emerald-500 animate-pulse'"></span>
+                                    Live
+                                </span>
+                            </button>
+                        </div>
+
+                        <!-- Thông tin phụ bên phải: Dự án đang xem + nút làm mới nếu ở tab Bảng hàng -->
+                        <div class="flex items-center gap-2 text-xs">
+                            <template x-if="locatorSubTab === 'inventory'">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[11px] text-slate-500 hidden sm:inline">
+                                        Đồng bộ: <strong class="text-slate-700" x-text="sheetLastUpdated || 'Vừa xong'"></strong>
+                                    </span>
+                                    <button 
+                                        type="button" 
+                                        @click="refreshGoogleSheetData()" 
+                                        :disabled="sheetLoading"
+                                        class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-[11px] font-bold transition flex items-center gap-1.5"
+                                        title="Đồng bộ lại từ Google Sheet"
+                                    >
+                                        <i class="fa-solid fa-arrows-rotate text-[10px]" :class="sheetLoading ? 'animate-spin' : ''"></i>
+                                        <span class="hidden sm:inline" x-text="sheetLoading ? 'Đang tải...' : 'Làm mới'"></span>
+                                    </button>
+                                </div>
+                            </template>
+                            <div class="hidden md:flex items-center gap-1 text-[11px] text-slate-500 pl-2 border-l border-slate-200">
+                                <span class="text-slate-400">Dự án:</span>
+                                <span class="font-bold text-slate-800 truncate max-w-[200px]" x-text="currentProject.name"></span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- TAB CON 1: SƠ ĐỒ CHỈ CĂN CHI TIẾT (2 CỘT: CỘT ĐẦU DANH SÁCH CĂN HỘ, BÊN CÒN LẠI HIỂN THỊ ẢNH CHỈ CĂN) -->
                     <!-- 100% HIỂN THỊ TRÊN 1 MÀN HÌNH KHÔNG CẦN LĂN CHUỘT -->
                     <div x-show="locatorSubTab === 'units'" class="flex-1 min-h-0 grid grid-cols-12 gap-2 h-full overflow-hidden">
@@ -602,23 +674,34 @@
                                 </span>
                             </div>
 
-                            <!-- Bộ lọc tìm kiếm nhanh gọn gàng -->
-                            <div class="space-y-1.5 pb-2 border-b border-slate-100 shrink-0">
-                                <!-- Ô tìm kiếm mã căn hoặc trục căn -->
-                                <div class="relative">
-                                    <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                                    <input 
-                                        type="text" 
-                                        x-model="unitFilter.search" 
-                                        @input="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
-                                        placeholder="Tìm mã căn, trục căn (VD: E1.05, Trục 08)..." 
-                                        class="w-full pl-7 pr-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                                    >
-                                </div>
+                            <!-- Bộ lọc tìm kiếm nhanh 3 cột gọn gàng -->
+                            <div class="pb-2 border-b border-slate-100 shrink-0">
+                                <div class="grid grid-cols-3 gap-1.5">
+                                    <!-- Ô tìm kiếm mã căn hoặc trục căn (chiếm 2 cột) -->
+                                    <div class="col-span-2 relative">
+                                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                        <input 
+                                            type="text" 
+                                            x-model="unitFilter.search" 
+                                            @input="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
+                                            placeholder="Tìm mã căn, trục căn..." 
+                                            class="w-full pl-7 pr-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                                        >
+                                    </div>
 
-                                <!-- Bộ chọn nhanh Tòa, Tầng, Trục căn, Loại căn (Lưới 2x2 cân đối, rõ ràng) -->
-                                <div class="grid grid-cols-2 gap-1.5">
-                                    <!-- Tòa -->
+                                    <!-- Loại căn (chiếm 1 cột) -->
+                                    <select 
+                                        x-model="unitFilter.type" 
+                                        @change="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
+                                        class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] focus:ring-1 focus:ring-blue-500 font-medium text-slate-700 truncate"
+                                    >
+                                        <option value="">Tất cả Loại</option>
+                                        <template x-for="tp in availableTypes" :key="tp">
+                                            <option :value="tp" x-text="tp"></option>
+                                        </template>
+                                    </select>
+
+                                    <!-- Tòa (chiếm 1 cột) -->
                                     <select 
                                         x-model="unitFilter.block" 
                                         @change="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
@@ -630,7 +713,7 @@
                                         </template>
                                     </select>
 
-                                    <!-- Tầng -->
+                                    <!-- Tầng (chiếm 1 cột) -->
                                     <select 
                                         x-model="unitFilter.floor" 
                                         @change="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
@@ -642,27 +725,15 @@
                                         </template>
                                     </select>
 
-                                    <!-- Trục căn -->
+                                    <!-- Trục căn (chiếm 1 cột) -->
                                     <select 
                                         x-model="unitFilter.axis" 
                                         @change="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
                                         class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] focus:ring-1 focus:ring-blue-500 font-medium text-slate-700 truncate"
                                     >
-                                        <option value="">Tất cả Trục căn</option>
+                                        <option value="">Tất cả Trục</option>
                                         <template x-for="ax in availableAxes" :key="ax">
                                             <option :value="ax" x-text="'Trục ' + ax"></option>
-                                        </template>
-                                    </select>
-
-                                    <!-- Loại căn -->
-                                    <select 
-                                        x-model="unitFilter.type" 
-                                        @change="if (filteredUnits.length > 0 && (!selectedUnit || !filteredUnits.some(u => u.id === selectedUnit.id))) selectedUnit = filteredUnits[0]"
-                                        class="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-[11px] focus:ring-1 focus:ring-blue-500 font-medium text-slate-700 truncate"
-                                    >
-                                        <option value="">Tất cả Loại</option>
-                                        <template x-for="tp in availableTypes" :key="tp">
-                                            <option :value="tp" x-text="tp"></option>
                                         </template>
                                     </select>
                                 </div>
@@ -926,96 +997,412 @@
 
                     </div>
 
-                </div>
-
-                </div>
-
-                {{-- TẠM ẨN: MENU 3 - BẢNG HÀNG & TRA CỨU CĂN HỘ
-                <div x-show="activeMenu === 'inventory'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" class="space-y-6">
-                    
-                    <div class="bg-white p-5 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">Bảng Hàng Tổng Hợp & Tra Cứu</h2>
-                            <p class="text-xs text-slate-500">Tra cứu nhanh toàn bộ danh sách căn hộ, diện tích, giá bán và tình trạng giao dịch.</p>
+                    <!-- TAB CON 3: BẢNG HÀNG TRỰC TUYẾN DỰ ÁN (GOOGLE SHEET LIVE SYNC) -->
+                    <div 
+                        x-show="locatorSubTab === 'inventory'" 
+                        class="flex-1 min-h-0 flex flex-col overflow-hidden space-y-2"
+                    >
+                        <!-- TRƯỜNG HỢP 1: DỰ ÁN CHƯA CẤU HÌNH BẢNG HÀNG GOOGLE SHEET -->
+                        <div x-show="!hasInventoryConfig" class="flex-1 bg-white rounded-xl border border-slate-200/90 shadow-sm p-8 flex flex-col items-center justify-center text-center">
+                            <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-500 border border-amber-200 flex items-center justify-center text-2xl mb-3 shadow-inner">
+                                <i class="fa-solid fa-table-cells-large"></i>
+                            </div>
+                            <h3 class="text-sm font-bold text-slate-800">Dự án chưa cấu hình Bảng Hàng Online</h3>
+                            <p class="text-xs text-slate-500 mt-1 max-w-md" x-text="sheetError || 'Dự án này chưa được liên kết file Google Sheets bảng hàng trực tuyến trong Quản trị Admin.'"></p>
+                            @auth
+                            <a :href="'/admin/unit-locators/project/' + currentProject.id" class="mt-4 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center gap-2">
+                                <i class="fa-solid fa-gear"></i>
+                                <span>Cấu hình bảng hàng dự án này</span>
+                            </a>
+                            @endauth
                         </div>
-                        <div class="flex items-center gap-2">
+
+                        <!-- TRƯỜNG HỢP 2: DỰ ÁN ĐÃ CẤU HÌNH BẢNG HÀNG -->
+                        <div x-show="hasInventoryConfig" class="flex-1 min-h-0 flex flex-col overflow-hidden space-y-2">
+                    <!-- 1. THANH ĐIỀU KHIỂN & TIÊU ĐỀ BẢNG HÀNG -->
+                    <div class="bg-white px-3.5 py-2.5 rounded-xl border border-slate-200/80 shadow-sm shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-500/10 text-emerald-700 border border-emerald-500/30 flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <span>GOOGLE DRIVE LIVE SYNC</span>
+                                </span>
+                                <h2 class="text-xs sm:text-sm font-extrabold text-slate-900 truncate" x-text="sheetData.title || 'IDC - GIỎ HÀNG ĐỘC QUYỀN THE WIN CITY'"></h2>
+                            </div>
+                            <div class="flex items-center gap-2 mt-1 text-[11px] text-slate-500">
+                                <span>Đồng bộ: <strong class="text-slate-700" x-text="sheetLastUpdated || 'Vừa xong'"></strong></span>
+                                <span>•</span>
+                                <span x-show="sheetData.name">Giỏ hàng: <strong class="text-blue-600" x-text="sheetData.name"></strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Thao tác: Làm mới, Mở sheet, CSBH, Xuất CSV -->
+                        <div class="flex items-center gap-1.5 flex-wrap shrink-0">
+                            <!-- Nút Chuyển Sheet (nếu có nhiều sheets) -->
+                            <template x-if="sheetTabs && sheetTabs.length > 1">
+                                <div class="flex items-center p-0.5 bg-slate-100 rounded-lg text-xs font-bold">
+                                    <template x-for="tab in sheetTabs" :key="tab.name">
+                                        <button 
+                                            type="button" 
+                                            @click="switchSheetTab(tab.name)" 
+                                            :class="selectedSheetTab === tab.name ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-600 hover:text-slate-900'"
+                                            class="px-2.5 py-1 rounded-md transition text-[11px] whitespace-nowrap"
+                                            x-text="tab.name"
+                                        ></button>
+                                    </template>
+                                </div>
+                            </template>
+
+                            {{-- TẠM ẨN CÁC NÚT: Làm mới, File CSBH, Sheet gốc, Xuất CSV
+                            <!-- Nút Làm mới -->
                             <button 
                                 type="button" 
-                                @click="exportInventoryCsv()" 
-                                class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
+                                @click="refreshGoogleSheetData()" 
+                                :disabled="sheetLoading"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition disabled:opacity-50"
+                                title="Đồng bộ ngay dữ liệu mới nhất từ Google Drive"
                             >
-                                <i class="fa-solid fa-file-excel text-emerald-600"></i>
-                                <span>Xuất Excel / CSV</span>
+                                <i class="fa-solid fa-arrows-rotate text-xs" :class="sheetLoading ? 'animate-spin' : ''"></i>
+                                <span x-text="sheetLoading ? 'Đang tải...' : 'Làm mới'"></span>
                             </button>
+
+                            <!-- Nút CSBH đính kèm -->
+                            <a 
+                                x-show="sheetData.csbh_link" 
+                                :href="sheetData.csbh_link" 
+                                target="_blank" 
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition"
+                                title="Xem Chính Sách Bán Hàng (CSBH) đính kèm"
+                            >
+                                <i class="fa-solid fa-file-contract text-xs"></i>
+                                <span class="hidden md:inline">File CSBH</span>
+                            </a>
+
+                            <!-- Nút Mở Google Sheet gốc -->
+                            <a 
+                                :href="sheetSourceUrl" 
+                                target="_blank" 
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
+                                title="Mở file Google Sheet gốc trên Drive"
+                            >
+                                <i class="fa-brands fa-google-drive text-emerald-600 text-xs"></i>
+                                <span class="hidden sm:inline">Sheet gốc</span>
+                            </a>
+
+                            <!-- Nút Xuất CSV -->
+                            <button 
+                                type="button" 
+                                @click="exportSheetCsv()" 
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
+                                title="Xuất danh sách ra file CSV / Excel"
+                            >
+                                <i class="fa-solid fa-file-csv text-emerald-600 text-xs"></i>
+                                <span class="hidden sm:inline">Xuất CSV</span>
+                            </button>
+                            --}}
                         </div>
                     </div>
 
-                    <!-- Bảng dữ liệu bảng hàng -->
-                    <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto">
+                    <!-- 2. THỐNG KÊ NHANH 4 THẺ & BỘ LỌC ĐA NĂNG -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 shrink-0">
+                        <!-- Tổng căn -->
+                        <div class="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                            <div>
+                                <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">Tổng Giỏ Hàng</span>
+                                <span class="text-base sm:text-lg font-black text-slate-900" x-text="sheetData.stats ? sheetData.stats.total : 0"></span>
+                            </div>
+                            <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-sm font-bold">
+                                <i class="fa-solid fa-layer-group"></i>
+                            </div>
+                        </div>
+
+                        <!-- Còn hàng / Tồn -->
+                        <div class="bg-white p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/20 shadow-sm flex items-center justify-between">
+                            <div>
+                                <span class="text-[11px] font-semibold text-emerald-700 uppercase tracking-wider block">Còn Hàng (Mở bán)</span>
+                                <span class="text-base sm:text-lg font-black text-emerald-600" x-text="sheetData.stats ? sheetData.stats.available : 0"></span>
+                            </div>
+                            <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                        </div>
+
+                        <!-- Tạm Lock -->
+                        <div class="bg-white p-2.5 rounded-xl border border-amber-200 bg-amber-50/20 shadow-sm flex items-center justify-between">
+                            <div>
+                                <span class="text-[11px] font-semibold text-amber-700 uppercase tracking-wider block">Tạm Lock</span>
+                                <span class="text-base sm:text-lg font-black text-amber-600" x-text="sheetData.stats ? sheetData.stats.locked : 0"></span>
+                            </div>
+                            <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold">
+                                <i class="fa-solid fa-lock"></i>
+                            </div>
+                        </div>
+
+                        <!-- Đã có cọc -->
+                        <div class="bg-white p-2.5 rounded-xl border border-rose-200 bg-rose-50/20 shadow-sm flex items-center justify-between">
+                            <div>
+                                <span class="text-[11px] font-semibold text-rose-700 uppercase tracking-wider block">Đã Có Cọc</span>
+                                <span class="text-base sm:text-lg font-black text-rose-600" x-text="sheetData.stats ? sheetData.stats.deposited : 0"></span>
+                            </div>
+                            <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center text-sm font-bold">
+                                <i class="fa-solid fa-handshake"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. BỘ LỌC TÌM KIẾM NHANH GỌN GÀNG -->
+                    <div class="bg-white px-3 py-2 rounded-xl border border-slate-200/80 shadow-sm shrink-0 flex flex-wrap items-center gap-2">
+                        <!-- Ô tìm kiếm mã căn / view / thanh toán -->
+                        <div class="relative flex-1 min-w-[160px] sm:min-w-[220px]">
+                            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input 
+                                type="text" 
+                                x-model="sheetFilter.search" 
+                                placeholder="Tìm mã căn, loại căn, view, thanh toán..." 
+                                class="w-full pl-7 pr-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                            >
+                        </div>
+
+                        <!-- Lọc Trạng thái -->
+                        <select 
+                            x-model="sheetFilter.status" 
+                            class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                        >
+                            <option value="">Tất cả trạng thái</option>
+                            <option value="available">🟢 Còn hàng (Mở bán)</option>
+                            <option value="locked">🟡 Tạm lock</option>
+                            <option value="deposited">🔴 Đã có cọc</option>
+                        </select>
+
+                        <!-- Lọc Loại Căn -->
+                        <select 
+                            x-model="sheetFilter.type" 
+                            class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                        >
+                            <option value="">Tất cả loại căn</option>
+                            <template x-for="t in sheetData.unit_types" :key="t">
+                                <option :value="t" x-text="t"></option>
+                            </template>
+                        </select>
+
+                        <!-- Lọc Hướng -->
+                        <select 
+                            x-model="sheetFilter.direction" 
+                            class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                        >
+                            <option value="">Tất cả hướng</option>
+                            <template x-for="d in sheetData.directions" :key="d">
+                                <option :value="d" x-text="'Hướng ' + d"></option>
+                            </template>
+                        </select>
+
+                        <!-- Lọc Khoảng Giá -->
+                        <select 
+                            x-model="sheetFilter.priceRange" 
+                            class="px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+                        >
+                            <option value="">Tất cả mức giá</option>
+                            <option value="under_2">Dưới 2 tỷ</option>
+                            <option value="2_to_2_5">Từ 2.0 - 2.5 tỷ</option>
+                            <option value="above_2_5">Trên 2.5 tỷ</option>
+                        </select>
+
+                        <!-- Nút Xóa Lọc -->
+                        <button 
+                            type="button" 
+                            x-show="sheetFilter.search || sheetFilter.status || sheetFilter.type || sheetFilter.direction || sheetFilter.priceRange" 
+                            @click="sheetFilter = { search: '', status: '', type: '', direction: '', priceRange: '' }" 
+                            class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition flex items-center gap-1"
+                        >
+                            <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                            <span>Đặt lại</span>
+                        </button>
+
+                        <!-- Đếm kết quả -->
+                        <div class="ml-auto text-xs text-slate-500 font-semibold hidden md:block">
+                            Hiển thị: <span class="text-blue-600 font-bold" x-text="filteredSheetUnits.length"></span> / <span x-text="sheetData.units ? sheetData.units.length : 0"></span> căn
+                        </div>
+                    </div>
+
+                    <!-- 4. BẢNG DỮ LIỆU CUỘN MƯỢT (DATA TABLE) -->
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+                        <div class="overflow-auto flex-1 custom-scroll">
                             <table class="w-full text-left border-collapse text-xs">
-                                <thead>
-                                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
-                                        <th class="py-3.5 px-4">Mã Căn</th>
-                                        <th class="py-3.5 px-4">Tòa / Tầng</th>
-                                        <th class="py-3.5 px-4">Loại Căn</th>
-                                        <th class="py-3.5 px-4">Diện Tích (m²)</th>
-                                        <th class="py-3.5 px-4">Hướng Ban Công</th>
-                                        <th class="py-3.5 px-4">Giá Niêm Yết</th>
-                                        <th class="py-3.5 px-4">Trạng Thái</th>
-                                        <th class="py-3.5 px-4 text-right">Thao Tác</th>
+                                <thead class="sticky top-0 z-10 bg-slate-50 border-b border-slate-200 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+                                    <tr class="text-slate-600 font-bold uppercase tracking-wider text-[11px] select-none">
+                                        <th class="py-2.5 px-3 text-center w-12">STT</th>
+                                        <th class="py-2.5 px-3 font-extrabold text-slate-900">Mã Căn</th>
+                                        <th class="py-2.5 px-3">Tòa / Tầng</th>
+                                        <th class="py-2.5 px-3">Loại Căn</th>
+                                        <th class="py-2.5 px-3 text-right">DT Thông Thủy</th>
+                                        <th class="py-2.5 px-3 text-right">DT Tim Tường</th>
+                                        <th class="py-2.5 px-3">Hướng & Tầm View</th>
+                                        <th class="py-2.5 px-3 text-right">Giá VN (chưa VAT)</th>
+                                        <th class="py-2.5 px-3">Tiến Độ / Thanh Toán</th>
+                                        <th class="py-2.5 px-3 text-center">Trạng Thái</th>
+                                        {{-- TẠM ẨN: Cột Thao tác
+                                        <th class="py-2.5 px-3 text-right">Thao Tác</th>
+                                        --}}
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    <template x-for="unit in filteredUnits" :key="unit.id">
-                                        <tr class="hover:bg-blue-50/40 transition">
-                                            <td class="py-3 px-4 font-bold text-slate-900 text-sm" x-text="unit.unit_code"></td>
-                                            <td class="py-3 px-4 text-slate-700" x-text="(unit.block ? 'Tòa ' + unit.block + ' - ' : '') + 'Tầng ' + (unit.floor || '-')"></td>
-                                            <td class="py-3 px-4">
-                                                <span class="px-2 py-0.5 rounded-md font-semibold bg-slate-100 text-slate-700" x-text="unit.unit_type || '2PN'"></span>
+                                    <template x-for="(unit, idx) in filteredSheetUnits" :key="unit.unit_code || idx">
+                                        <tr 
+                                            class="hover:bg-blue-50/40 transition group"
+                                            :class="{
+                                                'bg-rose-50/20': unit.status === 'deposited',
+                                                'bg-amber-50/20': unit.status === 'locked'
+                                            }"
+                                        >
+                                            <!-- STT -->
+                                            <td class="py-2.5 px-3 text-center text-slate-400 font-medium text-[11px]" x-text="unit.stt || (idx + 1)"></td>
+
+                                            <!-- Mã Căn -->
+                                            <td class="py-2.5 px-3">
+                                                <div class="font-extrabold text-blue-700 text-xs sm:text-sm tracking-wide" x-text="unit.unit_code"></div>
+                                                <div class="text-[10px] text-slate-400 font-mono" x-text="'Số nhà ' + (unit.room_number || '-')"></div>
                                             </td>
-                                            <td class="py-3 px-4 font-bold text-slate-800" x-text="unit.area ? unit.area + ' m²' : '-'"></td>
-                                            <td class="py-3 px-4 text-slate-600" x-text="unit.direction || 'Đông Nam'"></td>
-                                            <td class="py-3 px-4 font-extrabold text-blue-600 text-sm" x-text="unit.price_text || unit.display_price || 'Thỏa thuận'"></td>
-                                            <td class="py-3 px-4">
+
+                                            <!-- Tòa / Tầng -->
+                                            <td class="py-2.5 px-3 text-slate-700 font-medium">
+                                                <div x-text="(unit.block ? 'Tòa ' + unit.block : '')"></div>
+                                                <div class="text-[11px] text-slate-500" x-text="'Tầng ' + unit.floor"></div>
+                                            </td>
+
+                                            <!-- Loại Căn -->
+                                            <td class="py-2.5 px-3">
                                                 <span 
-                                                    class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                                                    class="px-2 py-0.5 rounded-md font-bold text-[11px]"
                                                     :class="{
-                                                        'bg-emerald-50 text-emerald-700 border-emerald-200': unit.status === 'available',
-                                                        'bg-amber-50 text-amber-700 border-amber-200': unit.status === 'reserved' || unit.status === 'deposited',
-                                                        'bg-rose-50 text-rose-700 border-rose-200': unit.status === 'sold',
-                                                        'bg-slate-100 text-slate-700 border-slate-300': unit.status === 'locked'
+                                                        'bg-blue-100 text-blue-700': unit.unit_type.includes('1PN'),
+                                                        'bg-emerald-100 text-emerald-700': unit.unit_type.includes('2PN'),
+                                                        'bg-purple-100 text-purple-700': unit.unit_type.includes('3PN') || unit.unit_type.includes('Dualkey'),
+                                                        'bg-amber-100 text-amber-700': unit.unit_type.includes('Studio')
                                                     }"
-                                                    x-text="unit.status === 'available' ? 'Còn trống' : (unit.status === 'sold' ? 'Đã bán' : 'Đang giữ chỗ')"
+                                                    x-text="unit.unit_type"
                                                 ></span>
                                             </td>
-                                            <td class="py-3 px-4 text-right">
-                                                <div class="flex items-center justify-end gap-1.5">
-                                                    <button 
-                                                        type="button" 
-                                                        @click="openUnitDetail(unit)" 
-                                                        class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold transition"
-                                                    >
-                                                        Xem chỉ căn
-                                                    </button>
+
+                                            <!-- Diện tích thông thủy -->
+                                            <td class="py-2.5 px-3 text-right">
+                                                <span class="font-extrabold text-slate-900" x-text="unit.net_area"></span>
+                                                <span class="text-[11px] text-slate-400 ml-0.5">m²</span>
+                                            </td>
+
+                                            <!-- Diện tích tim tường -->
+                                            <td class="py-2.5 px-3 text-right text-slate-500">
+                                                <span x-text="unit.gross_area"></span>
+                                                <span class="text-[10px] text-slate-400 ml-0.5">m²</span>
+                                            </td>
+
+                                            <!-- Hướng & View -->
+                                            <td class="py-2.5 px-3">
+                                                <div class="flex items-center gap-1.5 font-bold text-slate-800">
+                                                    <i class="fa-solid fa-compass text-amber-500 text-[10px]"></i>
+                                                    <span x-text="'Hướng ' + (unit.direction || '-')"></span>
+                                                </div>
+                                                <div class="text-[11px] text-slate-500 truncate max-w-[200px]" :title="unit.view" x-text="unit.view || '-'"></div>
+                                            </td>
+
+                                            <!-- Giá Bán Niêm Yết -->
+                                            <td class="py-2.5 px-3 text-right">
+                                                <div class="font-black text-blue-600 text-xs sm:text-sm" x-text="unit.price_text"></div>
+                                                <div x-show="unit.price_foreign > 0" class="text-[10px] text-slate-400" :title="'Khách nước ngoài: ' + unit.price_foreign_text">
+                                                    NN: <span x-text="unit.price_foreign_text"></span>
+                                                </div>
+                                            </td>
+
+                                            <!-- Thanh toán / CSBH -->
+                                            <td class="py-2.5 px-3">
+                                                <div class="text-[11px] font-semibold text-slate-700 max-w-[180px] line-clamp-2" :title="unit.payment_method" x-text="unit.payment_method || 'Theo CSBH chuẩn'"></div>
+                                                <div x-show="unit.calc_file" class="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1 truncate max-w-[180px]">
+                                                    <i class="fa-solid fa-paperclip text-[9px] text-slate-400"></i>
+                                                    <span x-text="unit.calc_file"></span>
+                                                </div>
+                                            </td>
+
+                                            <!-- Trạng Thái -->
+                                            <td class="py-2.5 px-3 text-center">
+                                                <span 
+                                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold border shadow-xs"
+                                                    :class="{
+                                                        'bg-emerald-50 text-emerald-700 border-emerald-300': unit.status === 'available',
+                                                        'bg-amber-50 text-amber-700 border-amber-300': unit.status === 'locked',
+                                                        'bg-rose-50 text-rose-700 border-rose-300': unit.status === 'deposited'
+                                                    }"
+                                                >
+                                                    <span 
+                                                        class="w-2 h-2 rounded-full"
+                                                        :class="{
+                                                            'bg-emerald-500 animate-pulse': unit.status === 'available',
+                                                            'bg-amber-500': unit.status === 'locked',
+                                                            'bg-rose-500': unit.status === 'deposited'
+                                                        }"
+                                                    ></span>
+                                                    <span x-text="unit.status_label"></span>
+                                                </span>
+                                            </td>
+
+                                            {{-- TẠM ẨN: Cột Thao tác
+                                            <!-- Thao Tác -->
+                                            <td class="py-2.5 px-3 text-right">
+                                                <div class="flex items-center justify-end gap-1">
+                                                    <!-- Nút Tính vay -->
                                                     <button 
                                                         type="button" 
                                                         @click="calculateLoanForUnit(unit)" 
-                                                        class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold transition"
-                                                        title="Tính bảng vay trả góp"
+                                                        class="px-2 py-1 rounded-lg bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white font-bold transition flex items-center gap-1 text-[11px]"
+                                                        title="Tính dòng tiền vay ngân hàng cho căn này"
                                                     >
-                                                        <i class="fa-solid fa-calculator"></i>
+                                                        <i class="fa-solid fa-calculator text-[10px]"></i>
+                                                        <span class="hidden xl:inline">Tính vay</span>
+                                                    </button>
+
+                                                    <!-- Nút Tư vấn -->
+                                                    <button 
+                                                        type="button" 
+                                                        @click="openConsultationModal('The Win City C2.1', unit.unit_code)" 
+                                                        class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition text-[11px]"
+                                                        title="Đăng ký tư vấn / Giữ chỗ căn này"
+                                                    >
+                                                        <i class="fa-regular fa-paper-plane text-[10px]"></i>
                                                     </button>
                                                 </div>
+                                            </td>
+                                            --}}
+                                        </tr>
+                                    </template>
+
+                                    <!-- Khi không có căn nào thỏa mãn -->
+                                    <template x-if="filteredSheetUnits.length === 0">
+                                        <tr>
+                                            <td colspan="11" class="py-12 text-center text-slate-400">
+                                                <div class="w-12 h-12 mx-auto rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-lg mb-2">
+                                                    <i class="fa-solid fa-table-list"></i>
+                                                </div>
+                                                <div class="font-bold text-slate-600 text-sm">Không tìm thấy căn hộ nào phù hợp</div>
+                                                <div class="text-xs text-slate-400 mt-1">Vui lòng điều chỉnh hoặc xóa bớt tiêu chí lọc tìm kiếm bên trên.</div>
                                             </td>
                                         </tr>
                                     </template>
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- Chân bảng tóm tắt -->
+                        <div class="px-4 py-2 bg-slate-50 border-t border-slate-200 text-slate-500 text-xs flex items-center justify-between shrink-0">
+                            <div>
+                                Nguồn dữ liệu: <a :href="sheetSourceUrl" target="_blank" class="text-blue-600 font-bold hover:underline">Google Spreadsheets (Drive)</a> • Tự động đồng bộ theo thời gian thực
+                            </div>
+                            <div class="font-semibold text-slate-700">
+                                <span class="text-emerald-600 font-bold" x-text="sheetData.stats ? sheetData.stats.available : 0"></span> căn còn mở bán
+                            </div>
+                        </div>
                     </div>
+                        </div>
+                    </div>
+
                 </div>
-                --}}
 
                 <!-- ============================================================== -->
                 <!-- MENU 4: BẢNG TÍNH VAY MUA NHÀ & LÃI SUẤT (LOAN CALCULATOR)      -->
@@ -1370,6 +1757,16 @@
             </div>
 
             </div>
+
+            <!-- FOOTER CƠ BẢN -->
+            <footer class="shrink-0 bg-white border-t border-slate-200/80 px-3 sm:px-4 py-1.5 flex flex-col sm:flex-row items-center justify-between gap-0.5 sm:gap-3 text-[10px] sm:text-[11px] text-slate-500">
+                <p class="whitespace-nowrap">
+                    &copy; {{ date('Y') }} <span class="font-bold text-slate-700">INDOCHINE</span> &middot; BĐS &amp; Sơ Đồ Chỉ Căn
+                </p>
+                <p class="hidden sm:block truncate text-slate-400">
+                    Thông tin, hình ảnh và giá bán chỉ mang tính tham khảo.
+                </p>
+            </footer>
 
         </main>
 
@@ -2122,17 +2519,56 @@
                     submitting: false
                 },
 
+                // Dữ liệu Bảng Hàng Trực Tuyến Live Sync từ Google Drive
+                sheetData: {!! json_encode($sheetInventory['current_sheet'] ?? [
+                    'title' => 'IDC - GIỎ HÀNG ĐỘC QUYỀN THE WIN CITY- TÒA C2.1',
+                    'name' => 'GH độc quyền tòa C2.1',
+                    'csbh_link' => '',
+                    'stats' => ['total' => 0, 'available' => 0, 'deposited' => 0, 'locked' => 0],
+                    'unit_types' => [],
+                    'directions' => [],
+                    'units' => []
+                ]) !!},
+                sheetTabs: {!! json_encode($sheetInventory['sheets'] ?? []) !!},
+                selectedSheetTab: '{{ addslashes($sheetInventory['current_sheet']['name'] ?? 'GH độc quyền tòa C2.1') }}',
+                sheetLastUpdated: '{{ $sheetInventory['updated_at'] ?? now()->format('H:i d/m/Y') }}',
+                sheetSourceUrl: '{{ $sheetInventory['source_url'] ?? "https://docs.google.com/spreadsheets/d/14553EpRwsgN3iz5YQmc9o__Bc5ovfuRa/edit?gid=149974058" }}',
+                sheetLoading: false,
+                hasInventoryConfig: {{ ($sheetInventory['has_config'] ?? false) ? 'true' : 'false' }},
+                sheetError: null,
+                sheetFilter: {
+                    search: '',
+                    status: '',
+                    type: '',
+                    direction: '',
+                    priceRange: ''
+                },
+
                 // Khởi tạo
                 initApp() {
                     // Kiểm tra URL hash hoặc param
                     const urlParams = new URLSearchParams(window.location.search);
                     const requestedMenu = urlParams.get('menu');
+                    const requestedTab = urlParams.get('tab');
+
                     if (requestedMenu && this.menuTitles[requestedMenu]) {
                         this.activeMenu = requestedMenu;
                     }
 
+                    // Nếu truy cập menu bảng hàng hoặc tab bảng hàng, dẫn vào locator subtab inventory
+                    if (requestedMenu === 'inventory' || requestedTab === 'inventory') {
+                        this.activeMenu = 'locator';
+                        this.locatorSubTab = 'inventory';
+                        this.loadProjectSheetInventory(this.currentProject.id);
+                    } else if (requestedTab && ['units', 'floorplans', 'inventory'].includes(requestedTab)) {
+                        this.locatorSubTab = requestedTab;
+                        if (requestedTab === 'inventory') {
+                            this.loadProjectSheetInventory(this.currentProject.id);
+                        }
+                    }
+
                     // Nếu menu đang chọn thuộc các mục tạm ẩn, chuyển về projects
-                    if (this.activeMenu === 'inventory' || this.activeMenu === 'news') {
+                    if (this.activeMenu === 'news') {
                         this.activeMenu = 'projects';
                     }
 
@@ -2224,10 +2660,26 @@
                     }
 
                     this.switchMenu('locator');
-                    this.locatorSubTab = 'units';
+                    if (this.locatorSubTab === 'inventory') {
+                        this.loadProjectSheetInventory(projectId);
+                    } else if (!this.locatorSubTab) {
+                        this.locatorSubTab = 'units';
+                    }
                     this.selectedUnit = (this.unitsList && this.unitsList.length > 0) ? this.unitsList[0] : null;
                     this.selectedFloorplan = (this.floorplansList && this.floorplansList.length > 0) ? this.floorplansList[0] : null;
                     this.resetUnitFilters();
+                },
+
+                // Chuyển tab con trong Sơ đồ dự án: Chỉ căn, Mặt bằng, Bảng hàng
+                switchLocatorSubTab(tabKey) {
+                    this.locatorSubTab = tabKey;
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('tab', tabKey);
+                    window.history.replaceState({}, '', url);
+
+                    if (tabKey === 'inventory') {
+                        this.loadProjectSheetInventory(this.currentProject.id);
+                    }
                 },
 
                 // Lọc dự án (chỉ hiển thị dự án có chỉ căn)
@@ -2826,6 +3278,139 @@
                     } finally {
                         this.passwordForm.submitting = false;
                     }
+                },
+
+                // Danh sách căn Google Sheet sau khi lọc (Computed)
+                get filteredSheetUnits() {
+                    if (!this.sheetData || !this.sheetData.units) return [];
+                    return this.sheetData.units.filter(u => {
+                        // Lọc từ khóa tìm kiếm
+                        if (this.sheetFilter.search) {
+                            const q = this.sheetFilter.search.toLowerCase().trim();
+                            const code = (u.unit_code || '').toLowerCase();
+                            const type = (u.unit_type || '').toLowerCase();
+                            const view = (u.view || '').toLowerCase();
+                            const payment = (u.payment_method || '').toLowerCase();
+                            const room = (u.room_number ? 'số nhà ' + u.room_number : '').toLowerCase();
+                            if (!code.includes(q) && !type.includes(q) && !view.includes(q) && !payment.includes(q) && !room.includes(q)) {
+                                return false;
+                            }
+                        }
+                        // Lọc trạng thái
+                        if (this.sheetFilter.status && u.status !== this.sheetFilter.status) {
+                            return false;
+                        }
+                        // Lọc loại căn
+                        if (this.sheetFilter.type && u.unit_type !== this.sheetFilter.type) {
+                            return false;
+                        }
+                        // Lọc hướng ban công
+                        if (this.sheetFilter.direction && u.direction !== this.sheetFilter.direction) {
+                            return false;
+                        }
+                        // Lọc khoảng giá
+                        if (this.sheetFilter.priceRange) {
+                            const p = Number(u.price) || 0;
+                            if (this.sheetFilter.priceRange === 'under_2' && p >= 2000000000) return false;
+                            if (this.sheetFilter.priceRange === '2_to_2_5' && (p < 2000000000 || p > 2500000000)) return false;
+                            if (this.sheetFilter.priceRange === 'above_2_5' && p <= 2500000000) return false;
+                        }
+                        return true;
+                    });
+                },
+
+                // Tải dữ liệu Bảng hàng Google Sheet theo từng dự án
+                async loadProjectSheetInventory(projectId = null, force = false, sheetName = null) {
+                    const pid = projectId || this.currentProject.id;
+                    if (!pid) return;
+                    this.sheetLoading = true;
+                    this.sheetError = null;
+                    const targetSheet = sheetName || this.selectedSheetTab;
+                    try {
+                        let url = `/api/inventory/sheet?project_id=${encodeURIComponent(pid)}`;
+                        if (force) url += '&refresh=1';
+                        if (targetSheet) url += `&sheet=${encodeURIComponent(targetSheet)}`;
+
+                        const res = await fetch(url);
+                        const data = await res.json();
+                        if (data.success && data.current_sheet) {
+                            this.sheetData = data.current_sheet;
+                            this.sheetLastUpdated = data.updated_at || 'Vừa xong';
+                            this.selectedSheetTab = data.current_sheet.name || targetSheet;
+                            this.sheetSourceUrl = data.sheet_url || this.sheetSourceUrl;
+                            this.hasInventoryConfig = true;
+                            if (data.sheets && data.sheets.length > 0) {
+                                this.sheetTabs = data.sheets;
+                            }
+                            if (force && window.Swal) {
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'top-end',
+                                    icon: 'success',
+                                    title: 'Đã đồng bộ dữ liệu mới nhất từ Google Drive!',
+                                    showConfirmButton: false,
+                                    timer: 2500
+                                });
+                            }
+                        } else {
+                            this.hasInventoryConfig = data.has_config !== false;
+                            this.sheetError = data.message || 'Dự án này chưa được cấu hình bảng hàng Google Sheet.';
+                        }
+                    } catch (err) {
+                        console.error('Lỗi tải bảng hàng dự án:', err);
+                        this.sheetError = 'Không thể kết nối lấy dữ liệu bảng hàng.';
+                    } finally {
+                        this.sheetLoading = false;
+                    }
+                },
+
+                // Đồng bộ mới dữ liệu từ Google Drive
+                async refreshGoogleSheetData(sheetName = null) {
+                    await this.loadProjectSheetInventory(this.currentProject.id, true, sheetName);
+                },
+
+                // Chuyển tab giỏ hàng (sheet)
+                async switchSheetTab(sheetName) {
+                    if (this.selectedSheetTab === sheetName) return;
+                    this.selectedSheetTab = sheetName;
+                    await this.loadProjectSheetInventory(this.currentProject.id, false, sheetName);
+                },
+
+                // Xuất file CSV bảng hàng Google Sheet
+                exportSheetCsv() {
+                    const list = this.filteredSheetUnits;
+                    if (!list || list.length === 0) {
+                        if (window.Swal) {
+                            Swal.fire({ icon: 'warning', title: 'Không có dữ liệu', text: 'Không có căn nào phù hợp với bộ lọc hiện tại để xuất.' });
+                        }
+                        return;
+                    }
+                    const headers = ['STT', 'Mã Căn', 'Loại Căn', 'Số Nhà', 'Tầng', 'Tòa', 'DT Thông Thủy (m2)', 'DT Tim Tường (m2)', 'Hướng', 'View', 'Giá VN (chưa VAT)', 'Giá Nước Ngoài (chưa VAT)', 'Phương Thức TT', 'Trạng Thái'];
+                    const rows = list.map(u => [
+                        u.stt,
+                        u.unit_code,
+                        u.unit_type,
+                        u.room_number || '',
+                        u.floor,
+                        u.block,
+                        u.net_area,
+                        u.gross_area,
+                        u.direction,
+                        `"${(u.view || '').replace(/"/g, '""')}"`,
+                        u.price,
+                        u.price_foreign,
+                        `"${(u.payment_method || '').replace(/"/g, '""')}"`,
+                        u.status_label
+                    ]);
+                    const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", `Bang_hang_${this.selectedSheetTab.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
                 },
 
                 // Xuất file CSV bảng hàng

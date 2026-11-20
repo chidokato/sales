@@ -9,6 +9,7 @@ use App\Models\ProjectFloorplan;
 use App\Models\ProjectPerspective;
 use App\Models\ProjectTemplate;
 use App\Models\User;
+use App\Services\GoogleSheetInventoryService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -19,7 +20,7 @@ class FrontendController extends Controller
     /**
      * Hiển thị trang frontend cho người dùng (Khách hàng & Thành viên)
      */
-    public function index(Request $request)
+    public function index(Request $request, GoogleSheetInventoryService $inventoryService)
     {
         $requestedProjectId = (int) $request->query('project_id', 0);
         $activeMenu = $request->query('menu', 'projects'); // projects, locator, inventory, calculator, news, contact
@@ -219,6 +220,39 @@ class FrontendController extends Controller
         // 7. Tin tức & Cẩm nang Bất động sản
         $articles = $this->getSampleArticles();
 
+        // 8. Bảng hàng trực tuyến từ Google Sheet Driver (Live Sync theo cấu hình dự án)
+        $invConfig = null;
+        if ($activeProjectId > 0) {
+            $invConfig = \App\Models\ProjectInventoryConfig::where('project_id', $activeProjectId)->first();
+        }
+        $hasProjectConfig = ($invConfig !== null);
+        if (!$invConfig) {
+            $invConfig = \App\Models\ProjectInventoryConfig::first();
+        }
+        
+        $visibleTabs = $invConfig ? $invConfig->visible_tabs : null;
+        $sheetUrl = $invConfig ? $invConfig->sheet_url : null;
+        $sheetName = $invConfig ? $invConfig->sheet_tab_name : null;
+        if (!empty($visibleTabs) && is_array($visibleTabs) && !in_array($sheetName, $visibleTabs)) {
+            $sheetName = $visibleTabs[0] ?? $sheetName;
+        }
+
+        $sheetInventory = $inventoryService->getInventory(false, $sheetName, $sheetUrl);
+        $sheetInventory['has_config'] = $hasProjectConfig;
+        $sheetInventory['project_id'] = $invConfig ? $invConfig->project_id : $activeProjectId;
+        $sheetInventory['source_url'] = $sheetUrl ?: ($sheetInventory['source_url'] ?? '');
+
+        // Lọc danh sách tab chỉ hiển thị các tab được tick chọn (visible_tabs)
+        if (!empty($visibleTabs) && is_array($visibleTabs) && !empty($sheetInventory['sheets'])) {
+            $sheetInventory['sheets'] = array_values(array_filter($sheetInventory['sheets'], function ($s) use ($visibleTabs) {
+                return in_array($s['name'], $visibleTabs);
+            }));
+        }
+
+        if ($invConfig && !empty($invConfig->csbh_url) && !empty($sheetInventory['current_sheet'])) {
+            $sheetInventory['current_sheet']['csbh_link'] = $invConfig->csbh_url;
+        }
+
         return view('frontend.index', compact(
             'projects',
             'totalProjectsCount',
@@ -235,8 +269,72 @@ class FrontendController extends Controller
             'templates',
             'articles',
             'activeMenu',
-            'dbError'
+            'dbError',
+            'sheetInventory'
         ));
+    }
+
+    /**
+     * API AJAX lấy bảng hàng Google Sheet (Hỗ trợ Live Sync & Force Refresh theo dự án)
+     */
+    public function getGoogleSheetInventory(Request $request, GoogleSheetInventoryService $inventoryService)
+    {
+        $projectId = (int)$request->query('project_id', 0);
+        $invConfig = null;
+        if ($projectId > 0) {
+            $invConfig = \App\Models\ProjectInventoryConfig::where('project_id', $projectId)->first();
+            if (!$invConfig) {
+                $proj = SharedDatabase::table('posts')->where('id', $projectId)->first();
+                $projName = $proj ? $proj->name : "Dự án #{$projectId}";
+                return response()->json([
+                    'success' => false,
+                    'has_config' => false,
+                    'message' => "Dự án \"{$projName}\" chưa được cấu hình liên kết Bảng Hàng Online trong trang Quản trị.",
+                    'sheets' => [],
+                    'current_sheet' => null
+                ]);
+            }
+        } else {
+            $invConfig = \App\Models\ProjectInventoryConfig::first();
+        }
+
+        if (!$invConfig) {
+            return response()->json([
+                'success' => false,
+                'has_config' => false,
+                'message' => 'Hệ thống chưa có dự án nào được cấu hình bảng hàng online.',
+                'sheets' => [],
+                'current_sheet' => null
+            ]);
+        }
+
+        $visibleTabs = $invConfig->visible_tabs;
+        $sheetName = $request->query('sheet');
+        if (!$sheetName) {
+            $sheetName = $invConfig->sheet_tab_name;
+            if (!empty($visibleTabs) && is_array($visibleTabs) && !in_array($sheetName, $visibleTabs)) {
+                $sheetName = $visibleTabs[0] ?? $sheetName;
+            }
+        }
+        $sheetUrl = $request->query('sheet_url') ?: ($invConfig ? $invConfig->sheet_url : null);
+        $force = $request->boolean('refresh');
+        
+        $data = $inventoryService->getInventory($force, $sheetName, $sheetUrl);
+        $data['has_config'] = true;
+        $data['project_id'] = $invConfig->project_id;
+        $data['sheet_url'] = $invConfig->sheet_url;
+
+        // Lọc danh sách tab chỉ hiển thị các tab được tick chọn (visible_tabs)
+        if (!empty($visibleTabs) && is_array($visibleTabs) && !empty($data['sheets'])) {
+            $data['sheets'] = array_values(array_filter($data['sheets'], function ($s) use ($visibleTabs) {
+                return in_array($s['name'], $visibleTabs);
+            }));
+        }
+
+        if ($invConfig && !empty($invConfig->csbh_url) && !empty($data['current_sheet'])) {
+            $data['current_sheet']['csbh_link'] = $invConfig->csbh_url;
+        }
+        return response()->json($data);
     }
 
     /**

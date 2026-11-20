@@ -141,9 +141,45 @@
                 <span>Mặt bằng Tầng</span>
                 <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="activeTab === 'floorplans' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'" x-text="floorplanCount">{{ $floorplans->count() }}</span>
             </button>
+
+            <!-- Tab 5: Cấu hình Bảng Hàng Online (Google Sheet Drive) -->
+            <button 
+                type="button" 
+                @click="activeTab = 'online_inventory'"
+                :class="activeTab === 'online_inventory' ? 'border-emerald-600 text-emerald-700 font-bold bg-white' : 'border-transparent text-slate-500 hover:text-slate-800 font-semibold'"
+                class="py-2.5 px-4 border-b-2 text-xs sm:text-sm flex items-center gap-2 transition rounded-t-xl shrink-0"
+            >
+                <i class="fa-solid fa-table-cells-large text-xs text-emerald-600"></i>
+                <span>Cấu hình Bảng Hàng Online</span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold flex items-center gap-1" :class="activeTab === 'online_inventory' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-600'">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Live Sync</span>
+                </span>
+            </button>
         </div>
 
         <div class="pb-1.5 shrink-0 flex items-center gap-2">
+            <!-- Nút Tab Bảng Hàng Online -->
+            <button 
+                type="button" 
+                x-show="activeTab === 'online_inventory'"
+                @click="fetchInventoryPreview(true)"
+                :disabled="isLoadingInventory"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition disabled:opacity-50"
+            >
+                <i class="fa-solid fa-arrows-rotate text-xs" :class="isLoadingInventory ? 'animate-spin' : ''"></i>
+                <span x-text="isLoadingInventory ? 'Đang kiểm tra...' : 'Đồng bộ & Kiểm tra ngay'"></span>
+            </button>
+
+            <a 
+                x-show="activeTab === 'online_inventory'"
+                href="{{ route('home', ['project_id' => $project->id, 'menu' => 'inventory']) }}" 
+                target="_blank"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold transition border border-blue-200"
+            >
+                <i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+                <span>Xem ngoài Web</span>
+            </a>
             <!-- Nút Tab Phôi Mẫu -->
             <button 
                 type="button" 
@@ -266,15 +302,124 @@
                         </div>
                         @endif
 
-                        <!-- Axis Filter -->
+                        <!-- Axis Multi-Select Filter -->
                         @if(!empty($existingAxes) && count($existingAxes) > 0)
-                        <div>
-                            <select name="unit_axis" @change="applyFilters()" class="py-1.5 px-2.5 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50 font-semibold">
-                                <option value="">-- Trục căn --</option>
-                                @foreach($existingAxes as $ax)
-                                <option value="{{ $ax }}" {{ request('unit_axis') === $ax ? 'selected' : '' }}>Trục {{ $ax }}</option>
-                                @endforeach
-                            </select>
+                        <div class="relative" @click.outside="if (axisDropdownOpen) { axisDropdownOpen = false; applyFilters(); }">
+                            <!-- Hidden inputs for form submit / URL serialization -->
+                            <template x-for="ax in selectedAxes" :key="ax">
+                                <input type="hidden" name="unit_axis[]" :value="ax">
+                            </template>
+
+                            <!-- Button Trigger -->
+                            <button 
+                                type="button" 
+                                @click="axisDropdownOpen = !axisDropdownOpen"
+                                class="py-1.5 px-2.5 rounded-lg border text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold flex items-center gap-1.5 transition select-none cursor-pointer"
+                                :class="selectedAxes.length > 0 ? 'border-blue-400 bg-blue-50/90 text-blue-700 shadow-2xs font-bold' : 'border-slate-200 bg-slate-50/50 text-slate-700 hover:bg-slate-100'"
+                                title="Lọc theo một hoặc nhiều trục căn"
+                            >
+                                <template x-if="selectedAxes.length === 0">
+                                    <span class="flex items-center gap-1.5">
+                                        <span>-- Trục căn --</span>
+                                        <i class="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
+                                    </span>
+                                </template>
+                                <template x-if="selectedAxes.length === 1">
+                                    <span class="flex items-center gap-1.5">
+                                        <span x-text="'Trục ' + selectedAxes[0]"></span>
+                                        <span @click.stop="selectedAxes = []; applyFilters();" class="text-slate-400 hover:text-rose-500 ml-0.5 cursor-pointer" title="Bỏ chọn">
+                                            <i class="fa-solid fa-xmark text-[10px]"></i>
+                                        </span>
+                                    </span>
+                                </template>
+                                <template x-if="selectedAxes.length > 1">
+                                    <span class="flex items-center gap-1.5">
+                                        <span x-text="selectedAxes.length + ' trục'"></span>
+                                        <span class="px-1.5 py-0.2 rounded-full bg-blue-600 text-white font-black text-[9px]" x-text="selectedAxes.length"></span>
+                                        <span @click.stop="selectedAxes = []; applyFilters();" class="text-slate-400 hover:text-rose-500 ml-0.5 cursor-pointer" title="Xóa tất cả trục đã chọn">
+                                            <i class="fa-solid fa-xmark text-[10px]"></i>
+                                        </span>
+                                    </span>
+                                </template>
+                            </button>
+
+                            <!-- Dropdown Menu -->
+                            <div 
+                                x-show="axisDropdownOpen" 
+                                x-cloak
+                                x-transition:enter="transition ease-out duration-150"
+                                x-transition:enter-start="opacity-0 translate-y-1 scale-95"
+                                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                                x-transition:leave="transition ease-in duration-100"
+                                x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                                x-transition:leave-end="opacity-0 translate-y-1 scale-95"
+                                class="absolute left-0 mt-1.5 w-60 bg-white rounded-2xl shadow-xl border border-slate-200/90 z-40 p-2.5 text-xs space-y-2"
+                            >
+                                <!-- Search input in dropdown -->
+                                <div class="relative">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]"></i>
+                                    <input 
+                                        type="text" 
+                                        x-model="axisSearch" 
+                                        placeholder="Tìm trục (vd: 1, 14)..." 
+                                        class="w-full pl-7 pr-6 py-1 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-slate-50/50"
+                                    >
+                                    <template x-if="axisSearch">
+                                        <button type="button" @click="axisSearch = ''" class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                            <i class="fa-solid fa-xmark text-[10px]"></i>
+                                        </button>
+                                    </template>
+                                </div>
+
+                                <!-- Action Buttons: Select all / Deselect all -->
+                                <div class="flex items-center justify-between text-[11px] px-1 pb-1 border-b border-slate-100">
+                                    <button type="button" @click="selectAllAxes()" class="text-blue-600 hover:text-blue-800 font-bold hover:underline">
+                                        Chọn tất cả
+                                    </button>
+                                    <button type="button" @click="deselectAllAxes()" class="text-slate-500 hover:text-rose-600 font-semibold hover:underline">
+                                        Bỏ chọn
+                                    </button>
+                                </div>
+
+                                <!-- List of Checkboxes -->
+                                <div class="max-h-52 overflow-y-auto space-y-0.5 pr-1 divide-y divide-slate-50">
+                                    <template x-if="getFilteredAxes().length === 0">
+                                        <div class="py-4 text-center text-slate-400 text-xs">
+                                            Không tìm thấy trục nào
+                                        </div>
+                                    </template>
+                                    <template x-for="ax in getFilteredAxes()" :key="ax">
+                                        <label class="flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer select-none transition" :class="isAxisSelected(ax) ? 'bg-blue-50/70 font-bold text-blue-800' : 'text-slate-700'">
+                                            <div class="flex items-center gap-2">
+                                                <input 
+                                                    type="checkbox" 
+                                                    :checked="isAxisSelected(ax)" 
+                                                    @change="toggleAxis(ax)" 
+                                                    class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                >
+                                                <span x-text="'Trục ' + ax"></span>
+                                            </div>
+                                            <template x-if="isAxisSelected(ax)">
+                                                <i class="fa-solid fa-check text-blue-600 text-[10px]"></i>
+                                            </template>
+                                        </label>
+                                    </template>
+                                </div>
+
+                                <!-- Apply Filter Footer -->
+                                <div class="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                                    <span class="text-[11px] text-slate-500">
+                                        Đã chọn: <b class="text-blue-600" x-text="selectedAxes.length"></b>
+                                    </span>
+                                    <button 
+                                        type="button" 
+                                        @click="axisDropdownOpen = false; applyFilters();" 
+                                        class="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition cursor-pointer"
+                                    >
+                                        Áp dụng
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         @endif
 
@@ -728,7 +873,392 @@
                 </table>
             </div>
         </div>
-    </div> <!-- End Tab 2: Floorplans -->
+    </div> <!-- End Tab 4: Floorplans -->
+
+    <!-- ==================== TAB 5: CẤU HÌNH BẢNG HÀNG ONLINE (GOOGLE SHEET DRIVE) ==================== -->
+    <div x-show="activeTab === 'online_inventory'" class="space-y-4">
+        
+        <!-- 1. THẺ THIẾT LẬP CẤU HÌNH BẢNG HÀNG -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center justify-center text-lg shrink-0">
+                        <i class="fa-solid fa-table-cells-large"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base font-extrabold text-slate-900">Cấu hình Bảng Hàng Trực Tuyến (Google Sheets Live Sync)</h3>
+                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span>Drive Live</span>
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Kết nối trực tiếp link Google Sheet giỏ hàng của dự án <strong>{{ $project->name }}</strong>. Khi sale đổi màu ô hoặc cập nhật giá trên Drive, website tự động đồng bộ ngay lập tức.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Toggle kích hoạt -->
+                <div class="flex items-center gap-2 shrink-0 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
+                    <span class="text-xs font-semibold text-slate-700">Hiển thị ngoài Web:</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" x-model="inventoryConfig.is_active" class="sr-only peer">
+                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                    <span class="text-xs font-bold" :class="inventoryConfig.is_active ? 'text-emerald-600' : 'text-slate-400'" x-text="inventoryConfig.is_active ? 'Đang Bật' : 'Đang Tắt'"></span>
+                </div>
+            </div>
+
+            <!-- Form điền thông tin -->
+            <form @submit.prevent="saveInventoryConfig()" class="mt-5 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Link Google Sheet -->
+                    <div class="md:col-span-2">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-xs font-bold text-slate-700">
+                                <i class="fa-brands fa-google-drive text-emerald-600 mr-1"></i>
+                                Link Google Sheet Bảng Hàng (Drive) <span class="text-rose-500">*</span>
+                            </label>
+                            <a 
+                                :href="inventoryConfig.sheet_url" 
+                                target="_blank" 
+                                x-show="inventoryConfig.sheet_url"
+                                class="text-[11px] font-bold text-blue-600 hover:underline inline-flex items-center gap-1"
+                            >
+                                <span>Mở xem trên Google Drive</span>
+                                <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                            </a>
+                        </div>
+                        <div class="relative">
+                            <input 
+                                type="url" 
+                                x-model="inventoryConfig.sheet_url" 
+                                required
+                                placeholder="https://docs.google.com/spreadsheets/d/14553EpRwsgN3iz5YQmc9o__Bc5ovfuRa/edit?gid=149974058"
+                                class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                            >
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">Dán toàn bộ link Google Sheet chia sẻ (hệ thống tự bóc tách ID file và ID Sheet/gid).</p>
+                    </div>
+
+                    <!-- CẤU HÌNH DANH SÁCH TAB TRONG SHEET (TICK CHỌN HIỂN THỊ / ẨN TỪNG TAB) -->
+                    <div class="md:col-span-2 bg-slate-50/90 p-4 rounded-2xl border border-slate-200 space-y-3">
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                                    <i class="fa-solid fa-table-list"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-bold text-slate-800">Danh Sách Các Tab Trong Google Sheet</h4>
+                                    <p class="text-[11px] text-slate-400">Tick chọn <span class="font-semibold text-emerald-600">[✓]</span> để hiển thị tab đó ra web cho khách hàng xem, bỏ tick để ẩn tab nội bộ.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-1.5 text-xs">
+                                <template x-if="inventorySheetData && inventorySheetData.sheets && inventorySheetData.sheets.length > 0">
+                                    <div class="flex items-center gap-1">
+                                        <button 
+                                            type="button" 
+                                            @click="toggleAllTabs(true)"
+                                            class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-emerald-700 hover:border-emerald-300 text-[11px] font-bold transition shadow-2xs"
+                                        >
+                                            Chọn tất cả
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            @click="toggleAllTabs(false)"
+                                            class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-rose-600 hover:border-rose-300 text-[11px] font-bold transition shadow-2xs"
+                                        >
+                                            Bỏ chọn hết
+                                        </button>
+                                    </div>
+                                </template>
+                                <button 
+                                    type="button" 
+                                    @click="fetchInventoryPreview(true)"
+                                    :disabled="isLoadingInventory"
+                                    class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition flex items-center gap-1 shadow-xs disabled:opacity-50"
+                                    title="Quét lại toàn bộ tab từ file Google Sheet"
+                                >
+                                    <i class="fa-solid fa-arrows-rotate text-[10px]" :class="isLoadingInventory ? 'animate-spin' : ''"></i>
+                                    <span x-text="isLoadingInventory ? 'Đang đọc...' : 'Đọc lại danh sách Tab'"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- DANH SÁCH CÁC TAB CÓ TRONG SHEET -->
+                        <template x-if="inventorySheetData && inventorySheetData.sheets && inventorySheetData.sheets.length > 0">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                                <template x-for="sh in inventorySheetData.sheets" :key="sh.name">
+                                    <div 
+                                        class="p-3 rounded-xl border transition-all flex flex-col justify-between gap-2.5 relative"
+                                        :class="isTabChecked(sh.name) ? 'bg-white border-emerald-300 shadow-sm' : 'bg-slate-100/70 border-slate-200 opacity-60'"
+                                    >
+                                        <!-- Hàng 1: Checkbox tick chọn hiển thị hay không -->
+                                        <div class="flex items-start justify-between gap-2">
+                                            <label class="flex items-center gap-2 cursor-pointer select-none min-w-0 flex-1">
+                                                <input 
+                                                    type="checkbox" 
+                                                    :value="sh.name" 
+                                                    :checked="isTabChecked(sh.name)"
+                                                    @change="toggleTab(sh.name, $event.target.checked)"
+                                                    class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer shrink-0"
+                                                >
+                                                <span class="text-xs font-bold text-slate-800 truncate" x-text="sh.name" :title="sh.name"></span>
+                                            </label>
+
+                                            <span 
+                                                class="px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase shrink-0"
+                                                :class="isTabChecked(sh.name) ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-slate-200 text-slate-500'"
+                                                x-text="isTabChecked(sh.name) ? 'Hiển thị' : 'Ẩn'"
+                                            ></span>
+                                        </div>
+
+                                        <!-- Hàng 2: Chọn làm tab mặc định / ưu tiên -->
+                                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                                            <label class="flex items-center gap-1.5 cursor-pointer text-[11px] text-slate-600 hover:text-blue-600">
+                                                <input 
+                                                    type="radio" 
+                                                    name="primary_sheet_tab" 
+                                                    :value="sh.name" 
+                                                    :checked="inventoryConfig.sheet_tab_name === sh.name"
+                                                    @change="inventoryConfig.sheet_tab_name = sh.name"
+                                                    class="text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                >
+                                                <span :class="inventoryConfig.sheet_tab_name === sh.name ? 'font-bold text-blue-600' : ''">Mặc định</span>
+                                            </label>
+
+                                            <template x-if="inventoryConfig.sheet_tab_name === sh.name">
+                                                <span class="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-blue-100 text-blue-700 flex items-center gap-0.5">
+                                                    <i class="fa-solid fa-star text-[8px] text-amber-500"></i>
+                                                    Ưu tiên
+                                                </span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <!-- Chưa nạp danh sách tab -->
+                        <template x-if="!inventorySheetData || !inventorySheetData.sheets || inventorySheetData.sheets.length === 0">
+                            <div class="p-4 bg-white rounded-xl border border-dashed border-slate-300 text-center">
+                                <i class="fa-solid fa-file-excel text-2xl text-slate-300 mb-1"></i>
+                                <p class="text-xs font-semibold text-slate-600">Chưa tải danh sách Tab từ Google Sheet</p>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Bấm nút bên dưới để hệ thống quét các tab trong file Google Drive của bạn.</p>
+                                <button 
+                                    type="button" 
+                                    @click="fetchInventoryPreview(true)"
+                                    :disabled="isLoadingInventory"
+                                    class="mt-2.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition inline-flex items-center gap-1.5 shadow-xs"
+                                >
+                                    <i class="fa-solid fa-arrows-rotate text-xs" :class="isLoadingInventory ? 'animate-spin' : ''"></i>
+                                    <span>Tải danh sách các Tab trong Sheet</span>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Tên Sheet / Tab Giỏ Hàng Ưu Tiên (Input dự phòng) -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            <i class="fa-solid fa-sheet-plastic text-blue-600 mr-1"></i>
+                            Tên Tab Mặc Định / Ưu Tiên Mở Đầu Tiên
+                        </label>
+                        <input 
+                            type="text" 
+                            x-model="inventoryConfig.sheet_tab_name" 
+                            placeholder="GH độc quyền tòa C2.1"
+                            class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                        >
+                        <p class="text-[11px] text-slate-400 mt-1">Tab này sẽ được mở đầu tiên khi khách xem Bảng hàng trên web.</p>
+                    </div>
+
+                    <!-- Link CSBH Đính Kèm -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            <i class="fa-solid fa-file-contract text-indigo-600 mr-1"></i>
+                            Link File Chính Sách Bán Hàng (CSBH)
+                        </label>
+                        <input 
+                            type="url" 
+                            x-model="inventoryConfig.csbh_url" 
+                            placeholder="https://drive.google.com/file/d/1HjY1sRvEVD5_vDG2ojh7cKf9nQMUMRSW/view?usp=drivesdk"
+                            class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                        >
+                        <p class="text-[11px] text-slate-400 mt-1">Link file PDF / Drive CSBH đính kèm để khách hàng tải xem trên web.</p>
+                    </div>
+
+                    <!-- Ghi chú nội bộ -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            <i class="fa-regular fa-note-sticky text-amber-500 mr-1"></i>
+                            Ghi Chú Đợt Ban Hành / Chính Sách
+                        </label>
+                        <input 
+                            type="text" 
+                            x-model="inventoryConfig.notes" 
+                            placeholder="Áp dụng CSBH Victory Hermes ngày 08/08/2026..."
+                            class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition"
+                        >
+                    </div>
+                </div>
+
+                <!-- Nút lưu & Thao tác -->
+                <div class="flex items-center justify-between gap-3 pt-3 border-t border-slate-100 flex-wrap">
+                    <div class="text-[11px] text-slate-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>Lần đồng bộ gần nhất: <strong class="text-slate-700" x-text="inventoryConfig.last_synced_at || 'Chưa đồng bộ'"></strong></span>
+                    </div>
+
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <!-- Nút Lưu -->
+                        <button 
+                            type="submit" 
+                            :disabled="isSavingInventoryConfig"
+                            class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span x-text="isSavingInventoryConfig ? 'Đang lưu...' : 'Lưu Cấu Hình'"></span>
+                        </button>
+
+                        <!-- Nút Tải thử dữ liệu -->
+                        <button 
+                            type="button" 
+                            @click="fetchInventoryPreview(true)"
+                            :disabled="isLoadingInventory"
+                            class="px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs border border-emerald-200 transition flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                            <i class="fa-solid fa-arrows-rotate text-xs" :class="isLoadingInventory ? 'animate-spin' : ''"></i>
+                            <span x-text="isLoadingInventory ? 'Đang kiểm tra...' : 'Kiểm Tra & Tải Xem Trước'"></span>
+                        </button>
+
+                        <!-- Nút Nạp vào database chỉ căn -->
+                        <button 
+                            type="button" 
+                            @click="syncInventoryUnitsToDatabase()"
+                            :disabled="isSyncingUnits || isLoadingInventory"
+                            class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 disabled:opacity-50"
+                            title="Nạp tự động 24 căn trong sheet này vào danh sách chỉ căn hộ của dự án"
+                        >
+                            <i class="fa-solid fa-cloud-arrow-down text-xs" :class="isSyncingUnits ? 'animate-bounce' : ''"></i>
+                            <span x-text="isSyncingUnits ? 'Đang nạp căn...' : 'Nạp Căn Vào CSDL Chỉ Căn'"></span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 2. BẢNG XEM TRƯỚC DỮ LIỆU TỪ GOOGLE SHEET (LIVE PREVIEW) -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <!-- Header Xem trước -->
+            <div class="p-4 border-b border-slate-200/80 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h4 class="text-sm font-extrabold text-slate-900">Xem Trước Dữ Liệu Bảng Hàng Thực Tế Từ Google Drive</h4>
+                        <span x-show="inventorySheetData?.current_sheet?.name" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-100 text-blue-700" x-text="inventorySheetData?.current_sheet?.name"></span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5" x-text="inventorySheetData?.current_sheet?.title || 'Bấm nút [Kiểm Tra & Tải Xem Trước] ở trên để nạp dữ liệu từ Google Drive.'"></p>
+                </div>
+
+                <div class="flex items-center gap-2" x-show="inventorySheetData?.current_sheet?.units">
+                    <span class="text-xs font-bold text-slate-600">Thống kê:</span>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700" x-text="'Tổng ' + (inventorySheetData?.current_sheet?.stats?.total || 0) + ' căn'"></span>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700" x-text="'Còn ' + (inventorySheetData?.current_sheet?.stats?.available || 0)"></span>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700" x-text="'Lock ' + (inventorySheetData?.current_sheet?.stats?.locked || 0)"></span>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700" x-text="'Cọc ' + (inventorySheetData?.current_sheet?.stats?.deposited || 0)"></span>
+                </div>
+            </div>
+
+            <!-- Khi đang tải dữ liệu -->
+            <div x-show="isLoadingInventory" class="p-12 text-center text-slate-400">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl text-emerald-600 mb-3"></i>
+                <p class="text-sm font-bold text-slate-700">Đang kết nối và tải file Excel từ Google Drive...</p>
+                <p class="text-xs text-slate-400 mt-1">Hệ thống đang bóc tách giá tiền, diện tích và màu sắc ô trạng thái.</p>
+            </div>
+
+            <!-- Bảng dữ liệu preview -->
+            <div x-show="!isLoadingInventory && inventorySheetData?.current_sheet?.units?.length > 0" class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
+                            <th class="py-2.5 px-3 text-center w-12">STT</th>
+                            <th class="py-2.5 px-3 font-extrabold text-slate-900">Mã Căn</th>
+                            <th class="py-2.5 px-3">Loại Căn</th>
+                            <th class="py-2.5 px-3">Tòa / Tầng</th>
+                            <th class="py-2.5 px-3 text-right">DT Thông Thủy</th>
+                            <th class="py-2.5 px-3">Hướng & View</th>
+                            <th class="py-2.5 px-3 text-right">Giá VN (chưa VAT)</th>
+                            <th class="py-2.5 px-3">Phương Thức Thanh Toán</th>
+                            <th class="py-2.5 px-3 text-center">Trạng Thái (Nhận dạng màu)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <template x-for="(unit, idx) in (inventorySheetData?.current_sheet?.units || [])" :key="unit.unit_code || idx">
+                            <tr 
+                                class="hover:bg-blue-50/40 transition"
+                                :class="{
+                                    'bg-rose-50/20': unit.status === 'deposited',
+                                    'bg-amber-50/20': unit.status === 'locked'
+                                }"
+                            >
+                                <td class="py-2.5 px-3 text-center text-slate-400" x-text="unit.stt || (idx + 1)"></td>
+                                <td class="py-2.5 px-3 font-extrabold text-blue-700 text-xs sm:text-sm" x-text="unit.unit_code"></td>
+                                <td class="py-2.5 px-3">
+                                    <span class="px-2 py-0.5 rounded-md font-bold text-[11px] bg-slate-100 text-slate-700" x-text="unit.unit_type"></span>
+                                </td>
+                                <td class="py-2.5 px-3 text-slate-700" x-text="(unit.block ? 'Tòa ' + unit.block + ' - ' : '') + 'Tầng ' + unit.floor"></td>
+                                <td class="py-2.5 px-3 text-right font-bold text-slate-900" x-text="unit.net_area + ' m²'"></td>
+                                <td class="py-2.5 px-3">
+                                    <div class="font-bold text-slate-800" x-text="'Hướng ' + unit.direction"></div>
+                                    <div class="text-[11px] text-slate-500 truncate max-w-[200px]" x-text="unit.view || '-'"></div>
+                                </td>
+                                <td class="py-2.5 px-3 text-right font-black text-blue-600 text-xs sm:text-sm" x-text="unit.price_text"></td>
+                                <td class="py-2.5 px-3 text-slate-600 text-[11px]" x-text="unit.payment_method || '-'"></td>
+                                <td class="py-2.5 px-3 text-center">
+                                    <span 
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold border"
+                                        :class="{
+                                            'bg-emerald-50 text-emerald-700 border-emerald-300': unit.status === 'available',
+                                            'bg-amber-50 text-amber-700 border-amber-300': unit.status === 'locked',
+                                            'bg-rose-50 text-rose-700 border-rose-300': unit.status === 'deposited'
+                                        }"
+                                    >
+                                        <span 
+                                            class="w-2 h-2 rounded-full"
+                                            :class="{
+                                                'bg-emerald-500 animate-pulse': unit.status === 'available',
+                                                'bg-amber-500': unit.status === 'locked',
+                                                'bg-rose-500': unit.status === 'deposited'
+                                            }"
+                                        ></span>
+                                        <span x-text="unit.status_label"></span>
+                                    </span>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Khi chưa tải hoặc không có dữ liệu -->
+            <div x-show="!isLoadingInventory && (!inventorySheetData?.current_sheet?.units || inventorySheetData.current_sheet.units.length === 0)" class="p-12 text-center text-slate-400">
+                <i class="fa-solid fa-file-excel text-3xl text-slate-300 mb-2"></i>
+                <p class="font-bold text-slate-600">Chưa tải dữ liệu xem trước</p>
+                <p class="text-xs text-slate-400 mt-1">Bấm nút "Kiểm Tra & Tải Xem Trước" ở phía trên để tải toàn bộ bảng hàng từ Google Drive.</p>
+                <button 
+                    type="button" 
+                    @click="fetchInventoryPreview(true)"
+                    class="mt-3 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 transition"
+                >
+                    <i class="fa-solid fa-arrows-rotate mr-1"></i>
+                    Tải dữ liệu xem trước ngay
+                </button>
+            </div>
+        </div>
+
+    </div> <!-- End Tab 5: Online Inventory Config -->
 
     <!-- LIGHTBOX MODAL: Xem ảnh chỉ căn kích thước lớn (Giao diện sáng, mờ tinh tế) -->
     <div 
@@ -1010,18 +1540,30 @@
             <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50/60 to-white">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-500/20">
-                        <i class="fa-solid fa-cube text-base"></i>
+                        <i :class="isBulkBocMai ? 'fa-solid fa-cubes-stacked' : 'fa-solid fa-cube'" class="text-base"></i>
                     </div>
                     <div>
                         <h4 class="font-extrabold text-slate-800 text-base flex items-center gap-2">
                             <span>Ảnh bóc mái 3D</span>
-                            <template x-if="activeBocMaiUnit">
+                            <template x-if="!isBulkBocMai && activeBocMaiUnit">
                                 <span class="text-xs px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 font-black" x-text="activeBocMaiUnit.unit_code"></span>
+                            </template>
+                            <template x-if="isBulkBocMai">
+                                <span class="text-xs px-2 py-0.5 rounded-md bg-violet-100 text-violet-700 font-black">Hàng loạt</span>
                             </template>
                         </h4>
                         <p class="text-xs text-slate-500 mt-0.5">
-                            Căn hộ: <span class="font-bold text-slate-700" x-text="activeBocMaiUnit?.unit_code || '—'"></span>
-                            • Trục căn: <span class="font-black text-indigo-600" x-text="activeBocMaiUnit?.unit_axis || 'Chưa đặt'"></span>
+                            <template x-if="!isBulkBocMai">
+                                <span>
+                                    Căn hộ: <span class="font-bold text-slate-700" x-text="activeBocMaiUnit?.unit_code || '—'"></span>
+                                    • Trục căn: <span class="font-black text-indigo-600" x-text="activeBocMaiUnit?.unit_axis || 'Chưa đặt'"></span>
+                                </span>
+                            </template>
+                            <template x-if="isBulkBocMai">
+                                <span>
+                                    Áp dụng đồng thời cho <span class="font-black text-violet-700" x-text="selectedUnitIds.length"></span> căn đang chọn
+                                </span>
+                            </template>
                         </p>
                     </div>
                 </div>
@@ -1059,6 +1601,15 @@
                 <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
                     <button 
                         type="button" 
+                        @click="bocMaiSourceTab = 'existing'" 
+                        :class="bocMaiSourceTab === 'existing' ? 'bg-indigo-600 text-white shadow-xs font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'"
+                        class="px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition"
+                    >
+                        <i class="fa-solid fa-layer-group text-xs"></i>
+                        <span>Ảnh bóc mái có sẵn (<span x-text="existingBocMaiList ? existingBocMaiList.length : 0"></span>)</span>
+                    </button>
+                    <button 
+                        type="button" 
                         @click="bocMaiSourceTab = 'upload'" 
                         :class="bocMaiSourceTab === 'upload' ? 'bg-indigo-600 text-white shadow-xs font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'"
                         class="px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition"
@@ -1066,18 +1617,59 @@
                         <i class="fa-solid fa-cloud-arrow-up text-xs"></i>
                         <span>Tải ảnh từ máy tính</span>
                     </button>
-                    <button 
-                        type="button" 
-                        @click="bocMaiSourceTab = 'perspectives'" 
-                        :class="bocMaiSourceTab === 'perspectives' ? 'bg-indigo-600 text-white shadow-xs font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'"
-                        class="px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition"
-                    >
-                        <i class="fa-solid fa-images text-xs"></i>
-                        <span>Kho Phối Cảnh ({{ $perspectives->count() }})</span>
-                    </button>
                 </div>
 
-                <!-- Tab 1: Upload File -->
+                <!-- Tab 1: Choose from Existing Bóc Mái Images in Project -->
+                <div x-show="bocMaiSourceTab === 'existing'" class="space-y-2.5">
+                    <template x-if="!existingBocMaiList || existingBocMaiList.length === 0">
+                        <div class="p-6 text-center bg-slate-50 rounded-2xl border border-slate-200">
+                            <i class="fa-solid fa-cube text-slate-300 text-3xl mb-2"></i>
+                            <p class="text-xs text-slate-500 font-bold">Chưa có ảnh bóc mái nào khác trong dự án này.</p>
+                            <p class="text-[11px] text-slate-400 mt-1">Hãy chuyển sang tab "Tải ảnh từ máy tính" ở trên để tải ảnh bóc mái mới lên.</p>
+                        </div>
+                    </template>
+                    <template x-if="existingBocMaiList && existingBocMaiList.length > 0">
+                        <div>
+                            <div class="flex items-center justify-between text-xs text-slate-500 font-medium mb-1.5">
+                                <span>Bấm vào 1 ảnh dưới đây để chọn làm ảnh bóc mái:</span>
+                                <span class="text-[11px] text-indigo-600 font-bold" x-text="existingBocMaiList.length + ' ảnh có sẵn'"></span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto p-1">
+                                <template x-for="(item, idx) in existingBocMaiList" :key="idx">
+                                    <div 
+                                        @click="selectPerspectiveForBocMai(item.image_path, item.image_url)"
+                                        :class="selectedPerspectivePath === item.image_path ? 'ring-2 ring-indigo-600 border-indigo-500 shadow-md scale-[1.02]' : 'border-slate-200 hover:border-indigo-300'"
+                                        class="group relative rounded-xl border bg-slate-900 overflow-hidden cursor-pointer aspect-4/3 transition-all"
+                                        :title="item.label"
+                                    >
+                                        <img :src="item.image_url" :alt="item.label" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent flex flex-col justify-end p-2">
+                                            <span class="text-[11px] font-bold text-white truncate drop-shadow-sm" x-text="item.label"></span>
+                                            <div class="flex flex-wrap items-center gap-1 text-[9px] text-slate-300 mt-0.5">
+                                                <template x-if="item.units_count > 0">
+                                                    <span class="px-1.5 py-0.2 rounded bg-indigo-500/80 text-white font-semibold" x-text="item.units_count + ' căn'"></span>
+                                                </template>
+                                                <template x-if="item.source === 'perspective'">
+                                                    <span class="px-1.5 py-0.2 rounded bg-amber-500/80 text-white font-semibold">Phối cảnh</span>
+                                                </template>
+                                                <template x-if="activeBocMaiUnit && (activeBocMaiUnit.layout_3d_image === item.image_path || (activeBocMaiUnit.layout_3d_image_url && activeBocMaiUnit.layout_3d_image_url === item.image_url))">
+                                                    <span class="px-1.5 py-0.2 rounded bg-emerald-500 text-white font-black">Đang dùng</span>
+                                                </template>
+                                            </div>
+                                        </div>
+                                        <template x-if="selectedPerspectivePath === item.image_path">
+                                            <div class="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs shadow-md">
+                                                <i class="fa-solid fa-check"></i>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Tab 2: Upload File -->
                 <div x-show="bocMaiSourceTab === 'upload'" class="space-y-3">
                     <div 
                         class="border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition"
@@ -1112,65 +1704,6 @@
                         </template>
                     </div>
                 </div>
-
-                <!-- Tab 2: Choose from Kho Phối Cảnh & Tiện Ích -->
-                <div x-show="bocMaiSourceTab === 'perspectives'" class="space-y-2">
-                    @if ($perspectives->isEmpty())
-                    <div class="p-6 text-center bg-slate-50 rounded-2xl border border-slate-200">
-                        <i class="fa-solid fa-image text-slate-300 text-3xl mb-2"></i>
-                        <p class="text-xs text-slate-500">Dự án này chưa có ảnh nào trong Kho Phối Cảnh.</p>
-                        <p class="text-[11px] text-slate-400 mt-1">Hãy chuyển sang tab "Tải ảnh từ máy tính" ở trên.</p>
-                    </div>
-                    @else
-                    <div class="text-xs text-slate-500 font-medium">Bấm vào 1 ảnh dưới đây để chọn làm ảnh bóc mái:</div>
-                    <div class="grid grid-cols-3 sm:grid-cols-4 gap-2.5 max-h-56 overflow-y-auto p-1">
-                        @foreach ($perspectives as $persp)
-                        <div 
-                            @click="selectPerspectiveForBocMai('{{ $persp->image_path }}', '{{ $persp->image_url }}')"
-                            :class="selectedPerspectivePath === '{{ $persp->image_path }}' ? 'ring-2 ring-indigo-600 border-indigo-500 shadow-md' : 'border-slate-200 hover:border-indigo-300'"
-                            class="group relative rounded-xl border bg-slate-900 overflow-hidden cursor-pointer aspect-4/3 transition-all"
-                            title="{{ $persp->name }}"
-                        >
-                            <img src="{{ $persp->image_url }}" alt="{{ $persp->name }}" class="w-full h-full object-cover group-hover:scale-105 transition">
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-1.5">
-                                <span class="text-[10px] font-bold text-white truncate drop-shadow-sm">{{ $persp->name }}</span>
-                                @if ($persp->category === 'layout_3d')
-                                <span class="text-[8px] font-black text-amber-300">Bóc mái 3D</span>
-                                @endif
-                            </div>
-                            <template x-if="selectedPerspectivePath === '{{ $persp->image_path }}'">
-                                <div class="absolute top-1 right-1 w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] shadow-sm">
-                                    <i class="fa-solid fa-check"></i>
-                                </div>
-                            </template>
-                        </div>
-                        @endforeach
-                    </div>
-                    @endif
-                </div>
-
-                <!-- Sync Axis Option Checkbox -->
-                <div class="p-3.5 bg-gradient-to-r from-amber-50/60 to-indigo-50/60 rounded-2xl border border-indigo-100/80">
-                    <label class="flex items-start gap-3 cursor-pointer">
-                        <input 
-                            type="checkbox" 
-                            x-model="syncAxisBocMai" 
-                            class="mt-0.5 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                        >
-                        <div class="text-xs">
-                            <div class="font-extrabold text-slate-800 flex items-center gap-1.5">
-                                <i class="fa-solid fa-arrows-rotate text-indigo-600 text-xs"></i>
-                                <span>Đồng bộ cho tất cả các căn cùng trục</span>
-                                <template x-if="activeBocMaiUnit && activeBocMaiUnit.unit_axis">
-                                    <span class="px-1.5 py-0.2 rounded bg-indigo-600 text-white font-black text-[11px]" x-text="'Trục ' + activeBocMaiUnit.unit_axis"></span>
-                                </template>
-                            </div>
-                            <p class="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
-                                Thường các căn cùng trục căn ở các tầng khác nhau có thiết kế bóc mái giống hệt nhau. Bật tùy chọn này sẽ tự động cập nhật ảnh cho toàn bộ các căn cùng trục.
-                            </p>
-                        </div>
-                    </label>
-                </div>
             </div>
 
             <!-- Modal Footer -->
@@ -1190,7 +1723,7 @@
                     <template x-if="!isSavingBocMai">
                         <i class="fa-solid fa-floppy-disk text-xs"></i>
                     </template>
-                    <span>Lưu ảnh bóc mái</span>
+                    <span x-text="isBulkBocMai ? ('Áp dụng cho ' + selectedUnitIds.length + ' căn') : 'Lưu ảnh bóc mái'"></span>
                 </button>
             </div>
         </div>
@@ -1460,12 +1993,11 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <input type="file" x-ref="bulkBocMaiFile" accept="image/*" class="hidden" @change="bulkReplaceLayout3d($event)">
             <button
                 type="button"
-                @click="$refs.bulkBocMaiFile.click()"
-                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-md transition"
-                title="Dùng một ảnh bóc mái mới cho tất cả căn đang chọn"
+                @click="openBulkBocMaiModal()"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-md transition cursor-pointer"
+                title="Thay ảnh bóc mái cho tất cả căn đang chọn"
             >
                 <i class="fa-solid fa-cubes-stacked text-xs"></i>
                 <span>Thay ảnh bóc mái</span>
@@ -2557,12 +3089,14 @@ function unitProjectHub() {
         // Quick Bóc Mái Modal States
         quickBocMaiModalOpen: false,
         activeBocMaiUnit: null,
-        bocMaiSourceTab: 'upload',
+        isBulkBocMai: false,
+        bocMaiSourceTab: 'existing',
+        existingBocMaiList: {!! json_encode($existingBocMaiImages ?? []) !!},
         selectedBocMaiFile: null,
         selectedBocMaiFileName: '',
         bocMaiFilePreview: null,
         selectedPerspectivePath: '',
-        syncAxisBocMai: true,
+        syncAxisBocMai: false,
         isSavingBocMai: false,
 
         // Quick Định Vị Mặt Bằng Modal States
@@ -2578,12 +3112,39 @@ function unitProjectHub() {
 
         // AJAX Search & Filter State
         isLoadingUnits: false,
+        selectedAxes: {!! json_encode(array_values(array_map('strval', $selectedAxes ?? []))) !!},
+        axisDropdownOpen: false,
+        axisSearch: '',
+        allExistingAxes: {!! json_encode(array_values(array_map('strval', $existingAxes ?? []))) !!},
+
+        // Bảng Hàng Online (Google Sheet Live Sync) State
+        inventoryConfig: {
+            sheet_url: '{{ addslashes($inventoryConfig->sheet_url ?? "https://docs.google.com/spreadsheets/d/14553EpRwsgN3iz5YQmc9o__Bc5ovfuRa/edit?gid=149974058#gid=149974058") }}',
+            sheet_tab_name: '{{ addslashes($inventoryConfig->sheet_tab_name ?? "GH độc quyền tòa C2.1") }}',
+            visible_tabs: {!! json_encode($inventoryConfig->visible_tabs ?? []) !!},
+            csbh_url: '{{ addslashes($inventoryConfig->csbh_url ?? "https://drive.google.com/file/d/1HjY1sRvEVD5_vDG2ojh7cKf9nQMUMRSW/view?usp=drivesdk") }}',
+            is_active: {{ ($inventoryConfig->is_active ?? true) ? 'true' : 'false' }},
+            notes: '{{ addslashes($inventoryConfig->notes ?? "Áp dụng CSBH Victory Hermes ngày 08/08/2026") }}',
+            last_synced_at: '{{ $inventoryConfig->last_synced_at ? $inventoryConfig->last_synced_at->format("H:i d/m/Y") : "" }}'
+        },
+        inventorySheetData: null,
+        isLoadingInventory: false,
+        isSavingInventoryConfig: false,
+        isSyncingUnits: false,
 
         init() {
             window.__selectedUnitIds = this.selectedUnitIds || [];
             this.$watch('selectedUnitIds', (val) => {
                 window.__selectedUnitIds = val || [];
             });
+            this.$watch('activeTab', (tab) => {
+                if (tab === 'online_inventory' && !this.inventorySheetData) {
+                    this.fetchInventoryPreview(false);
+                }
+            });
+            if (this.activeTab === 'online_inventory' && !this.inventorySheetData) {
+                this.fetchInventoryPreview(false);
+            }
             this.calcBoardDimensions();
             this.$nextTick(() => {
                 this.bindPaginationLinks(document.getElementById('units-list-container'));
@@ -2594,6 +3155,188 @@ function unitProjectHub() {
             window.addEventListener('popstate', () => {
                 this.applyFilters(window.location.href, false);
             });
+        },
+
+        // Lấy preview bảng hàng từ Google Sheet
+        async fetchInventoryPreview(force = false) {
+            this.isLoadingInventory = true;
+            try {
+                const params = new URLSearchParams({
+                    sheet_url: this.inventoryConfig.sheet_url || '',
+                    sheet_name: this.inventoryConfig.sheet_tab_name || '',
+                    refresh: force ? '1' : '0'
+                });
+                const res = await fetch(`{{ route('admin.unit-locators.preview-inventory-sheet', $project->id) }}?${params}`);
+                const data = await res.json();
+                if (data.success) {
+                    this.inventorySheetData = data;
+                    // Nếu chưa có visible_tabs nào được lưu, mặc định tick chọn tất cả tabs
+                    if ((!this.inventoryConfig.visible_tabs || this.inventoryConfig.visible_tabs.length === 0) && data.sheets && data.sheets.length > 0) {
+                        this.inventoryConfig.visible_tabs = data.sheets.map(s => s.name);
+                    }
+                    if (force && window.Swal) {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'Đã tải dữ liệu Google Sheet thành công!',
+                            showConfirmButton: false,
+                            timer: 2500
+                        });
+                    }
+                } else {
+                    throw new Error(data.message || 'Lỗi tải dữ liệu');
+                }
+            } catch (err) {
+                console.error('Lỗi tải inventory:', err);
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Không thể tải bảng hàng',
+                        text: err.message || 'Vui lòng kiểm tra lại đường dẫn Google Sheet.',
+                        confirmButtonColor: '#2563eb'
+                    });
+                }
+            } finally {
+                this.isLoadingInventory = false;
+            }
+        },
+
+        // Kiểm tra xem tab sheet này có được tick chọn hiển thị không
+        isTabChecked(sheetName) {
+            if (!this.inventoryConfig.visible_tabs || !Array.isArray(this.inventoryConfig.visible_tabs) || this.inventoryConfig.visible_tabs.length === 0) {
+                return true;
+            }
+            return this.inventoryConfig.visible_tabs.includes(sheetName);
+        },
+
+        // Bật / tắt tick chọn tab
+        toggleTab(sheetName, isChecked) {
+            if (!this.inventoryConfig.visible_tabs || !Array.isArray(this.inventoryConfig.visible_tabs)) {
+                if (this.inventorySheetData && this.inventorySheetData.sheets) {
+                    this.inventoryConfig.visible_tabs = this.inventorySheetData.sheets.map(s => s.name);
+                } else {
+                    this.inventoryConfig.visible_tabs = [];
+                }
+            }
+            if (isChecked) {
+                if (!this.inventoryConfig.visible_tabs.includes(sheetName)) {
+                    this.inventoryConfig.visible_tabs.push(sheetName);
+                }
+            } else {
+                this.inventoryConfig.visible_tabs = this.inventoryConfig.visible_tabs.filter(n => n !== sheetName);
+                // Nếu tab bị tắt đang là tab mặc định, chuyển tab mặc định sang tab khác còn tick
+                if (this.inventoryConfig.sheet_tab_name === sheetName && this.inventoryConfig.visible_tabs.length > 0) {
+                    this.inventoryConfig.sheet_tab_name = this.inventoryConfig.visible_tabs[0];
+                }
+            }
+        },
+
+        // Chọn tất cả hoặc bỏ chọn tất cả tabs
+        toggleAllTabs(selectAll) {
+            if (!this.inventorySheetData || !this.inventorySheetData.sheets) return;
+            if (selectAll) {
+                this.inventoryConfig.visible_tabs = this.inventorySheetData.sheets.map(s => s.name);
+            } else {
+                this.inventoryConfig.visible_tabs = [];
+            }
+        },
+
+        // Lưu cấu hình Bảng Hàng Online
+        async saveInventoryConfig() {
+            this.isSavingInventoryConfig = true;
+            try {
+                const res = await fetch(`{{ route('admin.unit-locators.save-inventory-config', $project->id) }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(this.inventoryConfig)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: data.message || 'Đã lưu cấu hình Bảng Hàng Online!',
+                            confirmButtonColor: '#059669'
+                        });
+                    }
+                } else {
+                    throw new Error(data.message || 'Không thể lưu cấu hình');
+                }
+            } catch (err) {
+                console.error('Lỗi lưu cấu hình:', err);
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: err.message,
+                        confirmButtonColor: '#2563eb'
+                    });
+                }
+            } finally {
+                this.isSavingInventoryConfig = false;
+            }
+        },
+
+        // Nạp toàn bộ căn từ Sheet vào database chỉ căn
+        async syncInventoryUnitsToDatabase() {
+            const confirm = await Swal.fire({
+                title: 'Nạp căn vào CSDL?',
+                text: 'Hệ thống sẽ lấy toàn bộ danh sách căn từ Google Sheet này và thêm / cập nhật vào mục Chỉ căn hộ của dự án. Bạn có chắc chắn muốn thực hiện?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Đồng ý nạp căn',
+                cancelButtonText: 'Hủy bỏ',
+                confirmButtonColor: '#4f46e5'
+            });
+
+            if (!confirm.isConfirmed) return;
+
+            this.isSyncingUnits = true;
+            try {
+                const res = await fetch(`{{ route('admin.unit-locators.sync-inventory-units', $project->id) }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sheet_url: this.inventoryConfig.sheet_url,
+                        sheet_name: this.inventoryConfig.sheet_tab_name
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.inventoryConfig.last_synced_at = 'Vừa xong';
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Đã nạp căn thành công!',
+                        html: `<div class="text-xs text-slate-600">${data.message}</div>`,
+                        confirmButtonColor: '#4f46e5'
+                    });
+                    window.location.reload();
+                } else {
+                    throw new Error(data.message || 'Lỗi khi nạp căn');
+                }
+            } catch (err) {
+                console.error('Lỗi sync căn:', err);
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi',
+                        text: err.message,
+                        confirmButtonColor: '#2563eb'
+                    });
+                }
+            } finally {
+                this.isSyncingUnits = false;
+            }
         },
 
         calcBoardDimensions() {
@@ -3095,19 +3838,60 @@ function unitProjectHub() {
         },
 
         openQuickBocMaiModal(unit) {
+            this.isBulkBocMai = false;
             this.activeBocMaiUnit = unit;
-            this.bocMaiSourceTab = 'upload';
+
+            // Nếu căn này đã có ảnh bóc mái nhưng chưa có trong danh sách có sẵn, bổ sung vào
+            if (unit && unit.layout_3d_image && unit.layout_3d_image_url && Array.isArray(this.existingBocMaiList)) {
+                const exists = this.existingBocMaiList.some(item => item.image_path === unit.layout_3d_image || item.image_url === unit.layout_3d_image_url);
+                if (!exists) {
+                    this.existingBocMaiList.push({
+                        image_path: unit.layout_3d_image,
+                        image_url: unit.layout_3d_image_url,
+                        label: unit.unit_axis ? ('Trục ' + unit.unit_axis) : ('Căn ' + (unit.unit_code || '')),
+                        axes: unit.unit_axis ? [unit.unit_axis] : [],
+                        units_count: 1,
+                        source: 'unit'
+                    });
+                }
+            }
+
+            this.bocMaiSourceTab = (this.existingBocMaiList && this.existingBocMaiList.length > 0) ? 'existing' : 'upload';
             this.selectedBocMaiFile = null;
             this.selectedBocMaiFileName = '';
             this.bocMaiFilePreview = null;
             this.selectedPerspectivePath = '';
-            this.syncAxisBocMai = true;
+            this.syncAxisBocMai = false;
+            this.isSavingBocMai = false;
+            this.quickBocMaiModalOpen = true;
+        },
+
+        openBulkBocMaiModal() {
+            if (!this.selectedUnitIds || this.selectedUnitIds.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Chưa chọn căn',
+                    text: 'Vui lòng tích chọn ít nhất 1 căn hộ để thay ảnh bóc mái!',
+                    confirmButtonText: 'Đã hiểu'
+                });
+                return;
+            }
+
+            this.isBulkBocMai = true;
+            this.activeBocMaiUnit = null;
+            this.bocMaiSourceTab = (this.existingBocMaiList && this.existingBocMaiList.length > 0) ? 'existing' : 'upload';
+            this.selectedBocMaiFile = null;
+            this.selectedBocMaiFileName = '';
+            this.bocMaiFilePreview = null;
+            this.selectedPerspectivePath = '';
+            this.syncAxisBocMai = false;
             this.isSavingBocMai = false;
             this.quickBocMaiModalOpen = true;
         },
 
         closeQuickBocMaiModal() {
             this.quickBocMaiModalOpen = false;
+            this.isBulkBocMai = false;
             this.activeBocMaiUnit = null;
             this.selectedBocMaiFile = null;
             this.selectedBocMaiFileName = '';
@@ -3138,16 +3922,92 @@ function unitProjectHub() {
         },
 
         saveQuickBocMai() {
-            if (!this.activeBocMaiUnit) return;
             if (!this.selectedBocMaiFile && !this.selectedPerspectivePath) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Chưa chọn ảnh',
-                    text: 'Vui lòng chọn 1 file ảnh từ máy tính hoặc từ Kho Phối Cảnh!',
+                    text: 'Vui lòng chọn 1 ảnh bóc mái có sẵn hoặc tải ảnh mới từ máy tính!',
                     confirmButtonText: 'Đã hiểu'
                 });
                 return;
             }
+
+            // Xử lý thay ảnh hàng loạt cho các căn đã chọn
+            if (this.isBulkBocMai) {
+                if (!this.selectedUnitIds || this.selectedUnitIds.length === 0) return;
+                this.isSavingBocMai = true;
+                const formData = new FormData();
+                this.selectedUnitIds.forEach(id => formData.append('ids[]', id));
+                if (this.selectedBocMaiFile) {
+                    formData.append('layout_3d_file', this.selectedBocMaiFile);
+                } else if (this.selectedPerspectivePath) {
+                    formData.append('layout_3d_image', this.selectedPerspectivePath);
+                }
+
+                fetch('{{ route('admin.unit-locators.bulk-layout-3d', $project->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    this.isSavingBocMai = false;
+                    if (data.success) {
+                        Toast.fire({
+                            icon: 'success',
+                            title: data.message || 'Đã thay ảnh bóc mái hàng loạt!'
+                        });
+
+                        const newUrl = data.layout_3d_image_url;
+                        const newPath = data.layout_3d_image;
+
+                        // Cập nhật DOM cho toàn bộ các căn được chọn
+                        this.selectedUnitIds.forEach(id => {
+                            this.updateUnitBocMaiDOM(id, newUrl, null);
+                        });
+
+                        // Bổ sung vào danh sách ảnh có sẵn nếu chưa có
+                        if (newPath && newUrl && Array.isArray(this.existingBocMaiList)) {
+                            const exists = this.existingBocMaiList.some(item => item.image_path === newPath || item.image_url === newUrl);
+                            if (!exists) {
+                                this.existingBocMaiList.unshift({
+                                    image_path: newPath,
+                                    image_url: newUrl,
+                                    label: this.selectedUnitIds.length + ' căn vừa chọn',
+                                    axes: [],
+                                    units_count: this.selectedUnitIds.length,
+                                    source: 'unit'
+                                });
+                            }
+                        }
+
+                        this.closeQuickBocMaiModal();
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Lỗi',
+                            text: data.message || 'Không thể cập nhật ảnh bóc mái hàng loạt.'
+                        });
+                    }
+                })
+                .catch(err => {
+                    this.isSavingBocMai = false;
+                    console.error(err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Lỗi kết nối',
+                        text: 'Có lỗi xảy ra khi lưu ảnh. Vui lòng thử lại.'
+                    });
+                });
+                return;
+            }
+
+            // Xử lý lưu ảnh cho 1 căn riêng lẻ
+            if (!this.activeBocMaiUnit) return;
 
             this.isSavingBocMai = true;
             const formData = new FormData();
@@ -3156,7 +4016,7 @@ function unitProjectHub() {
             } else if (this.selectedPerspectivePath) {
                 formData.append('layout_3d_image', this.selectedPerspectivePath);
             }
-            formData.append('sync_axis', this.syncAxisBocMai ? '1' : '0');
+            formData.append('sync_axis', '0');
 
             fetch(`{{ url('admin/unit-locators') }}/${this.activeBocMaiUnit.id}/layout-3d`, {
                 method: 'POST',
@@ -3177,20 +4037,32 @@ function unitProjectHub() {
                     });
 
                     const newUrl = data.layout_3d_image_url;
+                    const newPath = data.layout_3d_image;
                     const unitId = this.activeBocMaiUnit.id;
                     const unitAxis = this.activeBocMaiUnit.unit_axis;
+                    const unitCode = this.activeBocMaiUnit.unit_code;
 
-                    if (this.syncAxisBocMai && unitAxis) {
-                        document.querySelectorAll(`[data-unit-axis="${unitAxis}"]`).forEach(el => {
-                            const id = el.getAttribute('data-unit-id');
-                            if (id) {
-                                this.updateUnitBocMaiDOM(id, newUrl, unitAxis);
-                            }
-                        });
-                    } else {
-                        this.updateUnitBocMaiDOM(unitId, newUrl, unitAxis);
+                    if (this.activeBocMaiUnit) {
+                        this.activeBocMaiUnit.layout_3d_image_url = newUrl;
+                        this.activeBocMaiUnit.layout_3d_image = newPath;
                     }
 
+                    // Tự động bổ sung ảnh mới vào danh sách có sẵn để các lần sửa căn sau chọn được ngay
+                    if (newPath && newUrl && Array.isArray(this.existingBocMaiList)) {
+                        const exists = this.existingBocMaiList.some(item => item.image_path === newPath || item.image_url === newUrl);
+                        if (!exists) {
+                            this.existingBocMaiList.unshift({
+                                image_path: newPath,
+                                image_url: newUrl,
+                                label: unitAxis ? ('Trục ' + unitAxis) : ('Căn ' + (unitCode || '')),
+                                axes: unitAxis ? [unitAxis] : [],
+                                units_count: 1,
+                                source: 'unit'
+                            });
+                        }
+                    }
+
+                    this.updateUnitBocMaiDOM(unitId, newUrl, unitAxis);
                     this.closeQuickBocMaiModal();
                 } else {
                     Swal.fire({
@@ -3215,9 +4087,7 @@ function unitProjectHub() {
             if (!this.activeBocMaiUnit) return;
             confirmAction({
                 title: `Xóa ảnh bóc mái căn ${this.activeBocMaiUnit.unit_code}?`,
-                text: this.syncAxisBocMai && this.activeBocMaiUnit.unit_axis 
-                    ? `Ảnh sẽ bị xóa khỏi tất cả căn cùng trục ${this.activeBocMaiUnit.unit_axis}.`
-                    : 'Ảnh bóc mái của căn này sẽ bị xóa khỏi hệ thống.',
+                text: 'Ảnh bóc mái của căn này sẽ bị xóa khỏi hệ thống.',
                 icon: 'warning',
                 confirmButtonText: 'Đồng ý xóa',
                 confirmButtonColor: '#ef4444'
@@ -3225,7 +4095,7 @@ function unitProjectHub() {
                 if (result.isConfirmed) {
                     const formData = new FormData();
                     formData.append('remove_image', '1');
-                    formData.append('sync_axis', this.syncAxisBocMai ? '1' : '0');
+                    formData.append('sync_axis', '0');
 
                     fetch(`{{ url('admin/unit-locators') }}/${this.activeBocMaiUnit.id}/layout-3d`, {
                         method: 'POST',
@@ -3246,17 +4116,12 @@ function unitProjectHub() {
 
                             const unitId = this.activeBocMaiUnit.id;
                             const unitAxis = this.activeBocMaiUnit.unit_axis;
-                            if (this.syncAxisBocMai && unitAxis) {
-                                document.querySelectorAll(`[data-unit-axis="${unitAxis}"]`).forEach(el => {
-                                    const id = el.getAttribute('data-unit-id');
-                                    if (id) {
-                                        this.updateUnitBocMaiDOM(id, null, unitAxis);
-                                    }
-                                });
-                            } else {
-                                this.updateUnitBocMaiDOM(unitId, null, unitAxis);
-                            }
 
+                            if (this.activeBocMaiUnit) {
+                                this.activeBocMaiUnit.layout_3d_image_url = null;
+                                this.activeBocMaiUnit.layout_3d_image = null;
+                            }
+                            this.updateUnitBocMaiDOM(unitId, null, unitAxis);
                             this.closeQuickBocMaiModal();
                         }
                     });
@@ -3753,6 +4618,48 @@ function unitProjectHub() {
             });
         },
 
+        getFilteredAxes() {
+            if (!this.axisSearch || !this.axisSearch.trim()) return this.allExistingAxes;
+            const q = this.axisSearch.trim().toLowerCase();
+            return this.allExistingAxes.filter(a => String(a).toLowerCase().includes(q));
+        },
+
+        toggleAxis(ax) {
+            const val = String(ax);
+            const idx = this.selectedAxes.indexOf(val);
+            if (idx > -1) {
+                this.selectedAxes.splice(idx, 1);
+            } else {
+                this.selectedAxes.push(val);
+            }
+        },
+
+        isAxisSelected(ax) {
+            return this.selectedAxes.includes(String(ax));
+        },
+
+        selectAllAxes() {
+            this.getFilteredAxes().forEach(ax => {
+                const val = String(ax);
+                if (!this.selectedAxes.includes(val)) {
+                    this.selectedAxes.push(val);
+                }
+            });
+        },
+
+        deselectAllAxes() {
+            this.getFilteredAxes().forEach(ax => {
+                const val = String(ax);
+                const idx = this.selectedAxes.indexOf(val);
+                if (idx > -1) this.selectedAxes.splice(idx, 1);
+            });
+        },
+
+        clearAllSelectedAxes() {
+            this.selectedAxes = [];
+            this.applyFilters();
+        },
+
         resetFilters() {
             const form = this.$refs.filterForm;
             if (form) {
@@ -3762,6 +4669,7 @@ function unitProjectHub() {
                 const selects = form.querySelectorAll('select');
                 selects.forEach(s => s.selectedIndex = 0);
             }
+            this.selectedAxes = [];
             this.applyFilters();
         },
 
