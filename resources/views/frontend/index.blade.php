@@ -883,7 +883,7 @@
                                 <template x-for="(fp, idx) in floorplansList" :key="fp.id">
                                     <button 
                                         type="button" 
-                                        @click="selectedFloorplan = fp"
+                                        @click="selectedFloorplan = fp; if (window.innerWidth < 1024) mobileFloorplanPanelOpen = true"
                                         :class="selectedFloorplan && selectedFloorplan.id === fp.id ? 'bg-blue-600 text-white shadow-sm border-blue-600' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'"
                                         class="w-full p-2 rounded-lg border text-left transition-all duration-150 flex items-center justify-between group"
                                     >
@@ -917,12 +917,29 @@
                         </div>
 
                         <!-- CỘT 2 (BÊN CÒN LẠI): HIỂN THỊ ẢNH MẶT BẰNG (CO DÃN 100% VỪA MÀN HÌNH - KHÔNG CUỘN) -->
-                        <div class="col-span-12 lg:col-span-8 xl:col-span-9 bg-white rounded-xl border border-slate-200/90 shadow-sm p-2 flex flex-col h-full overflow-hidden">
+                        <!-- Mobile: lớp nền mờ khi panel mở -->
+                        <div x-show="mobileFloorplanPanelOpen" x-transition.opacity @click="mobileFloorplanPanelOpen = false" class="lg:hidden fixed inset-0 z-[60] bg-black/40" style="display:none"></div>
+                        <div
+                            @keydown.escape.window="mobileFloorplanPanelOpen = false"
+                            :class="mobileFloorplanPanelOpen ? 'translate-x-0' : 'translate-x-full'"
+                            class="fixed bottom-0 right-0 left-10 max-h-[100dvh] overflow-y-auto rounded-tl-2xl z-[61] translate-x-full transition-transform duration-300 ease-out lg:static lg:z-auto lg:translate-x-0 lg:transition-none col-span-12 lg:col-span-8 xl:col-span-9 bg-white lg:rounded-xl border-0 lg:border border-slate-200/90 shadow-2xl lg:shadow-sm p-2 flex flex-col lg:h-full lg:max-h-none lg:overflow-hidden"
+                        >
+                            <!-- Mobile: thanh tiêu đề + nút đóng để chọn mặt bằng khác -->
+                            <div class="lg:hidden flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-100 shrink-0">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-extrabold text-slate-900 truncate" x-text="selectedFloorplan ? selectedFloorplan.name : 'Mặt bằng'"></p>
+                                    <p class="text-[11px] text-slate-500 truncate" x-show="selectedFloorplan" x-text="selectedFloorplan ? ((selectedFloorplan.block ? 'Tòa ' + selectedFloorplan.block + ' • ' : '') + (selectedFloorplan.floor_range ? 'Phạm vi: ' + selectedFloorplan.floor_range : 'Bản vẽ kiến trúc')) : ''"></p>
+                                </div>
+                                <button type="button" @click="mobileFloorplanPanelOpen = false" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition" title="Đóng để chọn mặt bằng khác">
+                                    <i class="fa-solid fa-xmark text-sm"></i>
+                                    <span>Đóng</span>
+                                </button>
+                            </div>
                             <template x-if="selectedFloorplan">
-                                <div class="h-full flex flex-col min-h-0 overflow-hidden">
+                                <div class="lg:flex-1 lg:h-full flex flex-col lg:min-h-0 lg:overflow-hidden">
                                     
-                                    <!-- Header thanh công cụ nhỏ gọn trên ảnh mặt bằng -->
-                                    <div class="flex items-center justify-between pb-1.5 border-b border-slate-100 shrink-0 mb-1.5 px-1">
+                                    <!-- Header thanh công cụ nhỏ gọn trên ảnh mặt bằng (Desktop) -->
+                                    <div class="hidden lg:flex items-center justify-between pb-1.5 border-b border-slate-100 shrink-0 mb-1.5 px-1">
                                         <div class="flex items-center gap-2 min-w-0">
                                             <h3 class="text-xs sm:text-sm font-extrabold text-slate-900 truncate" x-text="selectedFloorplan.name"></h3>
                                             <span class="px-2 py-0.2 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
@@ -963,20 +980,32 @@
                                         </div>
                                     </div>
 
-                                    <!-- Khung hiển thị ảnh: Dùng relative + absolute inset-0 để bảo đảm 100% VỪA MÀN HÌNH - KHÔNG CUỘN -->
-                                    <div class="flex-1 min-h-0 relative w-full bg-[#fdfaf6] rounded-lg overflow-hidden flex items-center justify-center group border border-slate-200">
+                                    <!-- Khung hiển thị ảnh Mặt bằng. Mobile: ôm sát ảnh. Desktop: vừa khung, không cuộn -->
+                                    <div class="relative w-full overflow-hidden group lg:flex-1 lg:min-h-0 lg:flex lg:items-center lg:justify-center lg:bg-[#fdfaf6] lg:rounded-lg lg:border lg:border-slate-200 lg:py-8 lg:px-4">
+                                        <!-- Nút tải về góc trên bên phải trên mobile (giống hệt bên Chỉ căn) -->
+                                        <div class="lg:hidden absolute top-2 right-2 z-20 flex items-center gap-1.5">
+                                            <button type="button" @click="openLightbox(selectedFloorplan.image_url, selectedFloorplan.name)" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/95 hover:bg-white text-slate-700 text-xs font-bold shadow-md transition" title="Phóng to">
+                                                <i class="fa-solid fa-expand text-[11px]"></i>
+                                                <span>Phóng to</span>
+                                            </button>
+                                            <button type="button" @click="downloadFloorplanImage(selectedFloorplan)" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition" title="Tải ảnh mặt bằng">
+                                                <i class="fa-solid fa-download text-[11px]"></i>
+                                                <span>Tải về</span>
+                                            </button>
+                                        </div>
+
                                         <img 
                                             :src="selectedFloorplan.image_url" 
                                             :alt="selectedFloorplan.name" 
-                                            class="absolute inset-0 w-full h-full object-contain px-4 py-6 sm:py-8 select-none drop-shadow-xl cursor-zoom-in"
+                                            class="block w-full h-auto lg:absolute lg:inset-0 lg:h-full object-contain lg:p-2 select-none cursor-zoom-in"
                                             @click="openLightbox(selectedFloorplan.image_url, selectedFloorplan.name)"
                                             loading="lazy"
                                         >
-                                        <!-- Nút xem nhanh toàn màn hình trên ảnh -->
+                                        <!-- Nút xem nhanh toàn màn hình trên desktop -->
                                         <button 
                                             type="button" 
                                             @click="openLightbox(selectedFloorplan.image_url, selectedFloorplan.name)" 
-                                            class="absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-black/75 hover:bg-black text-white text-[10px] font-bold backdrop-blur-sm transition flex items-center gap-1 shadow opacity-0 group-hover:opacity-100"
+                                            class="hidden sm:flex absolute bottom-2 right-2 px-2.5 py-1 rounded-lg bg-black/75 hover:bg-black text-white text-[10px] font-bold backdrop-blur-sm transition items-center gap-1 shadow opacity-0 group-hover:opacity-100"
                                         >
                                             <i class="fa-solid fa-magnifying-glass-plus text-[9px]"></i>
                                             <span>Click để phóng to</span>
@@ -2484,6 +2513,7 @@
                 selectedUnit: {!! json_encode($units->first() ?? null) !!},
                 // Mobile: panel ảnh chỉ căn trượt từ trái sang
                 mobileUnitPanelOpen: false,
+                mobileFloorplanPanelOpen: false,
                 selectedArticle: null,
 
                 // Bảng tính vay
@@ -2697,6 +2727,8 @@
                     }
                     this.selectedUnit = (this.unitsList && this.unitsList.length > 0) ? this.unitsList[0] : null;
                     this.selectedFloorplan = (this.floorplansList && this.floorplansList.length > 0) ? this.floorplansList[0] : null;
+                    this.mobileUnitPanelOpen = false;
+                    this.mobileFloorplanPanelOpen = false;
                     this.resetUnitFilters();
                 },
 
@@ -2706,6 +2738,8 @@
                         return;
                     }
                     this.locatorSubTab = tabKey;
+                    this.mobileUnitPanelOpen = false;
+                    this.mobileFloorplanPanelOpen = false;
                     const url = new URL(window.location.href);
                     url.searchParams.set('tab', tabKey);
                     window.history.replaceState({}, '', url);
